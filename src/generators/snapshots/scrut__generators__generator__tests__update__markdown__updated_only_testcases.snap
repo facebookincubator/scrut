@@ -1,0 +1,32 @@
+---
+source: src/generators/generator.rs
+expression: result
+---
+# this is a document
+
+there are many lines
+
+```rust
+println!("including code");
+```
+
+## Then there is a test
+
+```scrut
+$ the command 1
+new output ONE
+```
+
+Followed by other stuff
+
+
+
+Followed by another test
+
+```scrut
+$ the command 2
+new output ZWEI
+```
+
+ultimately ending in stuff
+

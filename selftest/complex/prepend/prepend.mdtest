@@ -1,0 +1,9 @@
+# Prepend File
+
+This file contains the tings that are prepended
+
+## Export variable
+
+```scrut
+$ export SOME_VARIABLE="prepended, not shaken"
+```

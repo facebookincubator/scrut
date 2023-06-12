@@ -1,0 +1,15 @@
+[package]
+name = "pyscrut"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "pyscrut"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "^1.0"
+lazy_static = "1.4"
+regex = "1.5"
+scrut = { path = ".." }
+pyo3 = { version = "0.16.3", features = ["extension-module"] }

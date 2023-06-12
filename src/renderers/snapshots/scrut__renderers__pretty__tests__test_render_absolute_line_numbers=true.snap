@@ -1,0 +1,61 @@
+---
+source: src/renderers/pretty.rs
+expression: rendered
+---
+// =============================================================================
+// @ Line 90
+// -----------------------------------------------------------------------------
+// # the title
+// -----------------------------------------------------------------------------
+// $ the command
+// =============================================================================
+
+ 91   91  |   matching 1
+ 92   92  |   matching 2
+ 93   93  |   matching 3
+ 94   94  |   matching 4
+ 95   95  |   matching 5
+ 96   96  |   matching 6
+ 97   97  |   matching 7
+ 98   98  |   matching 8
+ 99   99  |   matching 9
+100  100  |   matching 10
+101  101  |   matching 11
+102  102  |   matching 12
+103  103  |   matching 13
+104  104  |   matching 14
+105  105  |   matching 15
+106  106  |   matching 16
+107  107  |   matching 17
+108  108  |   matching 18
+109  109  |   matching 19
+110  110  |   matching 20
+     111  | - failing 21
+     112  | - failing 22
+     113  | - failing 23
+     114  | - failing 24
+     115  | - failing 25
+116  116  |   matching 26
+117  117  |   matching 27
+118  118  |   matching 28
+119  119  |   matching 29
+120  120  |   matching 30
+121  121  |   matching 31
+122  122  |   matching 32
+123  123  |   matching 33
+124  124  |   matching 34
+125  125  |   matching 35
+126  126  |   matching 36
+127  127  |   matching 37
+128  128  |   matching 38
+129  129  |   matching 39
+130  130  |   matching 40
+131  131  |   matching 41
+132  132  |   matching 42
+133  133  |   matching 43
+134  134  |   matching 44
+135  135  |   matching 45
+
+
+Summary: 0 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+

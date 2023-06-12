@@ -1,0 +1,62 @@
+[package]
+name = "scrut"
+version = "0.0.0"
+edition = "2021"
+autobins = false
+
+[features]
+
+# volatile tests, that depend on timeouts or order in STDERR, STDOUT will
+# be flaky and should not be executed in automation
+volatile_tests = []
+
+# the rust implementation of killing (created child) processes sends only
+# a SIGKILL to this very process - not it's direct or descending children.
+# this feature enables reaping of child processes, which is not without danger:
+# https://github.com/oconnor663/duct.py/blob/master/gotchas.md#killing-grandchild-processes
+reap_on_timeout = []
+
+[lib]
+name = "scrut"
+path = "src/lib.rs"
+
+[[bin]]
+name = "scrut"
+path = "src/bin/main.rs"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+atty = "0.2"
+clap = { version = "3.2", features = ["derive", "unicode", "wrap_help"] }
+colored = "1.9"
+dialoguer = "0.8"
+dunce = "1.0"
+erased-serde = "0.3"
+globset = "0.4"
+lazy_static = "1.4"
+os_pipe = { version = "1.1", features = ["io_safety"] }
+rand = "0.8"
+rayon = "1.5"
+regex = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.8"
+shell-escape = "0.1"
+strip-ansi-escapes = "0.1"
+sysinfo = "0.20"
+tempdir = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+unicode_categories = "0.1.1"
+wildmatch = "2.1"
+
+[build-dependencies]
+vergen = { version = "7", features = ["git"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+insta = {version = "1.21.1", features = ["json"] }
+predicates = "2.1"

@@ -1,0 +1,8 @@
+# This test must fail
+
+```scrut
+$ echo -e "foo\nbar\nbaz"
+* (glob*)
+bla
+* (glob*)
+```

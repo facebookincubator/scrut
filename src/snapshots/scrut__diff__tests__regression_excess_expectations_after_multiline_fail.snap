@@ -1,0 +1,13 @@
+---
+source: src/diff.rs
+assertion_line: 782
+expression: diffs
+---
+[matched: 3, unmatched: 1, unexpected: 0]
+0001      | = * (glob+)
+     0001 | = foo
+     0002 | = foo
+     0003 | = baz
+0002      | - bar (+)
+
+

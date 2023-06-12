@@ -1,0 +1,11 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 244
+expression: rendered
+---
+--- the location
++++ the location.new
+@@ -236 +236 @@ invalid exit code: the title
+-  [111]
++  [222]
+

@@ -1,0 +1,17 @@
+This is the test
+  $ echo -e "foo\n bar\n  baz"
+  foo
+   not-bar
+    baz
+
+This is a test with test with correct quantifiers
+  $ echo -e "foo\nfoo\nfoo\nbar\nbaz"
+  f* (glob+)
+  BAR
+  baz
+
+This is a test with invalid quantifiers
+  $ echo -e "foo\nfoo\nfoo\nbar\nbaz"
+  F* (glob+)
+  bar
+  baz

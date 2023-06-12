@@ -1,0 +1,10 @@
+# The actual test
+
+Scrut supports prepending of tests in front of a list of other files.
+
+## Run test with the assumption that prepended.mdtest is injected
+
+```scrut
+$ echo "Good things are ${SOME_VARIABLE:-undefined}"
+Good things are prepended, not shaken
+```

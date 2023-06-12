@@ -1,0 +1,6 @@
+# Execution from within custom shell
+
+```scrut
+$ echo "This is from a custom shell: ${FROM_A_CUSTOM_SHELL:-no}"
+This is from a custom shell: yes
+```

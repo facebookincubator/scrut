@@ -1,0 +1,15 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 546
+expression: rendered
+---
+--- location1
++++ location1.new
+@@ -11,0 +11 @@ malformed output: the title
++something else
+
+--- location2
++++ location2.new
+@@ -21,0 +21 @@ malformed output: the title
++something else
+

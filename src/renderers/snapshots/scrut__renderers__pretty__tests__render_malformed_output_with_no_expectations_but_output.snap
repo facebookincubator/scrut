@@ -1,0 +1,27 @@
+---
+source: src/renderers/pretty.rs
+expression: rendered
+---
+// =============================================================================
+// @ Line 234
+// -----------------------------------------------------------------------------
+// # the title
+// -----------------------------------------------------------------------------
+// $ the command
+// =============================================================================
+
+ 1      | + no match 1
+ 2      | + no match 2
+ 3      | + no match 3
+ 4      | + no match 4
+ 5      | + no match 5
+ 6      | + no match 6
+ 7      | + no match 7
+ 8      | + no match 8
+ 9      | + no match 9
+10      | + no match 10
+11      | + no match 11
+
+
+Summary: 0 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+

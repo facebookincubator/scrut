@@ -1,0 +1,13 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 381
+expression: rendered
+---
+--- the location
++++ the location.new
+@@ -236,2 +237,2 @@ malformed output: the title
+-  expected line 2
+-  expected line 3
++  something line 1
++  something line 2
+

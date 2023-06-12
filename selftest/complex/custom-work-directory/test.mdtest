@@ -1,0 +1,7 @@
+# Execution from within custom shell
+
+```scrut
+$ ls
+temp.* (glob)
+test-me.fixture
+```

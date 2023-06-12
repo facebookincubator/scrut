@@ -1,0 +1,11 @@
+---
+source: src/outcome.rs
+expression: outcome
+---
+{
+  "location": "path/file.md",
+  "title": "the title",
+  "result": {
+    "kind": "success"
+  }
+}

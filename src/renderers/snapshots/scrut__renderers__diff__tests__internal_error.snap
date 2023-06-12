@@ -1,0 +1,13 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 277
+expression: rendered
+---
+--- the location
++++ the location.new
+# ---- INTERNAL ERROR ----
+# PATH:  the location
+# TITLE: the title
+# ERROR: bad thing
+# ---- INTERNAL ERROR ----
+

@@ -1,0 +1,7 @@
+# Scrut treats line breaks as line breaks
+
+```scrut
+$ echo -e "Foo\r\nBar"
+Foo
+Bar
+```

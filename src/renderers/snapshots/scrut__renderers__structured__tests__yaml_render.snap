@@ -1,0 +1,29 @@
+---
+source: src/renderers/structured.rs
+assertion_line: 78
+expression: rendered
+---
+---
+- title: the title
+  result:
+    kind: success
+- location: the location 1
+  title: the title 1
+  result:
+    kind: success
+- location: the location 2
+  output:
+    exit_code: "0"
+    stdout: stdout 2
+    stderr: stderr 2
+  testcase:
+    title: the title 2
+    shell_expression: the command 2
+    expectations: []
+    exit_code: 0
+    line_number: 234
+  result:
+    kind: invalid_exit_code
+    actual: 123
+    expected: 234
+

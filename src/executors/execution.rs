@@ -1,0 +1,43 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
+/// Aggregate of all required input for an execution that is passed to
+/// [`super::executor::Executor::execute_all`] calls.
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
+pub struct Execution {
+    /// A shell expression that is to be executed
+    pub expression: String,
+
+    /// Optional list of environment variables
+    pub environment: Option<HashMap<String, String>>,
+
+    /// Optional timeout that limits the maximum execution length
+    pub timeout: Option<Duration>,
+}
+
+impl Execution {
+    /// Create a new Execution only from a shell expression, with empty
+    /// environment and no timeout
+    pub fn new(expression: &str) -> Self {
+        Execution {
+            expression: expression.to_string(),
+            ..Default::default()
+        }
+    }
+
+    /// Builder setter for environment variables
+    pub fn environment(mut self, keys_values: &[(&str, &str)]) -> Self {
+        self.environment = Some(HashMap::from_iter(
+            keys_values
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string())),
+        ));
+        self
+    }
+
+    /// Builder setter for timeout
+    pub fn timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.timeout = timeout;
+        self
+    }
+}

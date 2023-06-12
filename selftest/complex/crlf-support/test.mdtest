@@ -1,0 +1,7 @@
+# Test expecting CRLF support
+
+```scrut
+$ echo -en "With\r\nNewlines\r\n"
+With\r (escaped)
+Newlines\r (escaped)
+```

@@ -1,0 +1,7 @@
+# Execution from within custom shell
+
+```scrut
+$ echo "standard output" && ( 1>&2 echo "standard error" )
+standard output
+standard error
+```

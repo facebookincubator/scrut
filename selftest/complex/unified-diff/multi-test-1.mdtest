@@ -1,0 +1,8 @@
+# This is the test
+
+```scrut
+$ echo -e "foo\n bar\n  baz"
+foo
+ not-bar
+  baz
+```
