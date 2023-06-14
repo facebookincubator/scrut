@@ -1,4 +1,6 @@
 use std::fs;
+use std::io::stdout;
+use std::io::IsTerminal;
 use std::path::Path;
 
 use anyhow::bail;
@@ -340,7 +342,7 @@ impl Args {
 
     fn print_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> Result<()> {
         let mut summary = self.render_summary(updated, skipped, unchanged);
-        if self.no_color || !atty::is(atty::Stream::Stdout) {
+        if self.no_color || !stdout().is_terminal() {
             summary = strip_colors(&summary)?;
         }
         println!("{}", summary);
