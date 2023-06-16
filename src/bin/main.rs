@@ -5,9 +5,10 @@ mod utils;
 
 use std::env;
 use std::io;
+use std::io::stdout;
+use std::io::IsTerminal;
 use std::process::ExitCode;
 
-use atty::Stream;
 use clap::Parser;
 use commands::root::Commands;
 use commands::root::GlobalParameters;
@@ -56,7 +57,7 @@ fn init_logging() {
         .expect("failed to create default EnvFilter");
 
     FmtSubscriber::builder()
-        .with_ansi(atty::is(Stream::Stdout))
+        .with_ansi(stdout().is_terminal())
         .with_writer(io::stderr)
         .with_env_filter(filter)
         .init()

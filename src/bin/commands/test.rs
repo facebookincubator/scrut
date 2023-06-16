@@ -1,10 +1,11 @@
 use std::fmt::Display;
+use std::io::stdout;
+use std::io::IsTerminal;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Result;
-use atty::Stream;
 use clap::Parser as ClapParser;
 use scrut::executors::context::Context as ExecutionContext;
 use scrut::executors::error::ExecutionError;
@@ -291,7 +292,7 @@ impl Args {
         // finally render all outcomes of testcase validations
         let renderer: Box<dyn Renderer> = match self.renderer {
             ScrutRenderer::Auto | ScrutRenderer::Pretty => {
-                if atty::is(Stream::Stdout) && !self.no_color {
+                if stdout().is_terminal() && !self.no_color {
                     Box::new(PrettyColorRenderer::new(
                         DEFAULT_SURROUNDING_LINES,
                         self.absolute_line_numbers,
