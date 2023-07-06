@@ -25,6 +25,12 @@ impl Execution {
         }
     }
 
+    /// Builder setter for expression
+    pub fn expression(mut self, expression: &str) -> Self {
+        self.expression = expression.into();
+        self
+    }
+
     /// Builder setter for environment variables
     pub fn environment(mut self, keys_values: &[(&str, &str)]) -> Self {
         self.environment = Some(HashMap::from_iter(

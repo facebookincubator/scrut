@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_yaml_render() {
-        let renderer = YamlRenderer::default();
+        let renderer = YamlRenderer::new();
         let rendered = render(renderer).expect("rendering succeeds");
         insta::assert_snapshot!(rendered);
     }

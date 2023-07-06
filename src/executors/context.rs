@@ -13,7 +13,7 @@ pub struct Context {
     /// Optional cwd path for the execution
     pub directory: Option<String>,
 
-    /// Whether to comnbin STDOUT and STDERR into one stream
+    /// Whether to combine STDOUT and STDERR into one stream
     pub combine_output: bool,
 
     /// Whether CRLF and LF are all considered LF or not

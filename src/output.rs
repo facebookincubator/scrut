@@ -37,11 +37,21 @@ impl Output {
 
 impl Debug for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Output")
-            .field("stderr", &lossy_string!((&self.stderr).into()))
-            .field("stdout", &lossy_string!((&self.stdout).into()))
-            .field("exit_code", &self.exit_code.to_string())
-            .finish()
+        let escaper = &Escaper::default();
+        let stdout = escaper
+            .escaped_printable(&self.stdout.0)
+            .replace("\\n", "\\n\n");
+        let stderr = escaper
+            .escaped_printable(&self.stderr.0)
+            .replace("\\n", "\\n\n");
+
+        write!(
+            f,
+            "# STDOUT\n{}\n# STDOUT\n{}\n# EXITCODE: {}",
+            stdout,
+            stderr,
+            &self.exit_code.to_string(),
+        )
     }
 }
 
@@ -80,9 +90,19 @@ impl<T: ToString, U: ToString> From<(T, U)> for Output {
 impl From<Duration> for Output {
     fn from(timeout: Duration) -> Self {
         Self {
-            stdout: OutputStream("".into()),
-            stderr: OutputStream("".into()),
+            stdout: vec![].into(),
+            stderr: vec![].into(),
             exit_code: ExitStatus::Timeout(timeout),
+        }
+    }
+}
+
+impl From<ExitStatus> for Output {
+    fn from(status: ExitStatus) -> Self {
+        Self {
+            stdout: vec![].into(),
+            stderr: vec![].into(),
+            exit_code: status,
         }
     }
 }
@@ -124,6 +144,18 @@ impl Display for ExitStatus {
             Self::Timeout(duration) => write!(f, "timeout[{:.2}ms]", duration.as_millis()),
             Self::Unknown => write!(f, "unknown"),
         }
+    }
+}
+
+impl From<i32> for ExitStatus {
+    fn from(value: i32) -> Self {
+        ExitStatus::Code(value)
+    }
+}
+
+impl From<ExitStatus> for i32 {
+    fn from(value: ExitStatus) -> Self {
+        value.as_code()
     }
 }
 

@@ -29,8 +29,20 @@ path = "src/bin/main.rs"
 
 [dependencies]
 anyhow = "1.0"
-atty = "0.2"
-clap = { version = "3.2", features = ["derive", "unicode", "wrap_help"] }
+clap = { version = "4.1", features = [
+    "color",
+    "default",
+    "derive",
+    "env",
+    "error-context",
+    "help",
+    "std",
+    "string",
+    "suggestions",
+    "unicode",
+    "usage",
+    "wrap_help",
+] }
 colored = "1.9"
 dialoguer = "0.8"
 dunce = "1.0"
@@ -39,7 +51,6 @@ globset = "0.4"
 lazy_static = "1.4"
 os_pipe = { version = "1.1", features = ["io_safety"] }
 rand = "0.8"
-rayon = "1.5"
 regex = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -50,7 +61,8 @@ sysinfo = "0.20"
 tempdir = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-unicode_categories = "0.1.1"
+unicode_categories = "0.1"
+which = "4.4"
 wildmatch = "2.1"
 
 [build-dependencies]

@@ -91,6 +91,12 @@ pub(super) mod tests {
                     ("OK2\n", "").into(),
                 ]),
             ),
+            (
+                "Environment variables are set",
+                vec![Execution::new("echo have $FOOBAR").environment(&[("FOOBAR", "barfoo")])],
+                None,
+                Ok(vec![("have barfoo\n", "").into()]),
+            ),
         ];
 
         run_executor_tests(executor, tests, context);

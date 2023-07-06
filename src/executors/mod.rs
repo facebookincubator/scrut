@@ -18,7 +18,6 @@ pub mod context;
 pub mod error;
 pub mod execution;
 pub mod executor;
-pub mod parallel_executor;
 pub mod sequential_executor;
 pub mod shell;
 pub mod util;
