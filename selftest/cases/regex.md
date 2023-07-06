@@ -32,6 +32,12 @@ $ echo -e "foo\nfun\nfacts"
 f.* (regex+)
 ```
 
+## Regex match of multiple set of repeating lines
+```scrut
+$ echo -e "sea\nsand\nsea\nsand\nsea\nsand"
+sea|sand (regex+)
+```
+
 ## Regex with escaped characters
 
 ```scrut

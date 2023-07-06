@@ -169,7 +169,7 @@ $ echo -e "Hello\nEnding in Hello\nHello Start"
 ```
 ````
 
-**Note**: All Regex Expectations have are implicitly embedded within start and end markers: `^<expression>$`. This means _regular expressions are always assumed to match the full line_. Use `.*` to explicitly match only at the end of (`.*<expression> (regex)`), or the start of (`<expression>.* (regex)`), or anywhere in (`.*<expression>.* (regex)`) a line.
+**Note**: All Regex Expectations are implicitly embedded within start and end markers: `^<expression>$`. This means _regular expressions are always assumed to match the full line_. Use `.*` to explicitly match only at the end of (`.*<expression> (regex)`), or the start of (`<expression>.* (regex)`), or anywhere in (`.*<expression>.* (regex)`) a line.
 
 ### Examples
 
