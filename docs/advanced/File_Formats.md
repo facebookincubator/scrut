@@ -22,7 +22,7 @@ Each individual test that lives in a test file is called _Test Case_ and consist
 [Markdown](https://www.markdownguide.org/) is an amazingly simple, yet powerful language. To write _Test Cases_ in Markdown follow this guidance:
 
 - _Shell Expressions_ and _Expectations_ live in the same code-block, that must be annotated with the language `assumption` or `scrut`
-  - The first line of a _Shell Expressions_ must start with `$ `, any subsequent with `> `
+  - The first line of a _Shell Expressions_ must start with `$ ` (dollar, sign followed by a space), any subsequent with `> ` (closing angle bracket / chevron, followed by a space)
   - All other lines in the code block (including empty ones) that follow the _Shell Expression_ are considered _Expectations_
   - If an _Exit Code_ other than 0 is expected, it can be denoted in square brackets `[123]` once per _Test Case_
 - The first line before the code block that is either a paragraph or a header will be used as the _Title_ of the _Test Case_
@@ -87,7 +87,8 @@ Just make sure to write only one Test Case per code-block.
 
 Also supported, for compatibility, is the Cram file format. The general guidance to write _Test Cases_ in Cram files is:
 
-- The first line of _Shell Expression_ must start with ` $`, any subsequent with ` >` (those are wo indenting space characters)
+- The first line of _Shell Expression_ must start with `  $ ` (space + space + dollar + space), any subsequent with `  > ` (space + space + closing angle bracket + space)
+  - This is slightly different from classic scrut syntax. Be mindful of the additional spaces
 - Lines following the _Shell Expression_, that are also indented with two spaces, are considered _Expectations_
   - If an Exit Code other than 0 is expected, it can be denoted in square brackets ` [123]` once per Test Case
   - Note: Empty output lines (=empty _Expectations_) must still have two leading space characters
