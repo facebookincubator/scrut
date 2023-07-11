@@ -168,7 +168,7 @@ impl Args {
                 &ExecutionContext::new()
                     .combine_output(self.global.is_combine_output(Some(test.parser_type)))
                     .crlf_support(self.global.is_keep_output_crlf(Some(test.parser_type)))
-                    .directory(&test_work_directory)
+                    .directory(Path::new(&test_work_directory))
                     .timeout(timeout),
             );
             match execution_result {

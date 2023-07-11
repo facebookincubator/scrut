@@ -14,13 +14,17 @@
 //!   a file in parallel, returning results quickly, but not supporting shared
 //!   state in between
 
+pub mod bash_script_executor;
 pub mod context;
 pub mod error;
 pub mod execution;
 pub mod executor;
-pub mod sequential_executor;
-pub mod shell;
+pub mod runner;
+pub mod threaded_runner;
 pub mod util;
+
+#[cfg(feature = "reap_on_timeout")]
+pub mod reaper;
 
 /// Default path to shell on Windows
 #[cfg(target_os = "windows")]

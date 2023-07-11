@@ -11,7 +11,8 @@ use super::error::ExecutionError;
 use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
-use super::shell::run_in_shell;
+use super::runner::Runner;
+use super::threaded_runner::ThreadedRunner;
 use super::DEFAULT_SHELL;
 use crate::lossy_string;
 use crate::newline::BytesNewline;
@@ -27,47 +28,49 @@ const SUFFIX_RANDOM_SIZE: usize = 20;
 const DIVIDER_PREFIX: &str = "~~~~~~~~EXECDIVIDER::";
 // TODO: make this a static thingy thing
 const DIVIDER_PREFIX_BYTES: &[u8] = b"~~~~~~~~EXECDIVIDER::";
-/* lazy_static! {
-    static ref DIVIDER_PREFIX_BYTES: &'static [u8] = DIVIDER_PREFIX.as_bytes();
-} */
 
-/// Executions in a sequential shell share environment variables and aliases.
-/// All executions happen in sequential order and cannot have individual timeouts.
-pub struct SequentialShellExecutor {
-    /// Path to shell to use
-    pub shell: String,
-}
+/// An executor that runs all shell expressions of the provided executions
+/// within a single bash script (within the same bash process).
+///
+/// The output is then separated by dividing strings, that are printed in
+/// between the sequential executions.
+///
+/// As a result only timeout over all executions is supported, not per
+/// execution. Also, if any of the executions calls explicitly to `exit` (or
+/// otherwise ends the execution pre-maturely) then the whole script execution
+/// is ended and no results for individual executions are assigned.
+///
+/// !! Caution: Executions that detach (e.g. `nohup expression &`) are likely
+/// to mess with the output assignment !!
+pub struct BashScriptExecutor(String);
 
-impl SequentialShellExecutor {
-    pub fn new(shell: &str) -> Self {
-        Self {
-            shell: shell.to_string(),
-        }
+impl BashScriptExecutor {
+    pub fn new(bash_path: &str) -> Self {
+        Self(bash_path.to_owned())
     }
 }
 
-impl Default for SequentialShellExecutor {
+impl Default for BashScriptExecutor {
     fn default() -> Self {
         Self::new(DEFAULT_SHELL)
     }
 }
 
-impl Executor for SequentialShellExecutor {
-    /// Run all Executions in given order. Timeout over all Executions is supported.
-    /// Timeout per Execution is not.
+impl Executor for BashScriptExecutor {
     fn execute_all(
         &self,
         executions: &[&Execution],
         context: &ExecutionContext,
     ) -> Result<Vec<Output>> {
-        let expression = self.build_expression(executions, context)?;
-
-        let output = run_in_shell(
-            &self.shell,
-            &Execution::new(&expression).timeout(context.timeout),
-            context,
-        )
-        .map_err(|err| ExecutionError::from_execute(err, None, None))?;
+        let script = self.build_script(executions, context)?;
+        let runner = ThreadedRunner(self.0.to_owned());
+        let output = runner
+            .run(
+                "script",
+                &Execution::new(&script).timeout(context.timeout),
+                context,
+            )
+            .map_err(|err| ExecutionError::from_execute(err, None, None))?;
 
         match output.exit_code {
             ExitStatus::SKIP => return Err(ExecutionError::Skipped),
@@ -142,16 +145,14 @@ impl Executor for SequentialShellExecutor {
     }
 }
 
-impl SequentialShellExecutor {
-    /// Create a shell script, that contains all executions and appends printing
-    /// of the divider after each individual one, so that the execution of the
-    /// generated script prints out the results of the individual executions,
-    /// divided by a known string
+impl BashScriptExecutor {
+    /// Create a bash script, that contains all executions. Following each
+    /// a divider (one on STDOUT, one on STDERR) is printed, so that the
+    /// resulting output can be assigned to individual executions.
     ///
-    /// This method creates expressions that work within bash-like shells. That
-    /// means the "normal" `export VARNAME=VARVALUE` syntax is being used and
-    /// needs to be supported.
-    fn build_expression(
+    /// The created shell expressions are known to work in bash. No other shells
+    /// are intended to work.
+    fn build_script(
         &self,
         executions: &[&Execution],
         context: &ExecutionContext,
@@ -334,8 +335,8 @@ mod tests {
     use anyhow::anyhow;
 
     use super::parse_divider_bytes;
+    use super::BashScriptExecutor;
     use super::DividerSearch;
-    use super::SequentialShellExecutor;
     use super::DIVIDER_PREFIX;
     use crate::executors::context::Context as ExecutionContext;
     use crate::executors::error::ExecutionError;
@@ -348,15 +349,13 @@ mod tests {
 
     #[test]
     fn test_standard_test_suite() {
-        standard_test_suite(SequentialShellExecutor::default(), &ExecutionContext::new());
+        standard_test_suite(BashScriptExecutor::default(), &ExecutionContext::new());
     }
 
     #[test]
     fn test_combined_output_test_suite() {
         combined_output_test_suite(
-            SequentialShellExecutor {
-                shell: DEFAULT_SHELL.to_string(),
-            },
+            BashScriptExecutor::default(),
             &ExecutionContext::new().combine_output(true),
         );
     }
@@ -394,9 +393,7 @@ mod tests {
         ];
 
         run_executor_tests(
-            SequentialShellExecutor {
-                shell: DEFAULT_SHELL.to_string(),
-            },
+            BashScriptExecutor::default(),
             tests,
             &ExecutionContext::new(),
         );
@@ -415,9 +412,7 @@ mod tests {
         )];
 
         run_executor_tests(
-            SequentialShellExecutor {
-                shell: DEFAULT_SHELL.to_string(),
-            },
+            BashScriptExecutor::default(),
             tests,
             &ExecutionContext::new(),
         );
@@ -433,13 +428,12 @@ mod tests {
                 Execution::new("echo OK2"),
             ],
             None,
+            // sequential cannot identify which of the tests returned an error
             Err(ExecutionError::Skipped),
         )];
 
         run_executor_tests(
-            SequentialShellExecutor {
-                shell: DEFAULT_SHELL.to_string(),
-            },
+            BashScriptExecutor::default(),
             tests,
             &ExecutionContext::new(),
         );
@@ -462,6 +456,22 @@ mod tests {
                     ("FOO=bar\n", "").into(),
                     ("", "").into(),
                     ("FOO=undefined\n", "").into(),
+                ]),
+            ),
+            (
+                "Shell variable persists",
+                vec![
+                    Execution::new("BAR=foo"),
+                    Execution::new("echo BAR=${BAR:-undefined}"),
+                    Execution::new("unset BAR"),
+                    Execution::new("echo BAR=${BAR:-undefined}"),
+                ],
+                None,
+                Ok(vec![
+                    ("", "").into(),
+                    ("BAR=foo\n", "").into(),
+                    ("", "").into(),
+                    ("BAR=undefined\n", "").into(),
                 ]),
             ),
             (
@@ -490,9 +500,7 @@ mod tests {
         ];
 
         run_executor_tests(
-            SequentialShellExecutor {
-                shell: DEFAULT_SHELL.to_string(),
-            },
+            BashScriptExecutor::default(),
             tests,
             &ExecutionContext::new(),
         );
@@ -531,5 +539,29 @@ mod tests {
             let result = parse_divider_bytes(divider.as_bytes()).expect("parse line");
             assert_eq!(expect, result, "from `{}`", divider)
         }
+    }
+
+    #[test]
+    fn test_non_printable_ascii_in_output() {
+        let tests = vec![(
+            "Skip ends execution",
+            vec![
+                Execution::new("echo \"😊🦀\""),
+                Execution::new("echo -e \"A\r\nB\""),
+                Execution::new("echo \"🦀😊\" >&2"),
+            ],
+            None,
+            Ok(vec![
+                ("😊🦀\n", "").into(),
+                ("A\nB\n", "").into(),
+                ("", "🦀😊\n").into(),
+            ]),
+        )];
+
+        run_executor_tests(
+            BashScriptExecutor::default(),
+            tests,
+            &ExecutionContext::new(),
+        );
     }
 }

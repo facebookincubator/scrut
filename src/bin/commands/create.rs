@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::BufRead;
+use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -8,10 +9,10 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use scrut::executors::bash_script_executor::BashScriptExecutor;
 use scrut::executors::context::Context as ExecutionContext;
 use scrut::executors::execution::Execution;
 use scrut::executors::executor::Executor;
-use scrut::executors::sequential_executor::SequentialShellExecutor;
 use scrut::generators::cram::CramTestCaseGenerator;
 use scrut::generators::generator::TestCaseGenerator;
 use scrut::generators::markdown::MarkdownTestCaseGenerator;
@@ -71,12 +72,12 @@ impl Args {
         } else {
             self.shell_expression.join(" ")
         };
-        let shell = canonical_shell(&self.global.shell)?;
-        let executor = SequentialShellExecutor::new(&shell);
+        let shell_path = canonical_shell(&self.global.shell)?;
+        let executor = BashScriptExecutor::new(&shell_path);
 
         // initialize test environment
         let mut test_environment =
-            TestEnvironment::new(&shell, self.global.work_directory.as_deref())?;
+            TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
 
         // setup test environment ..
         let test_file_path =
@@ -95,7 +96,7 @@ impl Args {
                 &ExecutionContext::new()
                     .combine_output(self.global.is_combine_output(None))
                     .crlf_support(self.global.is_keep_output_crlf(None))
-                    .directory(&test_work_directory)
+                    .directory(Path::new(&test_work_directory))
                     .timeout(Some(timeout)),
             )
             .map_err(|err| anyhow!("{}", err))?;

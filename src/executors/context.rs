@@ -1,9 +1,11 @@
 use std::borrow::Cow;
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::newline::replace_crlf;
 
-/// Context that describes the environment in which one or multiple [`Execution`]s run in
+/// Context that describes the environment in which one or multiple [`super::execution::Execution`]s run in
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct Context {
     /// Optional timeout that limits the maximum execution length (can be
@@ -11,7 +13,7 @@ pub struct Context {
     pub timeout: Option<Duration>,
 
     /// Optional cwd path for the execution
-    pub directory: Option<String>,
+    pub directory: Option<PathBuf>,
 
     /// Whether to combine STDOUT and STDERR into one stream
     pub combine_output: bool,
@@ -34,8 +36,8 @@ impl Context {
     }
 
     /// Builder setter for working directory
-    pub fn directory(mut self, directory: &str) -> Self {
-        self.directory = Some(directory.into());
+    pub fn directory(mut self, directory: &Path) -> Self {
+        self.directory = Some(directory.to_path_buf());
         self
     }
 

@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
+use scrut::executors::bash_script_executor::BashScriptExecutor;
 use scrut::executors::executor::Executor;
-use scrut::executors::sequential_executor::SequentialShellExecutor;
 
 use super::fsutil::canonical_output_path;
 
@@ -12,14 +12,14 @@ pub(crate) fn make_executor(
     shell: &str,
     timeout_seconds: usize,
 ) -> Result<(Option<Duration>, Box<dyn Executor>)> {
-    let shell = canonical_shell(shell)?;
+    let shell_path = canonical_shell(shell)?;
     Ok((
         if timeout_seconds > 0 {
             Some(Duration::from_secs(timeout_seconds as u64))
         } else {
             None
         },
-        Box::new(SequentialShellExecutor::new(&shell)),
+        Box::new(BashScriptExecutor::new(&shell_path)),
     ))
 }
 
