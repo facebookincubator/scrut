@@ -1,8 +1,7 @@
 ---
-source: src/renderers/structured.rs
-assertion_line: 78
+source: clifoundation/scrut/src/renderers/structured.rs
+assertion_line: 80
 expression: rendered
----
 ---
 - title: the title
   result:
@@ -13,7 +12,7 @@ expression: rendered
     kind: success
 - location: the location 2
   output:
-    exit_code: "0"
+    exit_code: '0'
     stdout: stdout 2
     stderr: stderr 2
   testcase:

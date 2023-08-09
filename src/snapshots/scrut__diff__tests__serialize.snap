@@ -1,20 +1,22 @@
 ---
-source: src/diff.rs
+source: clifoundation/scrut/src/diff.rs
+assertion_line: 865
 expression: "&rendered"
 ---
----
 lines:
-  - kind: matched_expectation
-    index: 0
-    expectation: matched (equal)
-    lines:
-      - - 0
-        - "line content\n"
-  - kind: unmatched_expectation
-    index: 0
-    expectation: unmatched (equal)
-  - kind: unexpected_lines
-    lines:
-      - - 0
-        - "line content\n"
+- kind: matched_expectation
+  index: 0
+  expectation: matched (equal)
+  lines:
+  - - 0
+    - |
+      line content
+- kind: unmatched_expectation
+  index: 0
+  expectation: unmatched (equal)
+- kind: unexpected_lines
+  lines:
+  - - 0
+    - |
+      line content
 
