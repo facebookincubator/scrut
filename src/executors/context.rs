@@ -1,24 +1,33 @@
 use std::borrow::Cow;
-use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
+
+use derive_builder::Builder;
 
 use crate::newline::replace_crlf;
 
 /// Context that describes the environment in which one or multiple [`super::execution::Execution`]s run in
-#[derive(Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Clone, Default, Debug, PartialEq, Eq, Builder)]
 pub struct Context {
     /// Optional timeout that limits the maximum execution length (can be
     /// overridden per-[`Execution`] in some [`super::executor::Executor`]s)
+    #[builder(default)]
     pub timeout: Option<Duration>,
 
     /// Optional cwd path for the execution
-    pub directory: Option<PathBuf>,
+    #[builder(default)]
+    pub work_directory: Option<PathBuf>,
+
+    /// Optional path for that holds temporary files
+    #[builder(default)]
+    pub temp_directory: Option<PathBuf>,
 
     /// Whether to combine STDOUT and STDERR into one stream
+    #[builder(default)]
     pub combine_output: bool,
 
     /// Whether CRLF and LF are all considered LF or not
+    #[builder(default)]
     pub crlf_support: bool,
 }
 
@@ -29,28 +38,11 @@ impl Context {
         Default::default()
     }
 
-    /// Builder setter for timeout
-    pub fn timeout(mut self, timeout: Option<Duration>) -> Self {
-        self.timeout = timeout;
-        self
-    }
-
-    /// Builder setter for working directory
-    pub fn directory(mut self, directory: &Path) -> Self {
-        self.directory = Some(directory.to_path_buf());
-        self
-    }
-
-    /// Builder setter for whether to combine STDOUT and STDERR
-    pub fn combine_output(mut self, combined_output: bool) -> Self {
-        self.combine_output = combined_output;
-        self
-    }
-
-    /// Builder setter for whether to support CRLF in outputs
-    pub fn crlf_support(mut self, crlf_support: bool) -> Self {
-        self.crlf_support = crlf_support;
-        self
+    /// Return clone of self with given timeout
+    pub fn with_timeout(&self, timeout: Option<Duration>) -> Self {
+        let mut clone = self.clone();
+        clone.timeout = timeout;
+        clone
     }
 
     /// Render provided output lines based on CRLF setting
@@ -65,7 +57,7 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    use super::Context;
+    use super::ContextBuilder;
     use crate::lossy_string;
 
     #[test]
@@ -79,7 +71,10 @@ mod tests {
             (true, "foo\r\nbar\r\nbaz", "foo\r\nbar\r\nbaz"),
         ];
         for (crlf_support, from, expect) in tests {
-            let context = Context::new().crlf_support(*crlf_support).to_owned();
+            let context = ContextBuilder::default()
+                .crlf_support(*crlf_support)
+                .build()
+                .expect("create execution context");
             let output = context.render_output(from.as_bytes());
             assert_eq!(
                 *expect,

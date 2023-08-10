@@ -1,17 +1,16 @@
 use std::fmt::Display;
 use std::io::stdout;
 use std::io::IsTerminal;
-use std::path::Path;
-use std::time::Duration;
+use std::path::PathBuf;
 
 use anyhow::anyhow;
 use anyhow::bail;
+use anyhow::Context;
 use anyhow::Result;
 use clap::Parser as ClapParser;
-use scrut::executors::context::Context as ExecutionContext;
+use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::executors::execution::Execution;
-use scrut::executors::executor::Executor;
 use scrut::outcome::Outcome;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
@@ -158,14 +157,7 @@ impl Args {
             self.global.cram_compat,
         )?;
 
-        // init execution environment
-
-        let (timeout, executor) =
-            executorutil::make_executor(&self.global.shell, self.timeout_seconds)?;
-
         self.run_all(
-            executor,
-            timeout,
             &tests.iter().collect::<Vec<_>>(),
             &prepend_tests.iter().collect::<Vec<_>>(),
             &append_tests.iter().collect::<Vec<_>>(),
@@ -174,8 +166,6 @@ impl Args {
 
     fn run_all(
         &self,
-        executor: Box<dyn Executor>,
-        timeout: Option<Duration>,
         tests: &[&ParsedTestFile],
         prepend_tests: &[&ParsedTestFile],
         append_tests: &[&ParsedTestFile],
@@ -194,10 +184,9 @@ impl Args {
             let _s = span.enter();
 
             // setup test file environment ..
-            let (test_work_directory, env_vars) = test_environment.init_test_file(
-                &test.path,
-                test.parser_type == ParserType::Cram || self.global.cram_compat,
-            )?;
+            let cram_compat = test.parser_type == ParserType::Cram || self.global.cram_compat;
+            let (test_work_directory, env_vars) =
+                test_environment.init_test_file(&test.path, cram_compat)?;
             let env_vars = env_vars
                 .iter()
                 .map(|(k, v)| (k as &str, v as &str))
@@ -227,18 +216,24 @@ impl Args {
                 .map(|testcase| Execution::new(&testcase.shell_expression).environment(&env_vars))
                 .collect::<Vec<_>>();
 
+            let (timeout, executor) =
+                executorutil::make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+
             // run test cases and gather output ..
             let outputs = executor.execute_all(
                 &executions.iter().collect::<Vec<_>>(),
-                &ExecutionContext::new()
+                &ContextBuilder::default()
                     .combine_output(self.global.is_combine_output(Some(test.parser_type)))
                     .crlf_support(self.global.is_keep_output_crlf(Some(test.parser_type)))
-                    .directory(Path::new(&test_work_directory))
-                    .timeout(timeout),
+                    .work_directory(Some(PathBuf::from(&test_work_directory)))
+                    .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
+                    .timeout(timeout)
+                    .build()
+                    .context("failed to build execution context")?,
             );
             match outputs {
                 Err(err) => match err {
-                    ExecutionError::Skipped => {
+                    ExecutionError::Skipped(_) => {
                         count_skipped += 1;
                         debug!("Received skip code -> skipping tests");
                         outcomes.extend(testcases.into_iter().map(|testcase| Outcome {

@@ -14,12 +14,14 @@
 //!   a file in parallel, returning results quickly, but not supporting shared
 //!   state in between
 
+pub mod bash_runner;
 pub mod bash_script_executor;
 pub mod context;
 pub mod error;
 pub mod execution;
 pub mod executor;
 pub mod runner;
+pub mod stateful_executor;
 pub mod threaded_runner;
 pub mod util;
 

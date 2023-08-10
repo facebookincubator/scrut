@@ -111,90 +111,90 @@ When using the `--cram-compat` flag, or when a Cram `.t` test file is being exec
 
 By default `scrut` executes all tests in a dedicated directory _per test file_. This means _all tests within one file are being executed in the same directory_. The directory is created within the system temporary directory. It will be removed (including all the files or directories that the tests may have created) after all tests in the file are executed - or if the execution of the file fails for any reason.
 
-The directory within which tests are being executed can be explicitly set using the `--work-directory` parameter for the `test` and `update` commands. If that parameter is set then _all tests_ from _all test files_ are executed run within that directory, and the directory is _not removed_ afterwards.
-
-## Execution
-
-`scrut test` executes all provided test files in sequential order. All tests within each file are executed from the top down in sequential order.
-
-### Shared State
-
-All tests within the same file are executed in the _same_ shell process. That means they share a state. Consider the following:
+This means something like the following can be safely done and will be cleaned up by Scrut after the test finished (however it finishes):
 
 ````markdown
-# Setup some env variable
+# Some test that creates a file
 
 ```scrut
-$ export FOO=bar
+$ date > file
 ```
 
-# use the env variable
+The `file` lives in the current directory
 
 ```scrut
-$ echo "Bar is $FOO"
-Bar is bar
+$ test -f "$(pwd)/file"
 ```
 ````
 
-The exported variable from the first test will be available to the second test. So the output will be `Bar is bar`.
+The directory within which tests are being executed can be explicitly set using the `--work-directory` parameter for the `test` and `update` commands. If that parameter is set then _all tests_ from _all test files_ are executed run within that directory, and the directory is _not removed_ afterwards.
 
-> **Note**: If you want to share aliases using `/bin/bash` mind that you need to `shopt -s expand_aliases` (likely in a `setup.sh` bootstrap file) beforehand, as in:
->
-> ````markdown
-> Enable alias sharing (expanding)
->
-> ```scrut
-> $ shopt -s expand_aliases
-> ```
->
-> Expand an alias
->
-> ```scrut
-> $ alias foo="echo FOO"
-> ```
->
-> Use expanded alias
->
-> ```scrut
-> $ foo
-> FOO
-> ```
-> ````
+> **Note**: In addition to the work directory Scrut also creates and cleans up a temporary directory, that is accessible via `$TMPDIR`. Tools like `mktemp` automatically use it (from said environment variable).
 
-## Test isolation
+## Test execution
 
-`scrut` itself only isolates executions [in a temporary directory](#test-work-directory). If you need to isolate test execution further, consider running your tests in a jail, container or VM. You can do that by instrumenting the `--shell` parameter.
+As Scrut is primarily intended as an integration testing framework for CLI applications, it is tightly integrated with the shell.
+Each Scrut test must define a [shell expression](File_Formats.md#test-case-anatomy) (called an "execution").
+Each of those executions is then run within an actual shell (bash) process, as they would be when a human or automation would execute the expression manually on the shell.
 
-In order to understand how, have a peek under the hood of `scrut` to see how shell expressions of tests are executed. Consider the following:
+With that in mind:
+
+- Each execution from the same test file is executed in an individual shell process.
+  - Scrut currently only supports `bash` as shell process.
+  - Each subsequent execution within the same file inherits the state of the previous execution: environment variables, shell variables, functions, settings (`set` and `shopt`).
+- Tests within the same file are executed in sequential order.
+- Executions happen in a [temporary work directory](#test-work-directory), that is initially empty and will be cleaned up after the last executions of the test file has run (or when executions are [skipped](#skip-tests-with-exit-cod)).
+- Executions may be detached, but Scrut will not clean up (kill) or wait for detached child processes
+
+### Execution within a custom shell
+
+While Scrut currently only supports `bash` (>= 3.2) a custom shell can be provided with the `--shell` command line parameter.
+To understand how that works consider the following:
 
 ```bash
 $ echo "echo Hello" | /bin/bash -
 Hello
 ```
 
-What the above does is piping the string `echo Hello` into the `STDIN` of the process that was started with `/bin/bash -`. This is exactly what `scrut test` does.
+What the above does is piping the string `echo Hello` into the `STDIN` of the process that was started with `/bin/bash -`.
+Scrut pretty much does the same with each shell expressions within a test file.
 
-Knowing this, you could easily create a wrapper for `bash`:
+So why provide a custom `--shell` then?
+This becomes useful in two scenarios:
+1. You need to execute the same code before Scrut runs each individual expression
+2. You need Scrut to execute each expression in some isolated environment
+
+For (1) consider the following code:
 
 ```bash
 #!/bin/bash
 
 # do something in this wrapper script
-printenv > /tmp/env
+source /my/custom/setup.sh
+run_my_custom_setup
 
-# execute bash again, so that it expects STDIN
-/bin/bash -
+# consume and run STDIN
+source /dev/stdin
 ```
 
-Assuming the above is stored in `/usr/local/bash-wrapper` and executable, you could just provide it to `scrut test --shell /usr/local/bash-wrapper ...`. Instead of just printing the env vars into a file and staring bash again, you could, for example, start `bash` in a docker container or `ssh` into a machine.
+For (2) consider the following:
 
-> **Note**: If your the shell expressions of your test(s) reference other files (as in `source "$TESTDIR"/setup.sh` or so): make sure to have those files available in the same location in your execution environment as they would be locally (or use a custom environment variable)
+```bash
+#!/bin/bash
 
-> **Caution**: Scrut is primarily developed and tested with `/bin/bash` in mind. Other shells may come with breaking behavior. Scrut especially cannot deal with shells that echo the commands out that are piped into it (e.g. [`script`](https://linux.die.net/man/1/script)). Active development - things may improve.
+# do something in this wrapper script
+source /my/custom/setup.sh
+run_my_custom_setup
 
-# STDOUT and STDERR
+# end in a bash process that will receive STDIN
+exec ssh username@acme.tld /bin/bash
+```
 
-[Expectations](Advanced/Expectations.md) always only test [the primary output of a CLI program](https://clig.dev/#:~:text=primary%20output%20for%20your%20command). This means: only `STDOUT` is considered.
+Instead of SSHing into a machine, consider also running a bash process in docker container.
+
+## STDOUT and STDERR
+
+[Expectations](Expectations.md) always only test [the primary output of a CLI program](https://clig.dev/#:~:text=primary%20output%20for%20your%20command). This means: only `STDOUT` is considered.
 
 To make that clear: Assuming you have a command `foo` that outputs `Hello` on `STDOUT` and `World` on `STDERR` then the following test will suffice:
 

@@ -58,7 +58,7 @@ impl Runner for ThreadedRunner {
             .stdin(Stdio::piped())
             .stdout(stdout_writer)
             .stderr(stderr_writer);
-        if let Some(ref directory) = context.directory {
+        if let Some(ref directory) = context.work_directory {
             command.current_dir(directory);
         }
 
@@ -76,7 +76,7 @@ impl Runner for ThreadedRunner {
         let mut child = command.spawn().with_context(|| {
             format!(
                 "spawn execution in child process of shell {} in {:?}",
-                shell, &context.directory,
+                shell, &context.work_directory,
             )
         })?;
 

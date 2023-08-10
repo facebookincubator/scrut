@@ -2,6 +2,7 @@ use std::fs;
 use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
+use std::path::PathBuf;
 
 use anyhow::bail;
 use anyhow::Context;
@@ -9,7 +10,7 @@ use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 use scrut::escaping::strip_colors;
-use scrut::executors::context::Context as ExecutionContext;
+use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::executors::execution::Execution;
 use scrut::generators::cram::CramTestCaseGenerator;
@@ -123,10 +124,6 @@ impl Args {
             self.global.cram_compat,
         )?;
 
-        // init execution environment
-        let (timeout, executor) =
-            executorutil::make_executor(&self.global.shell, self.timeout_seconds)?;
-
         let mut test_environment =
             TestEnvironment::new(&self.global.shell, self.global.work_directory.as_deref())?;
 
@@ -137,8 +134,9 @@ impl Args {
             debug!("updating test file {:?}", test.path);
 
             // setup test file environment ..
-            let (test_work_directory, environment) = test_environment
-                .init_test_file(&test.path, test.parser_type == ParserType::Cram)?;
+            let cram_compat = test.parser_type == ParserType::Cram;
+            let (test_work_directory, environment) =
+                test_environment.init_test_file(&test.path, cram_compat)?;
 
             // must have test-cases to continue
             if test.testcases.is_empty() {
@@ -163,17 +161,23 @@ impl Args {
                     )
                 })
                 .collect::<Vec<_>>();
+
+            let (timeout, executor) =
+                executorutil::make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+
             let execution_result = executor.execute_all(
                 &executions.iter().collect::<Vec<_>>(),
-                &ExecutionContext::new()
+                &ContextBuilder::default()
                     .combine_output(self.global.is_combine_output(Some(test.parser_type)))
                     .crlf_support(self.global.is_keep_output_crlf(Some(test.parser_type)))
-                    .directory(Path::new(&test_work_directory))
-                    .timeout(timeout),
+                    .work_directory(Some(PathBuf::from(&test_work_directory)))
+                    .timeout(timeout)
+                    .build()
+                    .context("failed to build execution context")?,
             );
             match execution_result {
                 Err(err) => match err {
-                    ExecutionError::Skipped => {
+                    ExecutionError::Skipped(_) => {
                         count_skipped += 1;
                         info!("Skipping test file {:?}", &test.path);
                         continue;

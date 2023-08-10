@@ -6,11 +6,23 @@ use anyhow::anyhow;
 use crate::escaping::Escaper;
 use crate::output::Output;
 
+/// The state that describes what kind of timeout (i.e. per execution or over all)
+/// has occured.
+#[derive(Debug, PartialEq)]
+pub enum ExecutionTimeout {
+    /// Timeout of a specific execution (index: 0..n-1)
+    Index(usize),
+
+    /// Timeout of all executions, not a specific one
+    Total,
+}
+
 /// An error that results from running [`super::executor::Executor::execute_all`],
 /// which executes the shell expressions of a list of testcases.
 /// ! This is not a failed validation result, or a non-zero exit code of an
 /// execution, but an actual failure to execute and get a resulting Output !
-#[derive(Debug)]
+#[derive(Debug, Derivative)]
+#[derivative(PartialEq)]
 pub enum ExecutionError {
     /// Returned if a specific [`super::execution::Execution`] failed
     FailedExecution {
@@ -18,24 +30,31 @@ pub enum ExecutionError {
         index: usize,
 
         /// The error that prevented the execution from concluding in an Output
+        #[derivative(PartialEq(compare_with = "stringable_cmp"))]
         error: anyhow::Error,
     },
 
     /// Returned on errors that are not specific to an [`super::execution::Execution`]
     AbortedExecutions {
         /// The cause of the execution being aborted
+        #[derivative(PartialEq(compare_with = "stringable_cmp"))]
         error: anyhow::Error,
 
         /// Potentially the last output leading to the abort of execution
         output: Option<Output>,
     },
 
-    /// Returned if either all [`super::execution::Execution`]s timed out (only
-    /// when [`super::executor::Executor::execute_all`] supports timeouts)
-    Timeout,
+    /// Returned if either a single [`super::execution::Execution`] timed out
+    /// or if all are (see [`ExecutionTimeout`])
+    Timeout(ExecutionTimeout),
 
-    /// Returned if any [`super::execution::Execution`] ends in [`super::SKIP_EXIT_CODE`]
-    Skipped,
+    /// Returned if an [`super::execution::Execution`] explicitly skips the
+    /// tests. Index of the [`super::execution::Execution`] is provided
+    Skipped(usize),
+}
+
+fn stringable_cmp<T: ToString>(a: T, b: T) -> bool {
+    a.to_string() == b.to_string()
 }
 
 impl ExecutionError {
@@ -59,36 +78,6 @@ impl ExecutionError {
         match index {
             Some(index) => Self::FailedExecution { index, error },
             None => Self::AbortedExecutions { error, output },
-        }
-    }
-}
-
-impl PartialEq for ExecutionError {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (
-                Self::FailedExecution {
-                    index: l_index,
-                    error: l_error,
-                },
-                Self::FailedExecution {
-                    index: r_index,
-                    error: r_error,
-                },
-            ) => l_index == r_index && l_error.to_string() == r_error.to_string(),
-            (
-                Self::AbortedExecutions {
-                    error: l_error,
-                    output: l_output,
-                },
-                Self::AbortedExecutions {
-                    error: r_error,
-                    output: r_output,
-                },
-            ) => l_error.to_string() == r_error.to_string() && l_output == r_output,
-            (Self::Timeout, Self::Timeout) => true,
-            (Self::Skipped, Self::Skipped) => true,
-            _ => false,
         }
     }
 }
@@ -121,8 +110,15 @@ impl Display for ExecutionError {
                 }
                 Ok(())
             }
-            ExecutionError::Timeout => write!(f, "timeout in executions"),
-            ExecutionError::Skipped => write!(f, "skipped"),
+            ExecutionError::Timeout(timeout) => match timeout {
+                ExecutionTimeout::Index(idx) => write!(
+                    f,
+                    "timeout in executing shell expression of test {}",
+                    idx + 1
+                ),
+                ExecutionTimeout::Total => write!(f, "timeout in executing"),
+            },
+            ExecutionError::Skipped(idx) => write!(f, "skipped test {}", idx + 1),
         }
     }
 }

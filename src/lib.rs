@@ -1,7 +1,8 @@
 /// Command Line Application Testing - with no fuzz
 #[macro_use]
+extern crate derivative;
+#[macro_use]
 extern crate lazy_static;
-extern crate erased_serde;
 
 pub mod debug;
 pub mod diff;

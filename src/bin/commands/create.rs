@@ -1,6 +1,5 @@
 use std::fs;
 use std::io::BufRead;
-use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -10,7 +9,7 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use scrut::executors::bash_script_executor::BashScriptExecutor;
-use scrut::executors::context::Context as ExecutionContext;
+use scrut::executors::context::ContextBuilder;
 use scrut::executors::execution::Execution;
 use scrut::executors::executor::Executor;
 use scrut::generators::cram::CramTestCaseGenerator;
@@ -93,11 +92,14 @@ impl Args {
         let outputs = executor
             .execute_all(
                 &[&Execution::new(&expression).environment(environment)],
-                &ExecutionContext::new()
+                &ContextBuilder::default()
                     .combine_output(self.global.is_combine_output(None))
                     .crlf_support(self.global.is_keep_output_crlf(None))
-                    .directory(Path::new(&test_work_directory))
-                    .timeout(Some(timeout)),
+                    .work_directory(Some(PathBuf::from(&test_work_directory)))
+                    .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
+                    .timeout(Some(timeout))
+                    .build()
+                    .context("construct build execution context")?,
             )
             .map_err(|err| anyhow!("{}", err))?;
         assert_eq!(1, outputs.len(), "execution yielded result");

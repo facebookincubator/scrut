@@ -47,7 +47,7 @@ impl Debug for Output {
 
         write!(
             f,
-            "# STDOUT\n{}\n# STDOUT\n{}\n# EXITCODE: {}",
+            "# STDOUT\n{}\n# STDERR\n{}\n# EXITCODE: {}\n",
             stdout,
             stderr,
             &self.exit_code.to_string(),
@@ -116,6 +116,9 @@ pub enum ExitStatus {
     /// Execution never finished due to timeout
     Timeout(Duration),
 
+    /// Execution was skipped
+    Skipped,
+
     /// Execution failed for unknown reason
     Unknown,
 }
@@ -131,6 +134,7 @@ impl ExitStatus {
     pub fn as_code(&self) -> i32 {
         match self {
             Self::Code(code) => *code,
+            Self::Skipped => Self::SKIP.as_code(),
             Self::Timeout(_) => -1,
             Self::Unknown => -255,
         }
@@ -142,6 +146,7 @@ impl Display for ExitStatus {
         match self {
             Self::Code(code) => write!(f, "{}", code),
             Self::Timeout(duration) => write!(f, "timeout[{:.2}ms]", duration.as_millis()),
+            Self::Skipped => write!(f, "skipped"),
             Self::Unknown => write!(f, "unknown"),
         }
     }

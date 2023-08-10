@@ -8,6 +8,7 @@ use tracing::debug;
 
 use super::context::Context as ExecutionContext;
 use super::error::ExecutionError;
+use super::error::ExecutionTimeout;
 use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
@@ -73,8 +74,8 @@ impl Executor for BashScriptExecutor {
             .map_err(|err| ExecutionError::from_execute(err, None, None))?;
 
         match output.exit_code {
-            ExitStatus::SKIP => return Err(ExecutionError::Skipped),
-            ExitStatus::Timeout(_) => return Err(ExecutionError::Timeout),
+            ExitStatus::SKIP => return Err(ExecutionError::Skipped(0)),
+            ExitStatus::Timeout(_) => return Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
             ExitStatus::Unknown => {
                 return Err(ExecutionError::aborted(
                     anyhow!("execution failed"),
@@ -100,11 +101,10 @@ impl Executor for BashScriptExecutor {
         )?;
 
         // skip this?
-        if outputs
-            .iter()
-            .any(|output| output.exit_code == ExitStatus::SKIP)
-        {
-            return Err(ExecutionError::Skipped);
+        for (index, output) in outputs.iter().enumerate() {
+            if output.exit_code == ExitStatus::SKIP {
+                return Err(ExecutionError::Skipped(index));
+            }
         }
 
         // check for malformed
@@ -339,7 +339,9 @@ mod tests {
     use super::DividerSearch;
     use super::DIVIDER_PREFIX;
     use crate::executors::context::Context as ExecutionContext;
+    use crate::executors::context::ContextBuilder;
     use crate::executors::error::ExecutionError;
+    use crate::executors::error::ExecutionTimeout;
     use crate::executors::execution::Execution;
     use crate::executors::executor::tests::combined_output_test_suite;
     use crate::executors::executor::tests::run_executor_tests;
@@ -356,7 +358,10 @@ mod tests {
     fn test_combined_output_test_suite() {
         combined_output_test_suite(
             BashScriptExecutor::default(),
-            &ExecutionContext::new().combine_output(true),
+            &ContextBuilder::default()
+                .combine_output(true)
+                .build()
+                .unwrap(),
         );
     }
 
@@ -371,7 +376,7 @@ mod tests {
                     Execution::new("sleep 1.0 && echo OK3"),
                 ],
                 Some(Duration::from_millis(150)),
-                Err(ExecutionError::Timeout),
+                Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
             ),
             (
                 "Execution within timeout",
@@ -429,7 +434,7 @@ mod tests {
             ],
             None,
             // sequential cannot identify which of the tests returned an error
-            Err(ExecutionError::Skipped),
+            Err(ExecutionError::Skipped(0)),
         )];
 
         run_executor_tests(

@@ -21,6 +21,12 @@ pub(crate) enum EnvironmentDirectory {
     Permanent(PathBuf),
 }
 
+impl EnvironmentDirectory {
+    pub fn as_path_buf(&self) -> PathBuf {
+        self.into()
+    }
+}
+
 impl From<&EnvironmentDirectory> for PathBuf {
     fn from(value: &EnvironmentDirectory) -> Self {
         match value {

@@ -1,0 +1,52 @@
+# vim:set ft=bash
+__SCRUT_TEMP_STATE_PATH="{state_directory}"
+
+# persist the whole state / context of the execution in a file `state`, so that
+# it can be recovered in a subsequent execution using `source state`.
+function __scrut_persist_state {
+    local code=$?
+
+    # do not persist this trap
+    unset -f __scrut_persist_state
+
+    # ensure the state directory exists
+    mkdir -p "$__SCRUT_TEMP_STATE_PATH"
+
+    (
+        # store all settings (sh)
+        set +o
+
+        # store all settings (bash)
+        shopt -p
+
+        # store all aliases
+        alias -p
+
+        # store all functions
+        declare -f
+
+        # store all shell and environment variables
+        declare -p | \
+            grep -Ev "^declare -.?r" | \
+            grep -Ev "^declare -[a-zA-Z-]* ({excluded_variables}|[^=]*[^a-zA-Z0-9_=][^=]*)(=|\$)" | \
+            grep -Ev "^({excluded_variables})="
+
+        # ensure directory stack starts at same position
+        printf "cd %q 2>/dev/null\n" "${DIRSTACK[${#DIRSTACK[@]} - 1]}"
+
+        # store the current directory stack (pushd / popd)
+        printf "pushd %q >/dev/null 2>/dev/null\n" "${DIRSTACK[@]}" | tac | tail -n +2
+    ) > "$__SCRUT_TEMP_STATE_PATH/state"
+
+    exit $code
+}
+
+# load the state from the previous execution, if it exists
+shopt -s expand_aliases
+[ -f "$__SCRUT_TEMP_STATE_PATH/state" ] && source "$__SCRUT_TEMP_STATE_PATH/state"
+
+# ensure the state of this execution will be persisted for the next execution
+trap __scrut_persist_state EXIT
+
+# execute the shell expression
+{shell_expression}

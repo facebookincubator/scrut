@@ -30,20 +30,24 @@ pub trait Executor {
 pub(super) mod tests {
     use std::time::Duration;
 
+    use regex::Regex;
+
     use super::Executor;
     use super::Result;
+    use crate::escaping::Escaper;
     use crate::executors::context::Context;
     use crate::executors::execution::Execution;
+    use crate::output::ExitStatus;
     use crate::output::Output;
 
     /// A suite of tests that every executor should be able to pass
     pub(crate) fn standard_test_suite<T: Executor>(executor: T, context: &Context) {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
-            &str,                // title
-            Vec<Execution>,      // input executions
-            Option<Duration>,    // input duration
-            Result<Vec<Output>>, // expected result
+            &str,                        // title
+            Vec<Execution>,              // input executions
+            Option<Duration>,            // input duration
+            Result<Vec<ExpectedOutput>>, // expected result
         )> = vec![
             (
                 "STDOUT is delegated",
@@ -106,10 +110,10 @@ pub(super) mod tests {
     pub(crate) fn combined_output_test_suite<T: Executor>(executor: T, context: &Context) {
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
-            &str,                // title
-            Vec<Execution>,      // input executions
-            Option<Duration>,    // input duration
-            Result<Vec<Output>>, // expected result
+            &str,                        // title
+            Vec<Execution>,              // input executions
+            Option<Duration>,            // input duration
+            Result<Vec<ExpectedOutput>>, // expected result
         )> = vec![
             (
                 "STDOUT is just delegated",
@@ -158,31 +162,107 @@ pub(super) mod tests {
         run_executor_tests(executor, tests, context);
     }
 
+    /// An output expectation that can either be an expected
+    /// [`crate::output::Output`] for direct comparison, or a tuple of regular
+    /// expressions that must match respective STDOUT/STDERR
+    pub(crate) enum ExpectedOutput {
+        Output(Output),
+        Regex(Option<Regex>, Option<Regex>, Option<ExitStatus>),
+    }
+
+    impl<T: ToString, U: ToString> From<(T, U, Option<i32>)> for ExpectedOutput {
+        fn from(value: (T, U, Option<i32>)) -> Self {
+            ExpectedOutput::Output(value.into())
+        }
+    }
+
+    impl<T: ToString, U: ToString> From<(T, U)> for ExpectedOutput {
+        fn from(value: (T, U)) -> Self {
+            ExpectedOutput::Output(value.into())
+        }
+    }
+
+    impl From<(Option<Regex>, Option<Regex>, Option<ExitStatus>)> for ExpectedOutput {
+        fn from(value: (Option<Regex>, Option<Regex>, Option<ExitStatus>)) -> Self {
+            ExpectedOutput::Regex(value.0, value.1, value.2)
+        }
+    }
+
     /// Encapsulates execution of table tests for executors
     #[allow(clippy::type_complexity)]
     pub(crate) fn run_executor_tests<T: Executor>(
         executor: T,
         tests: Vec<(
-            &str,                // title
-            Vec<Execution>,      // input executions
-            Option<Duration>,    // input duration
-            Result<Vec<Output>>, // expected result
+            &str,                        // title
+            Vec<Execution>,              // input executions
+            Option<Duration>,            // input duration
+            Result<Vec<ExpectedOutput>>, // expected result
         )>,
         context: &Context,
     ) {
         for (title, executions, timeout, expected) in tests {
             let result = executor.execute_all(
                 &executions.iter().collect::<Vec<_>>(),
-                &context.clone().timeout(timeout),
+                &context.with_timeout(timeout),
             );
             match expected {
                 #[allow(clippy::expect_fun_call)]
-                Ok(expected) => assert_eq!(
-                    expected,
-                    result.expect(&format!("expected success in '{}'", title)),
-                    "expected success output in '{}'",
-                    title
-                ),
+                Ok(expected) => {
+                    let result =
+                        result.unwrap_or_else(|_| panic!("expected success in '{}'", title));
+                    assert_eq!(
+                        expected.len(),
+                        result.len(),
+                        "expected amount of outputs in '{}'",
+                        title
+                    );
+                    for (index, expected_output) in expected.iter().enumerate() {
+                        match expected_output {
+                            ExpectedOutput::Output(output) => assert_eq!(
+                                Some(output),
+                                result.get(index),
+                                "matching output in '{}' #{}",
+                                title,
+                                index,
+                            ),
+                            ExpectedOutput::Regex(stdout, stderr, exit_code) => {
+                                let output = result.get(index).unwrap_or_else(|| {
+                                    panic!("have output in '{}' #{}", title, index)
+                                });
+                                if let Some(exit_code) = exit_code {
+                                    assert_eq!(
+                                        &output.exit_code, exit_code,
+                                        "exit status in '{}' #{}",
+                                        title, index,
+                                    )
+                                }
+                                if let Some(regex) = stdout {
+                                    eprintln!("output is {:?}", output);
+                                    let stdout =
+                                        output.stdout.to_output_string(None, &Escaper::default());
+                                    assert!(
+                                        regex.is_match(&stdout),
+                                        "STDOUT matches '{:?}' #{}: {:?}",
+                                        regex,
+                                        index,
+                                        &stdout,
+                                    )
+                                }
+                                if let Some(regex) = stderr {
+                                    let stderr =
+                                        output.stderr.to_output_string(None, &Escaper::default());
+                                    assert!(
+                                        regex.is_match(&stderr),
+                                        "STDERR matches '{:?}' #{}: {:?}",
+                                        regex,
+                                        index,
+                                        &stderr,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 #[allow(clippy::expect_fun_call)]
                 Err(expected) => assert_eq!(
                     expected,
