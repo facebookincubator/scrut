@@ -7,7 +7,7 @@ $ uname
 Darwin
 ```
 
-> See also: [STDOUT or STDERR? What is tested](Advanced/Specifics.md#stdout-and-stderr)
+> See also: [STDOUT or STDERR? What is tested](Specifics.md#stdout-and-stderr)
 
 The Backus-Naur form for Expectations is sweet and short:
 
@@ -47,7 +47,7 @@ Hello
 ```
 ````
 
-The line that consists only of `Hello` _is_ the Equal Expectation and specifies that the (first line of the) output must be equal to `Hello\n` (with `\n` being the [newline of the operating system](Advanced/Specifics.md#newline-handling)).
+The line that consists only of `Hello` _is_ the Equal Expectation and specifies that the (first line of the) output must be equal to `Hello\n` (with `\n` being the [newline of the operating system](Specifics.md#newline-handling)).
 
 An extended for of the same Equal Expectation with explicit kind works as well and looks like that:
 

@@ -6,28 +6,34 @@ This chapter describes behaviors of Scrut that should be known by the user to pr
 
 Executing a test with Scrut results either in success (when all expectations in the test match) or failure (when at least one expectation in the test does not match).
 
-In case of success, Scrut does not print out anything:
+Scrut supports multiple *output renderers*, which yield a different representation of the test results.
+
+### Pretty Renderer (default)
+
+Scrut will always tell you what it did:
 
 ```bash
-$ scrut test /path/to/a-working-test.md
+$ scrut test selftest/cases/regex.md
+Summary: 1 file(s) with 8 test(s): 8 succeeded, 0 failed and 0 skipped
 ```
 
-In case of failure, Scrut will point you towards the problems. Multiple output modes, which are called renderers, are supported. Currently the `diff` renderer is the default. The output of a failed expectation looks like this:
+In case of failure the `pretty` default renderer will provide a human-readable output that points you to the problem with the output:
 
-```
-$ scrut test /path/to/a-working-test.md
+```bash
+$ scrut test a-failing-test.md
 // =============================================================================
-// @ /path/to/a-failing-test.md:4
+// @ /path/to/a-failing-test.md:10
 // -----------------------------------------------------------------------------
-// # A test
+// # One conjunct expression
 // -----------------------------------------------------------------------------
-// $ echo Hello
+// $ echo Foo && \
+//   echo Bar
 // =============================================================================
 
 1  1  |   Foo
-   2  | - Bar
-2  3  |   Baz
-3     | + Zoing
+   2  | - BAR
+2     | + Bar
+3     | + Baz
 ```
 
 The failure output consists of two components:
@@ -53,11 +59,11 @@ There are two possible variants that the `diff` renderer may return:
 The above output is a failed output expectations and you can read it as following:
 
 - `1  1  |   Foo`: This line was printed as expected. The left hand `1` is the number of the output line and the right hand `1` is the number of the expectation.
-- `   2  | - Bar`: This line was expected, but not printed. The left hand omitted number indicates that it was not found in output. The right hand number tells that this is the second expectation. The `-` before the line `Bar` emphasizes that this is a missed expectation.
-- `2  3  |   Baz`: This line was printed and expected. The left hand `2` is the number of the output line and the right hand `3` is the number of the expectation.
-- `3     | + Zoing`: This line was printed unexpectedly. The left hand `3` is the number of the output line the omitted right hand number implies there is no expectation that covers it. The `+` before the line `Zoing` emphasizes that this is a "surplus" line.
+- `   2  | - BAR`: This line was expected, but not printed. The left hand omitted number indicates that it was not found in output. The right hand number tells that this is the second expectation. The `-` before the line `Bar` emphasizes that this is a missed expectation.
+- `2     | + Bar`: This line was printed and expected. The left hand `2` is the number of the output line and the right hand `3` is the number of the expectation.
+- `3     | + Baz`: This line was printed unexpectedly. The left hand `3` is the number of the output line the omitted right hand number implies there is no expectation that covers it. The `+` before the line `Zoing` emphasizes that this is a "surplus" line.
 
-> **Note**: If you work with test files that contain a large amount of tests, then you may want to use the `--absolute-line-numbers` flag on the command line: instead of printing the relative line number for each test, as described above, it prints absolute line numbers from within the test file. Assuming the `Foo` expectation from above is in line 10 of a file, it would read `10  10  |   Foo` - and all subsequent output liens with respective aligned line numbers.
+> **Note**: If you work with test files that contain a large amount of tests, then you may want to use the `--absolute-line-numbers` flag on the command line: instead of printing the relative line number for each test, as described above, it prints absolute line numbers from within the test file. Assuming the `Foo` expectation from above is in line 10 of a file, it would read `13  13  |   Foo` - and all subsequent output liens with respective aligned line numbers.
 
 An example for the body of an *exit code expectation*:
 
@@ -74,6 +80,27 @@ unexpected exit code
 This should be mostly self-explanatory. Scrut does not provide any output expectation failures, because it assumes that when the exit code is different, then it is highly likely that the output is very different - and even if not, it would not matter, as it failed anyway.
 
 The tailing `## STDOUT` and `## STDERR` contain the output lines (prefixed with `#> `) that were printed out from the failed execution.
+
+### Diff renderer
+
+The `diff` renderer, that can be enabled with `--renderer diff` (or `-r diff`), prints a diff in the [unified format](https://en.wikipedia.org/wiki/Diff#Unified_format).
+
+```bash
+$ scrut test -r diff a-failing-test.md
+--- /path/to/a-failing-test.md
++++ /path/to/a-failing-test.md.new
+@@ -14 +14,2 @@ malformed output: One conjunct expression
+-BAR
++Bar
++Baz
+```
+
+> **Note**: The created diff is compatible with the `patch` command line tool (e.g. `patch -p0 < <(scrut test -r diff a-failing-test.md)`).
+
+### JSON and YAML renderer
+
+These renderer are primarily intended for automation and are to be considererd experimental.
+You can explore them using `--renderer yaml` or respective `--renderer json`.
 
 ## Test environment variables
 
