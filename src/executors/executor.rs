@@ -208,8 +208,9 @@ pub(super) mod tests {
             match expected {
                 #[allow(clippy::expect_fun_call)]
                 Ok(expected) => {
-                    let result =
-                        result.unwrap_or_else(|_| panic!("expected success in '{}'", title));
+                    let result = result.unwrap_or_else(|err| {
+                        panic!("expected success in '{}', but got: {}", title, err)
+                    });
                     assert_eq!(
                         expected.len(),
                         result.len(),

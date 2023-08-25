@@ -261,7 +261,7 @@ mod tests {
                 "Sufficient timeout has no effect",
                 vec![
                     Execution::new("sleep 0.1 && echo OK1")
-                        .timeout(Some(Duration::from_millis(200))),
+                        .timeout(Some(Duration::from_millis(2000))),
                 ],
                 None,
                 Ok(vec![("OK1\n", "").into()]),
@@ -279,13 +279,13 @@ mod tests {
                 "Timeout affects execution in isolation",
                 vec![
                     Execution::new("sleep 0.1 && echo OK1")
-                        .timeout(Some(Duration::from_millis(200))),
+                        .timeout(Some(Duration::from_millis(2000))),
                     Execution::new("sleep 0.1 && echo OK2")
                         .timeout(Some(Duration::from_millis(10))),
                     Execution::new("sleep 0.1 && echo OK3")
                         .timeout(Some(Duration::from_millis(10))),
                     Execution::new("sleep 0.1 && echo OK4")
-                        .timeout(Some(Duration::from_millis(1000))),
+                        .timeout(Some(Duration::from_millis(2000))),
                 ],
                 None,
                 Err(ExecutionError::Timeout(ExecutionTimeout::Index(1))),

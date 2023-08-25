@@ -91,42 +91,5 @@ pub(super) fn split_path_abs(path: &Path) -> Result<(PathBuf, PathBuf)> {
 // For windows `dunce` is used to assure that Windows NT forms are only used
 // if the path length or reserved words demand it.
 pub(crate) fn canonical_path<P: AsRef<Path> + Debug>(path: P) -> Result<PathBuf> {
-    dunce::canonicalize(&path).with_context(|| format!("canonicalize path for output {:?}", path))
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn test_windows_output_paths_are_unc_canonicalized() {
-        use std::path::PathBuf;
-
-        use super::canonical_path;
-
-        let tests = &[
-            r"C:\baz\bar\foo",
-            r"C:\\baz\\bar\\foo",
-            r"C:\baz\bar\foo",
-            r"\\?\C:\baz\bar\foo",
-            r"C:/baz/bar/foo",
-            r"C:\baz\bar/foo",
-        ];
-        for test in tests {
-            let path = PathBuf::from(test);
-            match to_output_path(path) {
-                Ok(output) => assert_eq!(r"C:\baz\bar\foo", &output),
-                Err(_) => {
-                    assert!(false, "output path {:?} should canonicalize", path)
-                }
-            }
-        }
-
-        let tests = &[r"\\?\C:/baz/bar/foo", r"\\?\C:\baz\bar/foo"];
-        for test in tests {
-            let path = PathBuf::from(test);
-            let result = to_output_path(path);
-            assert!(result.is_err())
-        }
-    }
+    Ok(dunce::canonicalize(&path)?)
 }

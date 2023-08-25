@@ -2,6 +2,12 @@
 
 This test proves that the `--shell` parameter provided shell is being used to execute the shell expressions of the tests in.
 
+Does not work in windows
+
+```scrut
+$ ( [[ "$(uname -s)" == "Darwin" ]] || [[ "$(uname -s)" == "Linux" ]] ) || exit 80
+```
+
 ## Run test with standard shell
 
 ```scrut

@@ -19,14 +19,14 @@ $ "$SCRUT_BIN" test --renderer diff --match-markdown "*.mdtest" . > output.diff
 
 ```scrut
 $ cat output.diff
---- ./multi-test-1.mdtest
-+++ ./multi-test-1.mdtest.new
+--- \.[/\\]multi-test-1\.mdtest (regex)
+\+\+\+ \.[/\\]multi-test-1\.mdtest\.new (regex)
 @@ -6 +6 @@ malformed output: This is the test
 - not-bar
 + bar
 
---- ./multi-test-2.mdtest
-+++ ./multi-test-2.mdtest.new
+--- \.[/\\]multi-test-2\.mdtest (regex)
+\+\+\+ \.[/\\]multi-test-2\.mdtest\.new (regex)
 @@ -6 +6 @@ malformed output: This is the test 1
 - NOT-BAR
 + BAR
