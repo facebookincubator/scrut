@@ -13,7 +13,7 @@ use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
 use super::runner::Runner;
-use super::threaded_runner::ThreadedRunner;
+use super::subprocess_runner::SubprocessRunner;
 use super::DEFAULT_SHELL;
 use crate::lossy_string;
 use crate::newline::BytesNewline;
@@ -64,7 +64,7 @@ impl Executor for BashScriptExecutor {
         context: &ExecutionContext,
     ) -> Result<Vec<Output>> {
         let script = self.build_script(executions, context)?;
-        let runner = ThreadedRunner(self.0.to_owned());
+        let runner = SubprocessRunner(self.0.to_owned());
         let output = runner
             .run(
                 "script",

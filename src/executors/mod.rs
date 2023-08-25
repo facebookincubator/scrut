@@ -22,7 +22,7 @@ pub mod execution;
 pub mod executor;
 pub mod runner;
 pub mod stateful_executor;
-pub mod threaded_runner;
+pub mod subprocess_runner;
 pub mod util;
 
 #[cfg(feature = "reap_on_timeout")]

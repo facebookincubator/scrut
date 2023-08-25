@@ -10,12 +10,6 @@ autobins = false
 # be flaky and should not be executed in automation
 volatile_tests = []
 
-# the rust implementation of killing (created child) processes sends only
-# a SIGKILL to this very process - not it's direct or descending children.
-# this feature enables reaping of child processes, which is not without danger:
-# https://github.com/oconnor663/duct.py/blob/master/gotchas.md#killing-grandchild-processes
-reap_on_timeout = []
-
 [lib]
 name = "scrut"
 path = "src/lib.rs"

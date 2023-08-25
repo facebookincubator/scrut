@@ -8,7 +8,7 @@ use super::context::Context as ExecutionContext;
 use super::execution::Execution;
 use super::runner::Runner;
 use super::stateful_executor::StatefulExecutorRunnerGenerator;
-use super::threaded_runner::ThreadedRunner;
+use super::subprocess_runner::SubprocessRunner;
 use crate::output::Output;
 
 #[doc = include_str!("./bash_runner.excluded_variables.md")]
@@ -97,7 +97,7 @@ impl Runner for BashRunner {
             .replace("{excluded_variables}", &BASH_EXCLUDED_VARIABLES.join("|"));
         trace!("compiled expression {}", &expression);
 
-        ThreadedRunner(shell).run(name, &execution.to_owned().expression(&expression), context)
+        SubprocessRunner(shell).run(name, &execution.to_owned().expression(&expression), context)
     }
 }
 
