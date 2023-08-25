@@ -14,6 +14,8 @@
 //!   a file in parallel, returning results quickly, but not supporting shared
 //!   state in between
 
+use std::path::Path;
+
 pub mod bash_runner;
 pub mod bash_script_executor;
 pub mod context;
@@ -28,10 +30,14 @@ pub mod util;
 #[cfg(feature = "reap_on_timeout")]
 pub mod reaper;
 
-/// Default path to shell on Windows
 #[cfg(target_os = "windows")]
-pub const DEFAULT_SHELL: &str = "bash";
+lazy_static! {
+    /// Default path to shell on Windows
+    pub static ref DEFAULT_SHELL: &'static Path = Path::new("bash");
+}
 
-/// Default path to shell on Linux/Mac/..
 #[cfg(not(target_os = "windows"))]
-pub const DEFAULT_SHELL: &str = "/bin/bash";
+lazy_static! {
+    /// Default path to shell on Linux/Mac/..
+    pub static ref DEFAULT_SHELL: &'static Path = Path::new("/bin/bash");
+}

@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::io::stdout;
 use std::io::IsTerminal;
+use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
@@ -47,7 +48,7 @@ impl Display for ValidationFailedError {
 #[derive(Debug, ClapParser)]
 pub struct Args {
     /// Path to test files or directories
-    test_file_paths: Vec<String>,
+    test_file_paths: Vec<PathBuf>,
 
     /// Optional list of paths to test files which are prepended to each test
     /// file in execution. Think: shared test bootstrap.
@@ -56,7 +57,7 @@ pub struct Args {
     /// configuration file and persist it together with your tests instead.
     /// UNSTABLE: this parameter may change or be removed.
     #[clap(long, short = 'P', num_args=0..)]
-    prepend_test_file_paths: Vec<String>,
+    prepend_test_file_paths: Vec<PathBuf>,
 
     /// Optional list of paths to test files which are appended to each test
     /// file in execution. Think: shared test teardown.
@@ -65,7 +66,7 @@ pub struct Args {
     /// configuration file and persist it together with your tests instead.
     /// UNSTABLE: this parameter may change or be removed.
     #[clap(long, short = 'A', num_args=0..)]
-    append_test_file_paths: Vec<String>,
+    append_test_file_paths: Vec<PathBuf>,
 
     /// Whether to print out debug output - use only
     #[clap(long)]
@@ -126,7 +127,7 @@ impl Args {
             &self
                 .test_file_paths
                 .iter()
-                .map(|s| s as &str)
+                .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
             &parser_generator,
             &parser_acceptor,
@@ -138,7 +139,7 @@ impl Args {
             &self
                 .prepend_test_file_paths
                 .iter()
-                .map(|s| s as &str)
+                .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
             &parser_generator,
             &parser_acceptor,
@@ -150,7 +151,7 @@ impl Args {
             &self
                 .append_test_file_paths
                 .iter()
-                .map(|s| s as &str)
+                .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
             &parser_generator,
             &parser_acceptor,
@@ -175,8 +176,12 @@ impl Args {
 
         let mut test_environment =
             TestEnvironment::new(&self.global.shell, self.global.work_directory.as_deref())?;
+        debug!(
+            "running {} test files in {:?}",
+            tests.len(),
+            test_environment
+        );
 
-        debug!("running {} test files", tests.len());
         let (mut count_success, mut count_skipped, mut count_failed) = (0, 0, 0);
 
         for test in tests {

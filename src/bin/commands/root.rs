@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
@@ -61,14 +63,14 @@ pub(crate) struct GlobalParameters {
     pub(crate) escaping: Option<Escaper>,
 
     /// Shell to execute expressions in
-    #[clap(long, short, default_value = DEFAULT_SHELL, global = true)]
-    pub(crate) shell: String,
+    #[clap(long, short, default_value = (&*DEFAULT_SHELL).to_string_lossy().to_string(), global = true)]
+    pub(crate) shell: PathBuf,
 
     /// Optional path to work directory in which the tests will be executed. Per
     /// default a temporary work directory for each test file will be created
     /// instead.
     #[clap(long, short, global = true)]
-    pub(crate) work_directory: Option<String>,
+    pub(crate) work_directory: Option<PathBuf>,
 }
 
 #[derive(Parser, Debug, Default)]
@@ -83,10 +85,10 @@ pub(crate) struct GlobalSharedParameters {
     pub(crate) keep_output_crlf: bool,
 
     #[clap(from_global)]
-    pub(crate) shell: String,
+    pub(crate) shell: PathBuf,
 
     #[clap(from_global)]
-    pub(crate) work_directory: Option<String>,
+    pub(crate) work_directory: Option<PathBuf>,
 
     #[clap(from_global)]
     pub(crate) escaping: Option<Escaper>,

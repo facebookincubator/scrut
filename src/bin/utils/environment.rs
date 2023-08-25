@@ -8,9 +8,9 @@ use anyhow::Result;
 use tempdir::TempDir;
 use tracing::debug;
 
-use super::fsutil::canonical_output_path;
 use super::fsutil::split_path_abs;
 use super::nameutil::UniqueNamer;
+use crate::utils::executorutil::canonical_shell;
 
 /// A directory within a test environment
 pub(crate) enum EnvironmentDirectory {
@@ -30,33 +30,27 @@ impl EnvironmentDirectory {
 impl From<&EnvironmentDirectory> for PathBuf {
     fn from(value: &EnvironmentDirectory) -> Self {
         match value {
-            EnvironmentDirectory::Ephemeral(temp) => temp.path(),
-            EnvironmentDirectory::Permanent(path) => path.as_path(),
+            EnvironmentDirectory::Ephemeral(temp) => temp.path().into(),
+            EnvironmentDirectory::Permanent(path) => path.clone(),
         }
-        .into()
     }
 }
 
-impl TryFrom<&EnvironmentDirectory> for String {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &EnvironmentDirectory) -> Result<Self, Self::Error> {
-        canonical_output_path(&value.into() as &PathBuf)
+impl From<&EnvironmentDirectory> for String {
+    fn from(value: &EnvironmentDirectory) -> Self {
+        PathBuf::from(value).to_string_lossy().to_string()
     }
 }
 
 impl Debug for EnvironmentDirectory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match String::try_from(self) {
-            Ok(path) => write!(f, "{}", path),
-            Err(err) => write!(f, "failed to canonicalize environment directory: {:?}", err),
-        }
+        write!(f, "{}", String::from(self))
     }
 }
 
 /// Encapsulate test directory and environment variables setup
 pub(crate) struct TestEnvironment {
-    pub(crate) shell: String,
+    pub(crate) shell: PathBuf,
 
     /// The base work directory in which tests are being executed. Can be:
     /// 1. A user provided directory in which all test files will be executed
@@ -80,10 +74,10 @@ pub(crate) struct TestEnvironment {
 }
 
 impl TestEnvironment {
-    pub(crate) fn new(shell: &str, provided_work_directory: Option<&str>) -> Result<Self> {
+    pub(crate) fn new(shell: &Path, provided_work_directory: Option<&Path>) -> Result<Self> {
         let (work_directory, tmp_directory) = if let Some(directory) = provided_work_directory {
             (
-                EnvironmentDirectory::Permanent(canonical_output_path(directory)?.into()),
+                EnvironmentDirectory::Permanent(directory.into()),
                 EnvironmentDirectory::Ephemeral(
                     TempDir::new_in(directory, "temp")
                         .context("create temporary tmp directory in given work directory")?,
@@ -96,7 +90,7 @@ impl TestEnvironment {
                 .context("create tmp directory in temporary work directory")?;
             (
                 EnvironmentDirectory::Ephemeral(work),
-                EnvironmentDirectory::Permanent(canonical_output_path(temp_path)?.into()),
+                EnvironmentDirectory::Permanent(temp_path),
             )
         };
         debug!(
@@ -104,10 +98,11 @@ impl TestEnvironment {
             &work_directory, &tmp_directory,
         );
 
-        let namer = UniqueNamer::new(&String::try_from(&work_directory)?);
+        let namer = UniqueNamer::new(&work_directory.as_path_buf());
+        let shell = canonical_shell(shell)?;
 
         Ok(TestEnvironment {
-            shell: shell.into(),
+            shell,
             work_directory,
             tmp_directory,
             namer,
@@ -121,8 +116,8 @@ impl TestEnvironment {
         &mut self,
         test_file_path: &Path,
         cram_compat: bool,
-    ) -> Result<(String, Vec<(String, String)>)> {
-        let (test_file_name, test_file_directory) =
+    ) -> Result<(PathBuf, Vec<(String, String)>)> {
+        let (test_file_directory, test_file_name) =
             split_path_abs(test_file_path).with_context(|| {
                 format!("split test file path {:?} into components", &test_file_path)
             })?;
@@ -135,6 +130,16 @@ impl TestEnvironment {
         };
 
         Ok((per_file.build_work_directory()?, per_file.build_env_vars()?))
+    }
+}
+
+impl Debug for TestEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TestEnvironment")
+            .field("shell", &self.shell)
+            .field("work_directory", &self.work_directory)
+            .field("tmp_directory", &self.tmp_directory)
+            .finish()
     }
 }
 
@@ -152,13 +157,13 @@ impl Drop for TestEnvironment {
 /// The environment per file, that builds on the [`TestEnvironment`]
 struct TestFileEnvironment<'a> {
     test_environment: &'a mut TestEnvironment,
-    test_file_name: &'a str,
-    test_file_directory: &'a str,
+    test_file_name: &'a Path,
+    test_file_directory: &'a Path,
     cram_compat: bool,
 }
 
 impl<'a> TestFileEnvironment<'a> {
-    fn build_work_directory(&mut self) -> Result<String> {
+    fn build_work_directory(&mut self) -> Result<PathBuf> {
         let test_work_directory = match &self.test_environment.work_directory {
             // if within temporary directory: create unique directory in file
             EnvironmentDirectory::Ephemeral(temp) => {
@@ -172,19 +177,24 @@ impl<'a> TestFileEnvironment<'a> {
             }
             EnvironmentDirectory::Permanent(path) => path.into(),
         };
-
-        canonical_output_path(test_work_directory).context("test work directory")
+        Ok(test_work_directory)
     }
 
     fn build_env_vars(&self) -> Result<Vec<(String, String)>> {
         let tmp = String::try_from(&self.test_environment.tmp_directory)?;
         let mut env_vars = vec![
-            ("TESTDIR".to_string(), self.test_file_directory.to_string()),
-            ("TESTFILE".to_string(), self.test_file_name.to_string()),
+            (
+                "TESTDIR".to_string(),
+                self.test_file_directory.to_string_lossy().to_string(),
+            ),
+            (
+                "TESTFILE".to_string(),
+                self.test_file_name.to_string_lossy().to_string(),
+            ),
             ("TMPDIR".to_string(), tmp.clone()),
             (
                 "TESTSHELL".to_string(),
-                self.test_environment.shell.to_string(),
+                self.test_environment.shell.to_string_lossy().to_string(),
             ),
             ("LANG".to_string(), "C".to_string()),
             ("LANGUAGE".to_string(), "C".to_string()),
@@ -214,15 +224,16 @@ mod tests {
     use std::path::Path;
     use std::path::PathBuf;
 
+    use anyhow::Context;
     use tempdir::TempDir;
 
     use super::TestEnvironment;
     use crate::utils::environment::EnvironmentDirectory;
-    use crate::utils::fsutil::canonical_output_path;
 
     #[test]
     fn create_temporary_work_directory_when_none_is_provided() {
-        let test_env = TestEnvironment::new("bash", None).expect("setup test environment");
+        let test_env =
+            TestEnvironment::new(Path::new("bash"), None).expect("setup test environment");
         assert!(
             matches!(test_env.work_directory, EnvironmentDirectory::Ephemeral(_)),
             "temporary work directory ephemeral"
@@ -241,10 +252,9 @@ mod tests {
 
     #[test]
     fn use_provided_work_directory_and_created_tmp_within() {
-        let sys_temp_dir =
-            canonical_output_path(env::temp_dir()).expect("system temp directory path");
-        let test_env =
-            TestEnvironment::new("bash", Some(&sys_temp_dir)).expect("setup test environment");
+        let sys_temp_dir = env::temp_dir();
+        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir))
+            .expect("setup test environment");
         assert!(
             matches!(test_env.work_directory, EnvironmentDirectory::Permanent(_)),
             "temporary work directory permanent"
@@ -256,14 +266,15 @@ mod tests {
         assert!(
             String::try_from(&test_env.tmp_directory)
                 .expect("tmp")
-                .starts_with(&sys_temp_dir),
+                .starts_with(&sys_temp_dir.to_string_lossy().to_string()),
             "temporary directory in provided work directory"
         )
     }
 
     #[test]
     fn temporary_work_directory_is_created_and_cleaned_up() {
-        let test_env = TestEnvironment::new("bash", None).expect("setup test environment");
+        let test_env =
+            TestEnvironment::new(Path::new("bash"), None).expect("setup test environment");
         let directory = String::try_from(&test_env.work_directory).expect("work directory");
         assert!(
             Path::new(&directory).exists(),
@@ -278,10 +289,9 @@ mod tests {
 
     #[test]
     fn temporary_tmp_directory_is_created_and_cleaned_up() {
-        let sys_temp_dir =
-            canonical_output_path(env::temp_dir()).expect("system temp directory path");
-        let test_env =
-            TestEnvironment::new("bash", Some(&sys_temp_dir)).expect("setup test environment");
+        let sys_temp_dir = env::temp_dir();
+        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir))
+            .expect("setup test environment");
         let directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
         assert!(
             Path::new(&directory).exists(),
@@ -297,8 +307,7 @@ mod tests {
     #[test]
     fn test_file_environment_setup() {
         let provided_directory = TempDir::new("provided").expect("create provided temp directory");
-        let provided_directory_path =
-            canonical_output_path(provided_directory.path()).expect("provided work directory path");
+        let provided_directory_path = provided_directory.path();
         let expected_variables = &[
             "CDPATH",
             "COLUMNS",
@@ -316,51 +325,57 @@ mod tests {
         let tests = &mut [
             (
                 false,
-                TestEnvironment::new("bash", None).expect("setup test environment"),
+                TestEnvironment::new(Path::new("bash"), None).expect("setup test environment"),
                 true,
             ),
             (
                 false,
-                TestEnvironment::new("bash", None).expect("setup test environment"),
+                TestEnvironment::new(Path::new("bash"), None).expect("setup test environment"),
                 false,
             ),
             (
                 true,
-                TestEnvironment::new("bash", Some(&provided_directory_path))
+                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path))
                     .expect("setup test environment"),
                 true,
             ),
             (
                 true,
-                TestEnvironment::new("bash", Some(&provided_directory_path))
+                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path))
                     .expect("setup test environment"),
                 false,
             ),
         ];
 
-        for (has_provided_work_dir, test_env, cram_compat) in tests.iter_mut() {
+        for (idx, (has_provided_work_dir, test_env, cram_compat)) in tests.iter_mut().enumerate() {
+            let test_file_name = format!("some-test-file-{}.md", idx + 1);
             let test_file_path = PathBuf::try_from(&test_env.work_directory)
-                .expect("work_directory")
-                .join("some-test-file.md");
+                .with_context(|| format!("work_directory {:?}", test_env))
+                .unwrap()
+                .join(&test_file_name);
+            /* fs::File::create(&test_file_path)
+            .with_context(|| format!("create dummy test file {:?}", test_env))
+            .unwrap(); */
             let (work_dir, env_vars) = test_env
                 .init_test_file(&test_file_path, *cram_compat)
-                .expect("initialize for test file");
+                .with_context(|| format!("initialize for test file {:?}", test_env))
+                .unwrap();
             if *has_provided_work_dir {
                 assert!(
-                    work_dir.starts_with(&provided_directory_path),
-                    "test file work directory `{}` in provided work directory `{}`",
+                    work_dir.starts_with(provided_directory_path),
+                    "test file work directory {:?} in provided work directory {:?}",
                     &work_dir,
                     &provided_directory_path,
                 );
             } else {
-                let sub_directory = Path::new(&work_dir)
+                let file_name = Path::new(&work_dir)
                     .components()
                     .last()
                     .map(|d| d.as_os_str().to_string_lossy().to_string());
                 assert_eq!(
-                    sub_directory,
-                    Some("some-test-file.md".to_string()),
-                    "test file work directory `{}` derived from test file",
+                    file_name,
+                    Some(test_file_name),
+                    "test file work directory {:?} derived from test file",
                     &work_dir,
                 );
             }

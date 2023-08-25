@@ -1,4 +1,5 @@
 use std::io::ErrorKind;
+use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -18,7 +19,7 @@ use crate::output::Output;
 /// Each output stream is read from an individual thread.
 /// Constraining the max execution time is supported.
 #[derive(Clone)]
-pub struct SubprocessRunner(pub(super) String);
+pub struct SubprocessRunner(pub(super) PathBuf);
 
 impl Runner for SubprocessRunner {
     fn run(
@@ -31,7 +32,7 @@ impl Runner for SubprocessRunner {
 
         // apply environment variables (assure SHELL is set)
         let mut envs = execution.environment.as_ref().cloned().unwrap_or_default();
-        envs.insert("SHELL".into(), shell.into());
+        envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 
         let mut exec = Exec::cmd(shell)
             .stdout(Redirection::Pipe)
@@ -93,7 +94,7 @@ impl Runner for SubprocessRunner {
 
 impl Default for SubprocessRunner {
     fn default() -> Self {
-        Self(DEFAULT_SHELL.into())
+        Self(DEFAULT_SHELL.to_owned())
     }
 }
 

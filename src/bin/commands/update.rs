@@ -43,7 +43,7 @@ use crate::utils::promptutil;
 pub struct Args {
     /// Path to test files or directories
     #[clap(required = true)]
-    paths: Vec<String>,
+    paths: Vec<PathBuf>,
 
     /// Whether to print out debug output - use only
     #[clap(long)]
@@ -118,7 +118,7 @@ impl Args {
 
         let tests = parserutil::parse_test_files(
             "test",
-            &self.paths.iter().map(|s| s as &str).collect::<Vec<_>>(),
+            &self.paths.iter().map(|p| p as &Path).collect::<Vec<_>>(),
             &parser_generator,
             &parser_acceptor,
             self.global.cram_compat,

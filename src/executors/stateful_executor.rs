@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_standard_test_suite() {
         standard_test_suite(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             &ExecutionContext::new(),
         );
     }
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn test_combined_output_test_suite() {
         combined_output_test_suite(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             &ContextBuilder::default()
                 .combine_output(true)
                 .build()
@@ -248,7 +248,7 @@ mod tests {
         ];
 
         run_executor_tests(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
             &ExecutionContext::new(),
         );
@@ -293,7 +293,7 @@ mod tests {
         ];
 
         run_executor_tests(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
             &ExecutionContext::new(),
         );
@@ -313,7 +313,7 @@ mod tests {
         )];
 
         run_executor_tests(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
             &ExecutionContext::new(),
         );
@@ -381,7 +381,7 @@ mod tests {
         ];
 
         run_executor_tests(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
             &ExecutionContext::new(),
         );
@@ -405,7 +405,7 @@ mod tests {
         )];
 
         run_executor_tests(
-            StatefulExecutor(BashRunner::stateful_generator(DEFAULT_SHELL)),
+            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
             &ExecutionContext::new(),
         );

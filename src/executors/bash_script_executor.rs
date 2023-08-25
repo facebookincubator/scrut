@@ -1,3 +1,6 @@
+use std::path::Path;
+use std::path::PathBuf;
+
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -43,17 +46,17 @@ const DIVIDER_PREFIX_BYTES: &[u8] = b"~~~~~~~~EXECDIVIDER::";
 ///
 /// !! Caution: Executions that detach (e.g. `nohup expression &`) are likely
 /// to mess with the output assignment !!
-pub struct BashScriptExecutor(String);
+pub struct BashScriptExecutor(PathBuf);
 
 impl BashScriptExecutor {
-    pub fn new(bash_path: &str) -> Self {
+    pub fn new(bash_path: &Path) -> Self {
         Self(bash_path.to_owned())
     }
 }
 
 impl Default for BashScriptExecutor {
     fn default() -> Self {
-        Self::new(DEFAULT_SHELL)
+        Self::new(*DEFAULT_SHELL)
     }
 }
 
@@ -496,7 +499,10 @@ mod tests {
                     ("", "").into(),
                     (
                         "",
-                        format!("{}: line 17: foo: command not found\n", DEFAULT_SHELL),
+                        format!(
+                            "{}: line 17: foo: command not found\n",
+                            DEFAULT_SHELL.to_string_lossy()
+                        ),
                         Some(127),
                     )
                         .into(),

@@ -136,7 +136,7 @@ impl LineParser {
         self.testcases.push(TestCase {
             title: self.title.to_owned().unwrap_or_default(),
             shell_expression: self.command.join("\n"),
-            exit_code: self.exit_code.clone(),
+            exit_code: self.exit_code,
             expectations: self.expectations.clone(),
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
         });

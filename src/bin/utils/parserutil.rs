@@ -16,8 +16,8 @@ use scrut::rules::registry::RuleRegistry;
 use scrut::rules::rule::RuleMaker;
 use scrut::testcase::TestCase;
 
-pub(crate) type ParserGenerator = Box<dyn Fn(&str, bool) -> Result<(ParserType, Box<dyn Parser>)>>;
-pub(crate) type ParserAcceptor = Box<dyn Fn(&str) -> bool>;
+pub(crate) type ParserGenerator = Box<dyn Fn(&Path, bool) -> Result<(ParserType, Box<dyn Parser>)>>;
+pub(crate) type ParserAcceptor = Box<dyn Fn(&Path) -> bool>;
 
 pub(crate) fn make_parser_generator<'a>(
     match_cram: &'a str,
@@ -56,7 +56,7 @@ pub(crate) fn make_parser_generator<'a>(
                     Box::new(CramParser::default_new(make_expectation_maker(true))),
                 ))
             } else {
-                Err(anyhow!("no parser found that matches `{}`", path))
+                Err(anyhow!("no parser found that matches {:?}", path))
             }
         }),
         Box::new(move |path| match_cram.is_match(path) || match_markdown.is_match(path)),
@@ -85,7 +85,7 @@ pub(crate) struct ParsedTestFile {
 /// Iterates provided list of paths to test files and returns a list of the `ParsedTestFile` instances
 pub(crate) fn parse_test_files(
     name: &str,
-    paths: &[&str],
+    paths: &[&Path],
     parser_generator: &ParserGenerator,
     parser_acceptor: &ParserAcceptor,
     cram_compat: bool,
@@ -97,7 +97,7 @@ pub(crate) fn parse_test_files(
         let (parser_type, parser) = parser_generator(&test_file_path, cram_compat)?;
         let testcases = parser
             .parse(&test_file_content)
-            .with_context(|| format!("parse {} from `{}`", name, test_file_path))?;
+            .with_context(|| format!("parse {} from {:?}", name, &test_file_path))?;
         result.push(ParsedTestFile {
             path: Path::new(&test_file_path).into(),
             content: test_file_content,
@@ -111,6 +111,8 @@ pub(crate) fn parse_test_files(
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::make_parser_generator;
 
     #[test]
@@ -121,9 +123,14 @@ mod tests {
             let (parser_gen, parser_acceptor) =
                 make_parser_generator("*.t", "*.md", &["foo", "bar"])
                     .expect("get parser generator");
-            assert!(parser_acceptor(file_name), "accept file `{}`", file_name,);
+            assert!(
+                parser_acceptor(Path::new(file_name)),
+                "accept file `{}`",
+                file_name,
+            );
 
-            let (parser_type, _) = parser_gen(file_name, false).expect("generate parser");
+            let (parser_type, _) =
+                parser_gen(Path::new(file_name), false).expect("generate parser");
             assert_eq!(expect, &format!("{}", parser_type));
         }
     }

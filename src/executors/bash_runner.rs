@@ -60,19 +60,19 @@ const BASH_TEMPLATE: &str = include_str!("bash_runner.template");
 /// Underlying the [`ThreadedRunner`] is used, so timeout constraints are fully supported.
 #[derive(Clone)]
 pub struct BashRunner {
-    pub shell: String,
+    pub shell: PathBuf,
     pub state_directory: PathBuf,
 }
 
 impl BashRunner {
-    pub fn new(shell: &str, state_directory: &Path) -> Self {
+    pub fn new(shell: &Path, state_directory: &Path) -> Self {
         Self {
             shell: shell.to_owned(),
             state_directory: state_directory.to_owned(),
         }
     }
 
-    pub fn stateful_generator(shell: &str) -> StatefulExecutorRunnerGenerator {
+    pub fn stateful_generator(shell: &Path) -> StatefulExecutorRunnerGenerator {
         let shell = shell.to_owned();
         Box::new(move |state_directory: &Path| -> Box<dyn Runner> {
             let shell_instance = Self {
@@ -117,7 +117,7 @@ mod tests {
     fn test_execute_with_timeout_captures_stdout_and_stderr() {
         let temp_dir = TempDir::new("runner").expect("create temporary directory");
         let output = BashRunner {
-            shell: DEFAULT_SHELL.into(),
+            shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
         }
         .run(
@@ -135,7 +135,7 @@ mod tests {
     fn test_execute_captures_non_printable_characters() {
         let temp_dir = TempDir::new("runner").expect("create temporary directory");
         let output = BashRunner {
-            shell: DEFAULT_SHELL.into(),
+            shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
         }
         .run(
@@ -154,7 +154,7 @@ mod tests {
     fn test_execute_with_timeout_captures_exit_code() {
         let temp_dir = TempDir::new("runner").expect("create temporary directory");
         let output = BashRunner {
-            shell: DEFAULT_SHELL.into(),
+            shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
         }
         .run(
