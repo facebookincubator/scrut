@@ -35,7 +35,7 @@ function __scrut_persist_state {
         printf "cd %q 2>/dev/null\n" "${DIRSTACK[${#DIRSTACK[@]} - 1]}"
 
         # store the current directory stack (pushd / popd)
-        printf "pushd %q >/dev/null 2>/dev/null\n" "${DIRSTACK[@]}" | tac | tail -n +2
+        printf "pushd %q >/dev/null 2>/dev/null\n" "${DIRSTACK[@]}" | sed '1!G;h;$!d' | tail -n +2
     ) > "$__SCRUT_TEMP_STATE_PATH/state"
 
     exit $code
