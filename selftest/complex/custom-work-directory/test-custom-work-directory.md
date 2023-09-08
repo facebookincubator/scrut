@@ -35,3 +35,9 @@ Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 $ "$SCRUT_BIN" --work-directory "$TESTDIR/fixtures" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 ```
+
+Ensure idempotent execution by cleaning up fixtures directory
+
+```scrut
+$ rm -rf "$TESTDIR/fixtures/temp.*"
+```
