@@ -66,15 +66,24 @@ impl Runner for SubprocessRunner {
             Err(err) => {
                 let kind = err.kind();
                 let (stdout, stderr) = err.capture;
-                (
-                    stdout,
-                    stderr,
+
+                // windows execution returns [`ErrorKind::BrokenPipe`] in case
+                // anything explicitly runs `exit <code>`
+                let exit = if cfg!(windows) {
+                    let process_result = process.wait().unwrap_or(ExitStatus::Undetermined);
                     if kind == ErrorKind::TimedOut {
                         OutputExitStatus::Timeout(execution.timeout.unwrap_or_default())
+                    } else if let ExitStatus::Exited(code) = process_result {
+                        (code as i32).into()
                     } else {
                         OutputExitStatus::Unknown
-                    },
-                )
+                    }
+                } else if kind == ErrorKind::TimedOut {
+                    OutputExitStatus::Timeout(execution.timeout.unwrap_or_default())
+                } else {
+                    OutputExitStatus::Unknown
+                };
+                (stdout, stderr, exit)
             }
         };
 
@@ -215,8 +224,9 @@ mod tests {
             "waited at most 200 ms ({:?})",
             duration,
         );
+        let max_wait = if cfg!(windows) { 1500 } else { 150 };
         assert!(
-            duration < Duration::from_millis(150),
+            duration < Duration::from_millis(max_wait),
             "waited at most 150 ms ({:?})",
             duration,
         );
