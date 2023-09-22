@@ -238,7 +238,11 @@ mod tests {
                 // windows execution takes a long time to start up, test intends
                 // to assert that timeout > actual execution does not return
                 // a timeout error -> long timeout is fine
-                Some(Duration::from_millis(1000)),
+                Some(Duration::from_millis(if cfg!(windows) {
+                    2000
+                } else {
+                    1000
+                })),
                 Ok(vec![
                     ("OK1\n", "").into(),
                     ("OK2\n", "").into(),
