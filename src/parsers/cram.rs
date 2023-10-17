@@ -6,6 +6,7 @@ use tracing::debug;
 use super::line_parser::is_comment;
 use super::line_parser::LineParser;
 use super::parser::Parser;
+use crate::config::DocumentConfig;
 use crate::expectation::ExpectationMaker;
 use crate::testcase::TestCase;
 
@@ -45,7 +46,7 @@ impl CramParser {
 
 impl Parser for CramParser {
     /// See [`super::parser::Parser::parse`]
-    fn parse(&self, text: &str) -> Result<Vec<TestCase>> {
+    fn parse(&self, text: &str) -> Result<(DocumentConfig, Vec<TestCase>)> {
         let mut engine = LineParser::new(self.expectation_maker.clone(), true);
         let lines = text.lines().collect::<Vec<_>>();
         let indent = " ".repeat(self.indention);
@@ -79,7 +80,7 @@ impl Parser for CramParser {
         }
         debug!("found {} testcases in cram file", engine.testcases.len());
 
-        Ok(engine.testcases.clone())
+        Ok((DocumentConfig::default(), engine.testcases.clone()))
     }
 }
 
@@ -106,7 +107,7 @@ mod tests {
   hello
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -135,7 +136,7 @@ This is a title
 
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -165,7 +166,7 @@ Title 2
 
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -197,7 +198,7 @@ This is the yet more title
   lastly
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(3, testcases.len());
         assert_eq!(
             TestCase {
@@ -249,7 +250,7 @@ The title
   most
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -287,7 +288,7 @@ This has an exit code 3
   output2
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(3, testcases.len());
         assert_eq!(
             TestCase {
@@ -336,9 +337,9 @@ Only one exit code please
   [2]
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test);
-        assert!(testcases.is_err());
-        let err = testcases.unwrap_err();
+        let result = parser.parse(cram_test);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
         assert_eq!(
             "line 5: exit code provided multiple times".to_string(),
             err.to_string()
@@ -359,7 +360,7 @@ This is a title
 # even more line comments
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -394,7 +395,7 @@ This is a title
   > ]
   > EOF"#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("no error");
+        let (_, testcases) = parser.parse(cram_test).expect("no error");
 
         assert_eq!(3, testcases.len());
         assert_eq!(

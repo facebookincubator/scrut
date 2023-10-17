@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::convert::From;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,6 +9,10 @@ use lazy_static::lazy_static;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use regex::Regex;
+use scrut::config::DocumentConfig;
+use scrut::config::OutputStreamControl;
+use scrut::config::TestCaseConfig;
+use scrut::config::TestCaseWait;
 use scrut::escaping::Escaper;
 use scrut::expectation::ExpectationMaker;
 use scrut::outcome::Outcome;
@@ -34,6 +40,9 @@ lazy_static! {
 fn pyscrut(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyOutput>()?;
     m.add_class::<PyTestCase>()?;
+    m.add_class::<PyTestCaseWait>()?;
+    m.add_class::<PyTestCaseConfig>()?;
+    m.add_class::<PyDocumentConfig>()?;
     m.add_class::<PyCramParser>()?;
     m.add_class::<PyMarkdownParser>()?;
 
@@ -232,6 +241,115 @@ impl From<&TestCase> for PyTestCase {
     }
 }
 
+#[pyclass(name = "OutputStreamControl")]
+#[derive(Clone)]
+enum PyOutputStreamControl {
+    Stdout,
+    Stderr,
+    Combined,
+}
+
+impl From<OutputStreamControl> for PyOutputStreamControl {
+    fn from(value: OutputStreamControl) -> Self {
+        match value {
+            OutputStreamControl::Stdout => Self::Stdout,
+            OutputStreamControl::Stderr => Self::Stderr,
+            OutputStreamControl::Combined => Self::Combined,
+        }
+    }
+}
+
+impl From<PyOutputStreamControl> for OutputStreamControl {
+    fn from(value: PyOutputStreamControl) -> Self {
+        match value {
+            PyOutputStreamControl::Stdout => Self::Stdout,
+            PyOutputStreamControl::Stderr => Self::Stderr,
+            PyOutputStreamControl::Combined => Self::Combined,
+        }
+    }
+}
+
+#[pyclass(name = "TestCaseWait")]
+#[derive(Clone)]
+pub struct PyTestCaseWait {
+    #[pyo3(get)]
+    pub timeout: usize,
+    #[pyo3(get)]
+    pub path: Option<String>,
+}
+
+impl From<TestCaseWait> for PyTestCaseWait {
+    fn from(value: TestCaseWait) -> Self {
+        Self {
+            timeout: duration_to_millis(value.timeout),
+            path: value.path.map(path_to_str),
+        }
+    }
+}
+
+#[pyclass(name = "TestCaseConfig")]
+#[derive(Clone)]
+struct PyTestCaseConfig {
+    #[pyo3(get)]
+    pub detached: Option<bool>,
+    #[pyo3(get)]
+    pub environment: HashMap<String, String>,
+    #[pyo3(get)]
+    pub keep_crlf: Option<bool>,
+    #[pyo3(get)]
+    pub output_stream: Option<PyOutputStreamControl>,
+    #[pyo3(get)]
+    pub skip_code: Option<u32>,
+    #[pyo3(get)]
+    pub timeout: Option<usize>,
+    #[pyo3(get)]
+    pub wait: Option<PyTestCaseWait>,
+}
+
+impl From<TestCaseConfig> for PyTestCaseConfig {
+    fn from(value: TestCaseConfig) -> Self {
+        Self {
+            detached: value.detached,
+            environment: value.environment,
+            keep_crlf: value.keep_crlf,
+            output_stream: value.output_stream.map(PyOutputStreamControl::from),
+            skip_code: value.skip_code,
+            timeout: value.timeout.map(duration_to_millis),
+            wait: value.wait.map(PyTestCaseWait::from),
+        }
+    }
+}
+
+#[pyclass(name = "DocumentConfig")]
+#[derive(Clone)]
+struct PyDocumentConfig {
+    #[pyo3(get)]
+    pub append: Vec<String>,
+    #[pyo3(get)]
+    pub defaults: PyTestCaseConfig,
+    #[pyo3(get)]
+    pub language_markers: Vec<String>,
+    #[pyo3(get)]
+    pub prepend: Vec<String>,
+    #[pyo3(get)]
+    pub shell: Option<String>,
+    #[pyo3(get)]
+    pub total_timeout: Option<usize>,
+}
+
+impl From<DocumentConfig> for PyDocumentConfig {
+    fn from(value: DocumentConfig) -> Self {
+        Self {
+            append: value.append.iter().map(path_to_str).collect::<Vec<_>>(),
+            defaults: value.defaults.into(),
+            language_markers: value.language_markers.clone(),
+            prepend: value.prepend.iter().map(path_to_str).collect::<Vec<_>>(),
+            shell: value.shell.map(path_to_str),
+            total_timeout: value.total_timeout.map(duration_to_millis),
+        }
+    }
+}
+
 #[pyclass(name = "CramParser")]
 struct PyCramParser(CramParser);
 
@@ -244,14 +362,12 @@ impl PyCramParser {
         ))))
     }
 
-    fn parse(&self, text: &str) -> PyResult<Vec<PyTestCase>> {
-        Ok(self
-            .0
-            .parse(text)
-            .map_err(cast_anyhow)?
-            .iter()
-            .map(PyTestCase::from)
-            .collect::<Vec<_>>())
+    fn parse(&self, text: &str) -> PyResult<(PyDocumentConfig, Vec<PyTestCase>)> {
+        let (config, testcases) = self.0.parse(text).map_err(cast_anyhow)?;
+        Ok((
+            config.into(),
+            testcases.iter().map(PyTestCase::from).collect::<Vec<_>>(),
+        ))
     }
 }
 
@@ -275,14 +391,12 @@ impl PyMarkdownParser {
         )))
     }
 
-    fn parse(&self, text: &str) -> PyResult<Vec<PyTestCase>> {
-        Ok(self
-            .0
-            .parse(text)
-            .map_err(cast_anyhow)?
-            .iter()
-            .map(PyTestCase::from)
-            .collect::<Vec<_>>())
+    fn parse(&self, text: &str) -> PyResult<(PyDocumentConfig, Vec<PyTestCase>)> {
+        let (config, testcases) = self.0.parse(text).map_err(cast_anyhow)?;
+        Ok((
+            config.into(),
+            testcases.iter().map(PyTestCase::from).collect::<Vec<_>>(),
+        ))
     }
 }
 
@@ -292,4 +406,12 @@ fn new_expectation_maker(cram_compat: bool) -> ExpectationMaker {
         registry.register(CramGlobRule::make, &["glob", "gl"]);
     }
     ExpectationMaker::new(registry)
+}
+
+fn path_to_str<P: AsRef<Path>>(path: P) -> String {
+    path.as_ref().to_string_lossy().into()
+}
+
+fn duration_to_millis(duration: Duration) -> usize {
+    duration.as_millis() as usize
 }

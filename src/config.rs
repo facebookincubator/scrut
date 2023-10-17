@@ -49,7 +49,7 @@ pub enum OutputStreamControl {
     // STDOUT and which are for STDERR by adding `@STDOUT` and `@STDERR` marks
     // that denote that all following expectations (until the next mar or the
     // end) are for the identified stream
-    Marked,
+    // TODO(implement) Marked,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]

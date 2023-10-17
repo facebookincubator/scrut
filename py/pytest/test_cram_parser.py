@@ -19,7 +19,7 @@ class TestCramParser(unittest.TestCase, parsertest.ParserTestCase):
 
     def _testcases(self) -> List[TestCase]:
         parser = CramParser()
-        testcases = parser.parse("This is a test\n  $ echo Hello\n  Hello\n")
+        _, testcases = parser.parse("This is a test\n  $ echo Hello\n  Hello\n")
         return testcases
 
     def _expect_line(self) -> int:

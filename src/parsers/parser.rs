@@ -3,12 +3,13 @@ use std::fmt::Display;
 use anyhow::Result;
 use clap::ValueEnum;
 
+use crate::config::DocumentConfig;
 use crate::testcase::TestCase;
 
 /// A Parser extracts one or more [`crate::testcase::TestCase`]s from a provided text
 pub trait Parser {
     /// Returns all testcases found in the provided text
-    fn parse(&self, tests: &str) -> Result<Vec<TestCase>>;
+    fn parse(&self, tests: &str) -> Result<(DocumentConfig, Vec<TestCase>)>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]

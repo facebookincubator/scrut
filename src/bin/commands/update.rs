@@ -176,16 +176,23 @@ impl Args {
                     .context("failed to build execution context")?,
             );
             match execution_result {
+                // test execution failed ..
                 Err(err) => match err {
+                    // .. intentionally with skip, so skip
                     ExecutionError::Skipped(_) => {
                         count_skipped += 1;
                         info!("Skipping test file {:?}", &test.path);
                         continue;
                     }
+                    // .. unintentionally with an error -> give up
                     _ => bail!("failing in {:?}: {}", test.path, err),
                 },
+
+                // test execution succeeded
                 Ok(outputs) => {
                     let mut outcomes = vec![];
+
+                    // take test execution output, run validation and store all outcomes ...
                     for (testcase, output) in test.testcases.iter().zip(outputs.iter()) {
                         let result = testcase.validate(output);
                         outcomes.push(Outcome {

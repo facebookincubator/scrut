@@ -7,6 +7,7 @@ use tracing::debug;
 
 use super::line_parser::is_comment;
 use super::parser::Parser;
+use crate::config::DocumentConfig;
 use crate::expectation::ExpectationMaker;
 use crate::parsers::line_parser::LineParser;
 use crate::testcase::TestCase;
@@ -51,7 +52,7 @@ impl MarkdownParser {
 
 impl Parser for MarkdownParser {
     /// See [`super::parser::Parser::parse`]
-    fn parse(&self, text: &str) -> Result<Vec<TestCase>> {
+    fn parse(&self, text: &str) -> Result<(DocumentConfig, Vec<TestCase>)> {
         debug!(
             "parsing markdown file, looking for code blocks with language `{}`",
             &self.languages.join("` or `")
@@ -61,6 +62,7 @@ impl Parser for MarkdownParser {
         let iterator = MarkdownIterator::new(languages, text.lines());
         let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
         let mut title_paragraph = vec![];
+        let config: DocumentConfig = Default::default();
 
         for token in iterator {
             match token {
@@ -90,7 +92,7 @@ impl Parser for MarkdownParser {
             line_parser.testcases.len()
         );
 
-        Ok(line_parser.testcases.clone())
+        Ok((config, line_parser.testcases.clone()))
     }
 }
 
@@ -246,7 +248,8 @@ hello
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (config, testcases) = parser.parse(cram_test).expect("must parse");
+        assert_eq!(config, Default::default(), "no extra configuration");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -276,7 +279,7 @@ hello
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -306,7 +309,7 @@ hello
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -335,7 +338,7 @@ hello
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -363,7 +366,7 @@ hello
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -410,7 +413,7 @@ world
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(2, testcases.len());
         assert_eq!(
             TestCase {
@@ -452,7 +455,7 @@ i am output 3
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -497,7 +500,8 @@ Hello World
 ````
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases): (crate::config::DocumentConfig, Vec<TestCase>) =
+            parser.parse(cram_test).expect("must parse");
         assert_eq!(2, testcases.len());
         assert_eq!(
             vec![
@@ -546,7 +550,7 @@ world
 ```
 "#;
         let parser = parser();
-        let testcases = parser.parse(cram_test).expect("must parse");
+        let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());
         assert_eq!(
             vec![TestCase {

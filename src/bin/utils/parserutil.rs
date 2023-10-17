@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use globset::Glob;
+use scrut::config::DocumentConfig;
 use scrut::expectation::ExpectationMaker;
 use scrut::parsers::cram::CramParser;
 use scrut::parsers::markdown::MarkdownParser;
@@ -80,6 +81,7 @@ pub(crate) struct ParsedTestFile {
     pub(crate) content: String,
     pub(crate) parser_type: ParserType,
     pub(crate) testcases: Vec<TestCase>,
+    pub(crate) config: DocumentConfig,
 }
 
 /// Iterates provided list of paths to test files and returns a list of the `ParsedTestFile` instances
@@ -95,7 +97,7 @@ pub(crate) fn parse_test_files(
     let mut result = vec![];
     for (test_file_path, test_file_content) in contents {
         let (parser_type, parser) = parser_generator(&test_file_path, cram_compat)?;
-        let testcases = parser
+        let (config, testcases) = parser
             .parse(&test_file_content)
             .with_context(|| format!("parse {} from {:?}", name, &test_file_path))?;
         result.push(ParsedTestFile {
@@ -103,6 +105,7 @@ pub(crate) fn parse_test_files(
             content: test_file_content,
             parser_type,
             testcases,
+            config,
         });
     }
 

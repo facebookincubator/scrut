@@ -8,7 +8,7 @@ use crate::expectation::Expectation;
 use crate::lossy_string;
 use crate::newline::SplitLinesByNewline;
 
-/// Compares [`crate::output::Output`]s of [`crate::executors::execution::Execution`]s
+/// Compares [`crate::output::Output`]s of [`crate::executors::executor::Executor`]
 /// with a list of [`crate::expectation::Expectation`]s to find out if there
 /// are any differences, which are represented as:
 ///

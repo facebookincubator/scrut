@@ -237,6 +237,7 @@ impl Args {
                     .context("failed to build execution context")?,
             );
             match outputs {
+                // test execution failed
                 Err(err) => match err {
                     ExecutionError::Skipped(_) => {
                         count_skipped += 1;
@@ -251,8 +252,12 @@ impl Args {
                         }));
                         continue;
                     }
+
+                    // because of a final error
                     _ => bail!("failing in {:?}: {}", test.path, err),
                 },
+
+                // test execution succeeded
                 Ok(outputs) => {
                     if self.debug {
                         debugutil::debug_testcases(&test.testcases, &test.path, &outputs);

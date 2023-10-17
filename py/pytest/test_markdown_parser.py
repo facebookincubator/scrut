@@ -19,7 +19,9 @@ class TestMarkdownParser(unittest.TestCase, parsertest.ParserTestCase):
 
     def _testcases(self) -> List[TestCase]:
         parser = MarkdownParser(["scrut"])
-        testcases = parser.parse("This is a test\n```scrut\n$ echo Hello\nHello\n```")
+        _, testcases = parser.parse(
+            "This is a test\n```scrut\n$ echo Hello\nHello\n```"
+        )
         return testcases
 
     def _expect_line(self) -> int:
