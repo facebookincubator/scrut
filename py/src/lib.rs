@@ -183,6 +183,7 @@ impl PyTestCase {
             exit_code: Some(exit_code),
             expectations,
             line_number,
+            ..Default::default()
         };
         Ok(Self {
             title: title.into(),

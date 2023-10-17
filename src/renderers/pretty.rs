@@ -383,6 +383,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location".to_string()),
                 result: Ok(()),
@@ -408,6 +409,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location \\\nnext line \\\nlast line".into()),
                 result: Err(TestCaseError::InvalidExitCode {
@@ -433,6 +435,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location".to_string()),
                 result: Err(TestCaseError::InvalidExitCode {
@@ -481,6 +484,7 @@ mod tests {
                         expectations: vec![],
                         exit_code: None,
                         line_number: 234,
+                        ..Default::default()
                     },
                     location: test.location.clone(),
                     result: Err(TestCaseError::InvalidExitCode {
@@ -515,6 +519,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 result: Err(TestCaseError::InternalError(anyhow!("something failed"))),
                 escaping: Escaper::default(),
@@ -538,6 +543,7 @@ mod tests {
             ],
             exit_code: None,
             line_number: 234,
+            ..Default::default()
         };
         let rendered = renderer
             .render(&[&Outcome {
@@ -578,6 +584,7 @@ mod tests {
             ],
             exit_code: None,
             line_number: 234,
+            ..Default::default()
         };
         let rendered = renderer
             .render(&[&Outcome {
@@ -683,6 +690,7 @@ mod tests {
                 expectations: expectations.clone(),
                 exit_code: None,
                 line_number: 234,
+                ..Default::default()
             };
 
             let rendered = renderer
@@ -711,6 +719,7 @@ mod tests {
             expectations: vec![],
             exit_code: None,
             line_number: 234,
+            ..Default::default()
         };
         let rendered = renderer
             .render(&[&Outcome {
@@ -780,6 +789,7 @@ mod tests {
             expectations,
             exit_code: None,
             line_number: 90,
+            ..Default::default()
         };
 
         vec![false, true].iter().for_each(|absolute_numbers| {

@@ -2,6 +2,7 @@ use serde::ser::SerializeMap;
 use serde::Serialize;
 use serde::Serializer;
 
+use crate::config::TestCaseConfig;
 use crate::diff::Diff;
 use crate::diff::DiffTool;
 use crate::expectation::Expectation;
@@ -13,7 +14,7 @@ pub type Result<T> = anyhow::Result<T, TestCaseError>;
 /// An aggregate that unifies all ingredients for a test: a title
 /// of the expected and intended state of the world; what a specific
 /// command line should output and why
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct TestCase {
     /// A human readable description that clarifies the intention
     pub title: String,
@@ -30,6 +31,10 @@ pub struct TestCase {
 
     /// The line number of this test in the original file (starting at 1)
     pub line_number: usize,
+
+    /// Configuration that influences the behavior of this test-case
+    #[serde(skip_serializing_if = "TestCaseConfig::is_empty")]
+    pub config: TestCaseConfig,
 }
 
 impl TestCase {
@@ -158,6 +163,7 @@ impl Serialize for TestCaseError {
 mod tests {
     use super::TestCase;
     use super::TestCaseError;
+    use crate::config::TestCaseConfig;
     use crate::diff::Diff;
     use crate::diff::DiffLine;
     use crate::test_expectation;
@@ -170,6 +176,7 @@ mod tests {
             expectations: vec![test_expectation!("no-eol", "the stdout")],
             exit_code: Some(123),
             line_number: 234,
+            ..Default::default()
         };
         testcase
             .validate(&("the stdout", "the stderr", Some(123)).into())
@@ -184,6 +191,7 @@ mod tests {
             expectations: vec![test_expectation!("no-eol", "the stdout", false, false)],
             exit_code: Some(234),
             line_number: 123,
+            ..Default::default()
         };
         let asserted_output = ("the stdout", "the stderr", Some(123)).into();
         let result = testcase.validate(&asserted_output);
@@ -216,6 +224,7 @@ mod tests {
             )],
             exit_code: Some(123),
             line_number: 234,
+            ..Default::default()
         };
         let asserted_output = ("the stdout", "the stderr", Some(123)).into();
         let result = testcase.validate(&asserted_output);

@@ -328,6 +328,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location".to_string()),
                 result: Ok(()),
@@ -350,6 +351,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: Some(111),
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location".into()),
                 result: Err(TestCaseError::InternalError(anyhow::Error::msg(
@@ -378,6 +380,7 @@ mod tests {
                             expectations: vec![test_expectation!("the stdout")],
                             exit_code: Some(111),
                             line_number: 234,
+                            ..Default::default()
                         },
                         location: Some("the location".into()),
                         result: Err(TestCaseError::InvalidExitCode {
@@ -405,6 +408,7 @@ mod tests {
             ],
             exit_code: None,
             line_number: 234,
+            ..Default::default()
         };
 
         let tests = vec![
@@ -481,6 +485,7 @@ mod tests {
             ],
             exit_code: None,
             line_number: 234,
+            ..Default::default()
         };
 
         let tests = vec![

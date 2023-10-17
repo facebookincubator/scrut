@@ -63,6 +63,7 @@ pub struct TestCaseWait {
 
 /// Configuration for the scope of a single [`crate::testcase::TestCase`]
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(default)]
 pub struct TestCaseConfig {
     /// Tell Scrut that the shell expression of this test will detach itself, so
     /// Scrut will not consider this a test (i.e. no output or exit code evaluation).
@@ -99,4 +100,17 @@ pub struct TestCaseConfig {
     /// within duration. The wait time does not count against timeout(), but
     /// against total_timeout(). To be used in conjunction with detached().
     pub wait: Option<TestCaseWait>,
+}
+
+impl TestCaseConfig {
+    /// Returns true if none the configuration parameters are set
+    pub fn is_empty(&self) -> bool {
+        self.output_stream.is_none()
+            && self.keep_crlf.is_none()
+            && self.timeout.is_none()
+            && self.detached.is_none()
+            && self.wait.is_none()
+            && self.skip_code.is_none()
+            && self.environment.is_empty()
+    }
 }

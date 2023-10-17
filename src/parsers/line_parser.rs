@@ -139,6 +139,7 @@ impl LineParser {
             exit_code: self.exit_code,
             expectations: self.expectations.clone(),
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
+            ..Default::default()
         });
         self.flush();
         Ok(())
@@ -208,6 +209,7 @@ mod tests {
                 expectations: vec![test_expectation!("equal", "baz"),],
                 shell_expression: "bar".to_string(),
                 line_number: 2,
+                ..Default::default()
             },],
             engine.testcases,
         )
@@ -230,6 +232,7 @@ mod tests {
                 expectations: vec![test_expectation!("equal", "baz"),],
                 shell_expression: "bar".to_string(),
                 line_number: 2,
+                ..Default::default()
             },],
             engine.testcases,
         )
@@ -252,6 +255,7 @@ mod tests {
                 expectations: vec![test_expectation!("equal", "baz"),],
                 shell_expression: "bar1\nbar2\nbar3".to_string(),
                 line_number: 2,
+                ..Default::default()
             },],
             engine.testcases,
         )
@@ -284,6 +288,7 @@ mod tests {
                 ],
                 shell_expression: "bar".to_string(),
                 line_number: 2,
+                ..Default::default()
             },],
             engine.testcases,
         )
@@ -310,6 +315,7 @@ mod tests {
                     expectations: vec![],
                     shell_expression: "foo1".to_string(),
                     line_number: 2,
+                    ..Default::default()
                 },
                 TestCase {
                     title: "".to_string(),
@@ -317,6 +323,7 @@ mod tests {
                     expectations: vec![],
                     shell_expression: "foo2".to_string(),
                     line_number: 3,
+                    ..Default::default()
                 },
                 TestCase {
                     title: "".to_string(),
@@ -324,6 +331,7 @@ mod tests {
                     expectations: vec![],
                     shell_expression: "foo3".to_string(),
                     line_number: 4,
+                    ..Default::default()
                 }
             ],
             engine.testcases,
@@ -353,6 +361,7 @@ mod tests {
                 ],
                 shell_expression: "foo1".to_string(),
                 line_number: 2,
+                ..Default::default()
             },],
             engine.testcases,
         )
@@ -390,6 +399,7 @@ mod tests {
                     expectations: vec![test_expectation!("equal", "baz1"),],
                     shell_expression: "bar1".to_string(),
                     line_number: 2,
+                    ..Default::default()
                 },
                 TestCase {
                     title: "foo2".to_string(),
@@ -397,6 +407,7 @@ mod tests {
                     expectations: vec![test_expectation!("equal", "baz2"),],
                     shell_expression: "bar2".to_string(),
                     line_number: 5,
+                    ..Default::default()
                 },
                 TestCase {
                     title: "foo3".to_string(),
@@ -404,6 +415,7 @@ mod tests {
                     expectations: vec![test_expectation!("equal", "baz3"),],
                     shell_expression: "bar3".to_string(),
                     line_number: 8,
+                    ..Default::default()
                 }
             ],
             engine.testcases,
@@ -427,6 +439,7 @@ mod tests {
                     expectations: vec![],
                     shell_expression: "bar".to_string(),
                     line_number: 2,
+                    ..Default::default()
                 },],
                 engine.testcases,
                 "provided exit code {provided}",

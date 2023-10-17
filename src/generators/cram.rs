@@ -143,6 +143,7 @@ mod tests {
                             )],
                             exit_code: None,
                             line_number: 234,
+                            config: Default::default(),
                         },
                         output: ("an expectation\n", "").into(),
                         result: Ok(()),
@@ -168,6 +169,7 @@ mod tests {
                             )],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         output: ("line 1\nline 2\nline 3\n", "").into(),
                         result: Ok(()),
@@ -188,6 +190,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "an expectation")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         output: ("new output\n", "").into(),
                         result: Err(TestCaseError::MalformedOutput(Diff::new(vec![

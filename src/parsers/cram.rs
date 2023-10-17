@@ -115,6 +115,7 @@ mod tests {
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 2,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -143,6 +144,7 @@ This is a title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -172,6 +174,7 @@ Title 2
                 title: "Title 2".to_string(),
                 exit_code: None,
                 line_number: 8,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -203,6 +206,7 @@ This is the yet more title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 3,
+                ..Default::default()
             },
             testcases[0],
             "testcase 1",
@@ -214,6 +218,7 @@ This is the yet more title
                 title: "This is the next title".to_string(),
                 exit_code: None,
                 line_number: 9,
+                ..Default::default()
             },
             testcases[1],
             "testcase 2",
@@ -225,6 +230,7 @@ This is the yet more title
                 title: "This is the yet more title".to_string(),
                 exit_code: None,
                 line_number: 12,
+                ..Default::default()
             },
             testcases[2],
             "testcase 3",
@@ -256,6 +262,7 @@ The title
                 title: "The title".into(),
                 exit_code: None,
                 line_number: 3,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -289,6 +296,7 @@ This has an exit code 3
                 title: "This has an exit code 1".to_string(),
                 exit_code: Some(4),
                 line_number: 3,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -299,6 +307,7 @@ This has an exit code 3
                 title: "This has an exit code 2".to_string(),
                 exit_code: Some(15),
                 line_number: 8,
+                ..Default::default()
             },
             testcases[1]
         );
@@ -312,6 +321,7 @@ This has an exit code 3
                 title: "This has an exit code 3".to_string(),
                 exit_code: Some(106),
                 line_number: 12,
+                ..Default::default()
             },
             testcases[2]
         );
@@ -366,6 +376,7 @@ This is a title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 6,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -393,6 +404,7 @@ This is a title
                 title: "Setup a buck dir with a mock visibility list".to_string(),
                 exit_code: None,
                 line_number: 2,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -403,6 +415,7 @@ This is a title
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 3,
+                ..Default::default()
             },
             testcases[1]
         );
@@ -421,6 +434,7 @@ This is a title
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 4,
+                ..Default::default()
             },
             testcases[2]
         );

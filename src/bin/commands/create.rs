@@ -117,6 +117,7 @@ impl Args {
             expectations: vec![],
             exit_code: None,
             line_number: 0,
+            ..Default::default()
         };
         let result = testcase.validate(&outputs[0]);
 

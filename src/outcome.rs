@@ -88,6 +88,7 @@ mod tests {
                         expectations: vec![test_expectation!("equal", "foo")],
                         exit_code: Some(234),
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::InvalidExitCode {
                         actual: 123,
@@ -108,6 +109,7 @@ mod tests {
                         expectations: vec![test_expectation!("equal", "foo")],
                         exit_code: Some(123),
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Ok(()),
                     escaping: Escaper::default(),

@@ -185,6 +185,7 @@ mod tests {
                             )],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Ok(()),
                         escaping: Escaper::default(),
@@ -220,6 +221,7 @@ mod tests {
                             )],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Ok(()),
                         escaping: Escaper::default(),
@@ -250,6 +252,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "an expectation")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                             DiffLine::UnmatchedExpectation {
@@ -288,6 +291,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "same output")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::InvalidExitCode {
                             actual: 10,
@@ -320,6 +324,7 @@ mod tests {
                             expectations: vec![],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::InvalidExitCode {
                             actual: 10,
@@ -354,6 +359,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "same output")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::InvalidExitCode {
                             actual: 20,
@@ -387,6 +393,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "an expectation")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                             DiffLine::UnmatchedExpectation {
@@ -425,6 +432,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "an expectation")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                             DiffLine::UnmatchedExpectation {
@@ -468,6 +476,7 @@ mod tests {
                             expectations: vec![test_expectation!("equal", "an expectation")],
                             exit_code: None,
                             line_number: 234,
+                            ..Default::default()
                         },
                         result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                             DiffLine::UnmatchedExpectation {
@@ -527,6 +536,7 @@ mod tests {
                                 expectations: vec![test_expectation!("equal", "old output 1")],
                                 exit_code: None,
                                 line_number: 234,
+                                ..Default::default()
                             },
                             result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                                 DiffLine::UnmatchedExpectation {
@@ -552,6 +562,7 @@ mod tests {
                                 expectations: vec![test_expectation!("equal", "old output 2")],
                                 exit_code: None,
                                 line_number: 234,
+                                ..Default::default()
                             },
                             result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                                 DiffLine::UnmatchedExpectation {

@@ -69,6 +69,7 @@ pub(super) mod tests {
                         expectations: vec![],
                         exit_code: None,
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                         DiffLine::UnexpectedLines {
@@ -90,6 +91,7 @@ pub(super) mod tests {
                         expectations: vec![],
                         exit_code: None,
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                         DiffLine::UnexpectedLines {
@@ -111,6 +113,7 @@ pub(super) mod tests {
                         expectations: vec![],
                         exit_code: None,
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                         DiffLine::UnexpectedLines {
@@ -136,6 +139,7 @@ pub(super) mod tests {
                         expectations: vec![],
                         exit_code: None,
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                         DiffLine::UnexpectedLines {
@@ -157,6 +161,7 @@ pub(super) mod tests {
                         expectations: vec![],
                         exit_code: Some(123),
                         line_number: 234,
+                        ..Default::default()
                     },
                     result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
                         DiffLine::UnexpectedLines {

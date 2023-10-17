@@ -90,6 +90,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: None,
                 result: Ok(()),
@@ -104,6 +105,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location 1".to_string()),
                 result: Ok(()),
@@ -118,6 +120,7 @@ mod tests {
                     expectations: vec![],
                     exit_code: None,
                     line_number: 234,
+                    ..Default::default()
                 },
                 location: Some("the location 2".to_string()),
                 result: Err(TestCaseError::InvalidExitCode {

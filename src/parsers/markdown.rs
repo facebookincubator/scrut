@@ -255,6 +255,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -284,6 +285,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 9,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -314,6 +316,7 @@ hello
                     .to_string(),
                 exit_code: None,
                 line_number: 9,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -341,6 +344,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -368,6 +372,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -414,6 +419,7 @@ world
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 12,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -424,6 +430,7 @@ world
                 title: "This is another title".to_string(),
                 exit_code: None,
                 line_number: 26,
+                ..Default::default()
             },
             testcases[1]
         );
@@ -458,6 +465,7 @@ i am output 3
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
+                ..Default::default()
             },
             testcases[0]
         );
@@ -504,6 +512,7 @@ Hello World
                     title: "This is a title".to_string(),
                     exit_code: None,
                     line_number: 5,
+                    ..Default::default()
                 },
                 TestCase {
                     shell_expression: "cat test.md".to_string(),
@@ -518,6 +527,7 @@ Hello World
                     title: "And another title".to_string(),
                     exit_code: None,
                     line_number: 15,
+                    ..Default::default()
                 },
             ],
             testcases
@@ -548,6 +558,7 @@ world
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
+                ..Default::default()
             },],
             testcases
         );
