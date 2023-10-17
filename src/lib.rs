@@ -4,6 +4,7 @@ extern crate derivative;
 #[macro_use]
 extern crate lazy_static;
 
+pub mod config;
 pub mod debug;
 pub mod diff;
 pub mod escaping;
