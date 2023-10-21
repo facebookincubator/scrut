@@ -39,13 +39,13 @@ impl UniqueNamer {
 mod tests {
     use std::path::Path;
 
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::UniqueNamer;
 
     #[test]
     fn generate_names_within_directory() {
-        let tempdir = TempDir::new("temp").expect("create temporary directory");
+        let tempdir = TempDir::with_prefix("temp.").expect("create temporary directory");
         let mut namer = UniqueNamer::new(tempdir.path());
 
         let prefix = Path::new("name");

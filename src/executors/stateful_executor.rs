@@ -4,7 +4,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
-use tempdir::TempDir;
+use tempfile::TempDir;
 use tracing::trace;
 use tracing::trace_span;
 
@@ -58,8 +58,8 @@ impl Executor for StatefulExecutor {
             .temp_directory
             .as_ref()
             .map_or_else(
-                || TempDir::new(".state"),
-                |dir| TempDir::new_in(dir, ".state"),
+                || TempDir::with_prefix(".state."),
+                |dir| TempDir::with_prefix_in(".state.", dir),
             )
             .context("generate temporary output directory")
             .map_err(|err| ExecutionError::aborted(err, None))?;

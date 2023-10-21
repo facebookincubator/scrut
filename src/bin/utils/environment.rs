@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
-use tempdir::TempDir;
+use tempfile::TempDir;
 use tracing::debug;
 
 use super::fsutil::split_path_abs;
@@ -79,12 +79,13 @@ impl TestEnvironment {
             (
                 EnvironmentDirectory::Permanent(directory.into()),
                 EnvironmentDirectory::Ephemeral(
-                    TempDir::new_in(directory, "temp")
+                    TempDir::with_prefix_in("temp.", directory)
                         .context("create temporary tmp directory in given work directory")?,
                 ),
             )
         } else {
-            let work = TempDir::new("execution").context("create temporary working directory")?;
+            let work =
+                TempDir::with_prefix("execution.").context("create temporary working directory")?;
             let temp_path = work.path().join("__tmp");
             fs::create_dir(&temp_path)
                 .context("create tmp directory in temporary work directory")?;
@@ -225,7 +226,7 @@ mod tests {
     use std::path::PathBuf;
 
     use anyhow::Context;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::TestEnvironment;
     use crate::utils::environment::EnvironmentDirectory;
@@ -306,7 +307,8 @@ mod tests {
 
     #[test]
     fn test_file_environment_setup() {
-        let provided_directory = TempDir::new("provided").expect("create provided temp directory");
+        let provided_directory =
+            TempDir::with_prefix("provided.").expect("create provided temp directory");
         let provided_directory_path = provided_directory.path();
         let expected_variables = &[
             "CDPATH",

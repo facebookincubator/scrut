@@ -103,7 +103,7 @@ impl Runner for BashRunner {
 
 #[cfg(test)]
 mod tests {
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::BashRunner;
     use super::Runner;
@@ -115,7 +115,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_execute_with_timeout_captures_stdout_and_stderr() {
-        let temp_dir = TempDir::new("runner").expect("create temporary directory");
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
         let output = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
@@ -133,7 +133,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_execute_captures_non_printable_characters() {
-        let temp_dir = TempDir::new("runner").expect("create temporary directory");
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
         let output = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
@@ -152,7 +152,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_execute_with_timeout_captures_exit_code() {
-        let temp_dir = TempDir::new("runner").expect("create temporary directory");
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
         let output = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
