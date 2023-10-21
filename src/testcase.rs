@@ -163,7 +163,6 @@ impl Serialize for TestCaseError {
 mod tests {
     use super::TestCase;
     use super::TestCaseError;
-    use crate::config::TestCaseConfig;
     use crate::diff::Diff;
     use crate::diff::DiffLine;
     use crate::test_expectation;
