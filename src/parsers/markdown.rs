@@ -1,6 +1,7 @@
 use std::str::Lines;
 use std::sync::Arc;
 
+use anyhow::Context;
 use anyhow::Result;
 use regex::Regex;
 use tracing::debug;
@@ -8,6 +9,7 @@ use tracing::debug;
 use super::line_parser::is_comment;
 use super::parser::Parser;
 use crate::config::DocumentConfig;
+use crate::config::TestCaseConfig;
 use crate::expectation::ExpectationMaker;
 use crate::parsers::line_parser::LineParser;
 use crate::testcase::TestCase;
@@ -62,10 +64,19 @@ impl Parser for MarkdownParser {
         let iterator = MarkdownIterator::new(languages, text.lines());
         let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
         let mut title_paragraph = vec![];
-        let config: DocumentConfig = Default::default();
+        let mut config: DocumentConfig = Default::default();
 
         for token in iterator {
             match token {
+                MarkdownToken::DocumentConfig(config_lines) => {
+                    config =
+                        serde_yaml::from_str(&config_lines.join_newline()).with_context(|| {
+                            format!(
+                                "parse document config from front-matter:\n{:?}",
+                                config_lines.join_newline()
+                            )
+                        })?;
+                }
                 MarkdownToken::Line(_, line) => {
                     if let Some((_, title)) = extract_title(&line) {
                         title_paragraph.push(title);
@@ -75,10 +86,17 @@ impl Parser for MarkdownParser {
                     }
                 }
                 MarkdownToken::CodeBlock {
-                    code_lines,
-                    comment_lines: _,
                     language: _,
+                    config_lines,
+                    comment_lines: _,
+                    code_lines,
                 } => {
+                    if !config_lines.is_empty() {
+                        let config: TestCaseConfig =
+                            serde_yaml::from_str(&config_lines.join_newline())
+                                .context("parse testcase config")?;
+                        line_parser.set_testcase_config(config);
+                    }
                     for (index, line) in &code_lines {
                         line_parser.add_testcase_body(line, *index)?;
                     }
@@ -102,11 +120,28 @@ pub(crate) enum MarkdownToken {
     /// An arbitrary line; basically any line of markdown we do not care about
     Line(usize, String),
 
-    /// The parsed contents of a code block within backticks
+    /// Raw configuration that is prepending the document
+    DocumentConfig(Vec<(usize, String)>),
+
+    /// The parsed contents of a code block within backticks:
+    ///
+    /// ```scrut { ... config ..}
+    /// # comment
+    /// $ shell expression
+    /// output expectations
+    /// ```
     CodeBlock {
-        code_lines: Vec<(usize, String)>,
-        comment_lines: Vec<(usize, String)>,
+        /// The used language token of the test (i.e. `scrut`)
         language: String,
+
+        /// Any configuration lines that precede the test (i.e. `scrut {..this config..}`)
+        config_lines: Vec<(usize, String)>,
+
+        /// Any comments that precede the test
+        comment_lines: Vec<(usize, String)>,
+
+        /// The code that makes up the test (shell expression & output expectations)
+        code_lines: Vec<(usize, String)>,
     },
 }
 
@@ -117,6 +152,7 @@ pub(crate) struct MarkdownIterator<'a> {
 
     // state
     line_index: usize,
+    content_start: bool,
 }
 
 impl<'a> MarkdownIterator<'a> {
@@ -125,6 +161,7 @@ impl<'a> MarkdownIterator<'a> {
             languages,
             document_lines,
             line_index: 0,
+            content_start: false,
         }
     }
 }
@@ -136,13 +173,33 @@ impl<'a> Iterator for MarkdownIterator<'a> {
         if let Some(line) = self.document_lines.next() {
             self.line_index += 1;
 
+            // found the initial front-matter (=document configuration)?
+            if !self.content_start && line == "---" {
+                let mut line = self.document_lines.next()?;
+                self.line_index += 1;
+                let mut config_content = vec![];
+                while line != "---" {
+                    config_content.push((self.line_index - 1, line.to_string()));
+                    line = self.document_lines.next()?;
+                    self.line_index += 1;
+                }
+                Some(MarkdownToken::DocumentConfig(config_content))
+
             // found the start of a code block (=testcase)?
-            if let Some((backticks, language)) = extract_code_block_start(line) {
+            } else if let Some((backticks, language, config)) = extract_code_block_start(line) {
+                self.content_start = true;
                 if language.is_empty() || !self.languages.contains(&language) {
                     return Some(MarkdownToken::Line(self.line_index - 1, line.into()));
                 }
 
-                // gather comments before command
+                // gather optional per-test config
+                let config_lines: Vec<(usize, String)> = if config.is_empty() {
+                    vec![]
+                } else {
+                    vec![(self.line_index - 1, config.into())]
+                };
+
+                // gather optional comments
                 let mut line = self.document_lines.next()?;
                 self.line_index += 1;
                 let mut comment_lines = vec![];
@@ -161,13 +218,19 @@ impl<'a> Iterator for MarkdownIterator<'a> {
                 }
 
                 Some(MarkdownToken::CodeBlock {
-                    code_lines,
-                    comment_lines,
                     language: language.into(),
+                    config_lines,
+                    comment_lines,
+                    code_lines,
                 })
 
             // not a code block -> just gather the line
             } else {
+                // note if any actual content has been collected, because then no
+                // front-matter may follow
+                if !line.trim().is_empty() {
+                    self.content_start = true;
+                }
                 Some(MarkdownToken::Line(self.line_index - 1, line.into()))
             }
         } else {
@@ -209,23 +272,51 @@ pub(crate) fn extract_title(line: &str) -> Option<(String, String)> {
 ///
 /// On the first line ending in foo, this function returns the backticks and
 /// the language. On all other lines it returns None.
-pub(crate) fn extract_code_block_start(line: &str) -> Option<(&str, &str)> {
+pub(crate) fn extract_code_block_start(line: &str) -> Option<(&str, &str, &str)> {
+    let mut language_start = None;
     for (index, ch) in line.chars().enumerate() {
-        if ch != '`' {
+        if let Some(language_start) = language_start {
+            if ch == '{' {
+                return Some((
+                    &line[0..language_start],
+                    (line[language_start..index].trim_end()),
+                    &line[index..],
+                ));
+            }
+        } else if ch != '`' {
             if index < 2 {
                 return None;
             }
-            return Some((&line[0..index], &line[index..]));
+            language_start = Some(index);
         }
     }
-    None
+
+    language_start.map(|index| (&line[0..index], &line[index..], ""))
+}
+
+pub(crate) trait NumberedLines {
+    fn join_newline(&self) -> String;
+}
+
+impl NumberedLines for Vec<(usize, String)> {
+    fn join_newline(&self) -> String {
+        self.iter()
+            .map(|(_, line)| line.to_owned())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
     use std::sync::Arc;
+    use std::time::Duration;
 
     use super::MarkdownParser;
+    use crate::config::DocumentConfig;
+    use crate::config::TestCaseConfig;
+    use crate::config::TestCaseWait;
     use crate::expectation::tests::expectation_maker;
     use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
     use crate::parsers::parser::Parser;
@@ -259,6 +350,80 @@ hello
                 exit_code: None,
                 line_number: 5,
                 ..Default::default()
+            },
+            testcases[0]
+        );
+    }
+
+    #[test]
+    fn test_document_config() {
+        let cram_test = r#"
+---
+total_timeout: 3m 3s
+shell: some-shell
+---
+
+This is a title
+
+```scrut
+$ echo hello
+hello
+```
+"#;
+        let parser = parser();
+        let (config, testcases) = parser.parse(cram_test).expect("must parse");
+        assert_eq!(
+            config,
+            DocumentConfig {
+                shell: Some(PathBuf::from("some-shell")),
+                total_timeout: Some(Duration::from_secs(3 * 60 + 3)),
+                ..Default::default()
+            },
+            "total timeout value is configured"
+        );
+        assert_eq!(1, testcases.len());
+        assert_eq!(
+            TestCase {
+                shell_expression: "echo hello".to_string(),
+                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                title: "This is a title".to_string(),
+                exit_code: None,
+                line_number: 10,
+                ..Default::default()
+            },
+            testcases[0]
+        );
+    }
+
+    #[test]
+    fn test_testcase_config() {
+        let cram_test = r#"
+This is a title
+
+```scrut {timeout: 3m 3s, wait: 4m 4s}
+$ echo hello
+hello
+```
+"#;
+        let parser = parser();
+        let (config, testcases) = parser.parse(cram_test).expect("must parse");
+        assert_eq!(config, Default::default(), "no extra configuration");
+        assert_eq!(1, testcases.len());
+        assert_eq!(
+            TestCase {
+                shell_expression: "echo hello".to_string(),
+                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                title: "This is a title".to_string(),
+                exit_code: None,
+                line_number: 5,
+                config: TestCaseConfig {
+                    timeout: Some(Duration::from_secs(3 * 60 + 3)),
+                    wait: Some(TestCaseWait {
+                        timeout: Duration::from_secs(4 * 60 + 4),
+                        path: None,
+                    }),
+                    ..Default::default()
+                }
             },
             testcases[0]
         );
@@ -540,7 +705,7 @@ Hello World
 
     #[test]
     fn test_output_of_dollar_lines() {
-        let cram_test = r#"
+        let cram_test = r"
 This is a title
 
 ```scrut
@@ -548,7 +713,7 @@ $ echo -e '$ hello\nworld'
 $ hello
 world
 ```
-"#;
+";
         let parser = parser();
         let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());

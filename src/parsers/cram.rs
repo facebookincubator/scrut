@@ -240,7 +240,7 @@ This is the yet more title
 
     #[test]
     fn test_multiline_command() {
-        let cram_test = r#"
+        let cram_test = r"
 The title
   $ echo hello && \
   > echo more && \
@@ -248,7 +248,7 @@ The title
   hello
   more
   most
-"#;
+";
         let parser = parser();
         let (_, testcases) = parser.parse(cram_test).expect("must parse");
         assert_eq!(1, testcases.len());

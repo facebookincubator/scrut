@@ -792,7 +792,7 @@ mod tests {
             ..Default::default()
         };
 
-        vec![false, true].iter().for_each(|absolute_numbers| {
+        [false, true].iter().for_each(|absolute_numbers| {
             let renderer = PrettyMonochromeRenderer::new(0, *absolute_numbers);
             let rendered = renderer
                 .render(&[&Outcome {

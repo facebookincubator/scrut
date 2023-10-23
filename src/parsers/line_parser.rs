@@ -5,6 +5,7 @@ use anyhow::Context;
 use anyhow::Result;
 use regex::Regex;
 
+use crate::config::TestCaseConfig;
 use crate::expectation::Expectation;
 use crate::expectation::ExpectationMaker;
 use crate::testcase::TestCase;
@@ -45,6 +46,7 @@ pub(super) struct LineParser {
     in_command: bool,
     allow_multiple_commands: bool,
     output_start_index: Option<usize>,
+    config: Option<TestCaseConfig>,
 }
 
 impl LineParser {
@@ -62,6 +64,7 @@ impl LineParser {
             in_command: false,
             allow_multiple_commands,
             output_start_index: None,
+            config: None,
         }
     }
 
@@ -118,6 +121,11 @@ impl LineParser {
         self.title = Some(line.to_string())
     }
 
+    /// Add a line of title
+    pub(super) fn set_testcase_config(&mut self, config: TestCaseConfig) {
+        self.config = Some(config)
+    }
+
     /// Signify end of currently processed testcase, which will test the
     /// validity of the testcase, add it to the stack and flush the state
     /// so that the next testcase(s) can be processed.
@@ -139,7 +147,7 @@ impl LineParser {
             exit_code: self.exit_code,
             expectations: self.expectations.clone(),
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
-            ..Default::default()
+            config: self.config.clone().unwrap_or_default(),
         });
         self.flush();
         Ok(())
@@ -156,6 +164,7 @@ impl LineParser {
         self.expectations = vec![];
         self.exit_code = None;
         self.output_start_index = None;
+        self.config = None;
     }
 }
 

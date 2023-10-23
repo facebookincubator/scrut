@@ -11,6 +11,7 @@ use crate::newline::StringNewline;
 use crate::outcome::Outcome;
 use crate::parsers::markdown::MarkdownIterator;
 use crate::parsers::markdown::MarkdownToken;
+use crate::parsers::markdown::NumberedLines;
 use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 
 /// Update [`crate::testcase::TestCase`]s in an existing Markdown document
@@ -49,16 +50,28 @@ impl UpdateGenerator for MarkdownUpdateGenerator {
         for token in iterator {
             match token {
                 MarkdownToken::Line(_, line) => updated.push_str(&line.assure_newline()),
+                MarkdownToken::DocumentConfig(config) => {
+                    let config = config.join_newline();
+                    updated.push_str("---\n");
+                    updated.push_str(&config);
+                    updated.push_str("\n---\n");
+                }
                 MarkdownToken::CodeBlock {
-                    code_lines: _,
-                    comment_lines,
                     language,
+                    config_lines,
+                    comment_lines,
+                    code_lines: _,
                 } => {
+                    let config = if config_lines.is_empty() {
+                        "".into()
+                    } else {
+                        format!(" {}", config_lines.join_newline().trim_start())
+                    };
                     let generated = outcomes[testcase_index]
                         .generate_testcase()
                         .with_context(|| format!("testcase number {}", testcase_index + 1))?;
                     let backticks = "`".repeat(max_backtick_size(&generated) + 1);
-                    updated.push_str(&formatln!("{}{}", &backticks, &language));
+                    updated.push_str(&formatln!("{}{}{}", &backticks, &language, &config));
                     for (_, line) in &comment_lines {
                         updated.push_str(&line.assure_newline());
                     }
@@ -139,8 +152,13 @@ fn max_backtick_size(code_block: &str) -> usize {
 #[cfg(test)]
 mod tests {
 
+    use std::path::PathBuf;
+    use std::time::Duration;
+
     use super::MarkdownTestCaseGenerator;
     use super::MarkdownUpdateGenerator;
+    use crate::config::TestCaseConfig;
+    use crate::config::TestCaseWait;
     use crate::diff::Diff;
     use crate::diff::DiffLine;
     use crate::escaping::Escaper;
@@ -445,6 +463,104 @@ mod tests {
                                     (1, formatln!("new output").as_bytes().to_vec()),
                                     (2, formatln!("````").as_bytes().to_vec()),
                                 ],
+                            },
+                        ]))),
+                        escaping: Escaper::default(),
+                        format: ParserType::Markdown,
+                    }],
+                },
+            ),
+            (
+                "per_document_config",
+                UpdateGeneratorTest {
+                    original_document: &([
+                        "---",
+                        "total_timeout: 2m 3s",
+                        "defaults:",
+                        "  timeout: 3m 4s",
+                        "---",
+                        "",
+                        "This is a test",
+                        "",
+                        "```scrut",
+                        "$ the command",
+                        "old output",
+                        "```",
+                    ]
+                    .join("\n")
+                        + "\n"),
+
+                    outcomes: vec![Outcome {
+                        location: None,
+                        output: ("new output\n", "").into(),
+                        testcase: TestCase {
+                            title: "This is a test".to_string(),
+                            shell_expression: "the command".to_string(),
+                            expectations: vec![test_expectation!("equal", "an expectation")],
+                            exit_code: None,
+                            line_number: 234,
+                            config: TestCaseConfig {
+                                timeout: Some(Duration::from_secs(3 * 60 + 4)),
+                                wait: Some(TestCaseWait {
+                                    timeout: Duration::from_secs(4 * 60 + 5),
+                                    path: Some(PathBuf::from("some-path")),
+                                }),
+                                ..Default::default()
+                            },
+                        },
+                        result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnmatchedExpectation {
+                                index: 0,
+                                expectation: test_expectation!("equal", "an expectation"),
+                            },
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, formatln!("new output").as_bytes().to_vec())],
+                            },
+                        ]))),
+                        escaping: Escaper::default(),
+                        format: ParserType::Markdown,
+                    }],
+                },
+            ),
+            (
+                "per_test_config",
+                UpdateGeneratorTest {
+                    original_document: &([
+                        "This is a test",
+                        "",
+                        "```scrut {timeout: 3m 4s, wait: {timeout: 4m 5s, path: some-path}}",
+                        "$ the command",
+                        "old output",
+                        "```",
+                    ]
+                    .join("\n")
+                        + "\n"),
+
+                    outcomes: vec![Outcome {
+                        location: None,
+                        output: ("new output\n", "").into(),
+                        testcase: TestCase {
+                            title: "This is a test".to_string(),
+                            shell_expression: "the command".to_string(),
+                            expectations: vec![test_expectation!("equal", "an expectation")],
+                            exit_code: None,
+                            line_number: 234,
+                            config: TestCaseConfig {
+                                timeout: Some(Duration::from_secs(3 * 60 + 4)),
+                                wait: Some(TestCaseWait {
+                                    timeout: Duration::from_secs(4 * 60 + 5),
+                                    path: Some(PathBuf::from("some-path")),
+                                }),
+                                ..Default::default()
+                            },
+                        },
+                        result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnmatchedExpectation {
+                                index: 0,
+                                expectation: test_expectation!("equal", "an expectation"),
+                            },
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, formatln!("new output").as_bytes().to_vec())],
                             },
                         ]))),
                         escaping: Escaper::default(),
