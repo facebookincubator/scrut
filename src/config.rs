@@ -52,6 +52,11 @@ pub struct DocumentConfig {
 }
 
 impl DocumentConfig {
+    /// Returns instance with all values set to [`None`]
+    pub fn empty() -> Self {
+        Self::default() // TODO: review - default may soon not be empty anymore
+    }
+
     /// Returns true if none the configuration parameters are set
     pub fn is_empty(&self) -> bool {
         self.shell.is_none()
@@ -60,6 +65,33 @@ impl DocumentConfig {
             && self.prepend.is_empty()
             && self.append.is_empty()
             && self.defaults.is_empty()
+    }
+
+    /// Returns a new instance that fills in unset values from the provided defaults.
+    /// Values for `append` and `prepend` are extended, not overwritten.
+    pub fn with_defaults_from(&self, defaults: &Self) -> Self {
+        let mut append = self.append.clone();
+        append.extend(defaults.append.clone());
+        let mut prepend = self.prepend.clone();
+        prepend.extend(defaults.prepend.clone());
+        Self {
+            append,
+            prepend,
+            defaults: self.defaults.with_defaults_from(&defaults.defaults),
+            language_markers: if self.language_markers.is_empty() {
+                defaults.language_markers.clone()
+            } else {
+                self.language_markers.clone()
+            },
+            shell: self.shell.clone().or_else(|| defaults.shell.clone()),
+            total_timeout: self.total_timeout.or(defaults.total_timeout),
+        }
+    }
+
+    /// Returns a new instance that is overridden with provided (set) values.
+    /// Values for `append` and `prepend` are extended, not overwritten.
+    pub fn with_overrides_from(&self, overrides: &Self) -> Self {
+        overrides.with_defaults_from(self)
     }
 }
 
@@ -184,6 +216,11 @@ pub struct TestCaseConfig {
 }
 
 impl TestCaseConfig {
+    /// Returns instance with all values set to [`None`]
+    pub fn empty() -> Self {
+        Self::default() // TODO: review - default may soon not be empty anymore
+    }
+
     /// Returns true if none the configuration parameters are set
     pub fn is_empty(&self) -> bool {
         self.output_stream.is_none()
@@ -193,6 +230,32 @@ impl TestCaseConfig {
             && self.wait.is_none()
             && self.skip_code.is_none()
             && self.environment.is_empty()
+    }
+
+    /// Returns a new instance that fills in unset values from the provided defaults
+    pub fn with_defaults_from(&self, defaults: &Self) -> Self {
+        Self {
+            output_stream: self
+                .output_stream
+                .clone()
+                .or_else(|| defaults.output_stream.clone()),
+            keep_crlf: self.keep_crlf.or(defaults.keep_crlf),
+            timeout: self.timeout.or(defaults.timeout),
+            environment: self
+                .environment
+                .clone()
+                .into_iter()
+                .chain(defaults.environment.clone())
+                .collect(),
+            detached: self.detached.or(defaults.detached),
+            wait: self.wait.clone().or_else(|| defaults.wait.clone()),
+            skip_code: self.skip_code.or(defaults.skip_code),
+        }
+    }
+
+    /// Returns a new instance that is overridden with provided (set) values
+    pub fn with_overrides_from(&self, overrides: &Self) -> Self {
+        overrides.with_defaults_from(self)
     }
 }
 

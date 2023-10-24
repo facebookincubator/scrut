@@ -8,6 +8,7 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use scrut::config::DocumentConfig;
 use scrut::executors::bash_script_executor::BashScriptExecutor;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::execution::Execution;
@@ -143,5 +144,14 @@ impl Args {
         }
 
         Ok(())
+    }
+
+    fn to_document_config(&self) -> DocumentConfig {
+        let mut config = DocumentConfig::empty();
+        if self.timeout_seconds > 0 {
+            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64))
+        }
+
+        config.with_defaults_from(&self.global.to_document_config())
     }
 }

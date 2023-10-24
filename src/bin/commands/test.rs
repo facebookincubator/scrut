@@ -3,12 +3,15 @@ use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser as ClapParser;
+use scrut::config::DocumentConfig;
+use scrut::config::TestCaseConfig;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::executors::execution::Execution;
@@ -327,5 +330,31 @@ impl Args {
             info!("Validation succeeded");
             Ok(())
         }
+    }
+
+    /// Translates command line arguments into a document config, that has only
+    /// values set which are provided by the user.
+    fn to_document_config(&self) -> DocumentConfig {
+        let mut config = DocumentConfig::empty();
+        if !self.append_test_file_paths.is_empty() {
+            config.append.extend(self.append_test_file_paths.clone());
+        }
+        if !self.markdown_languages.is_empty() {
+            config.language_markers = self.markdown_languages.clone();
+        }
+        if !self.prepend_test_file_paths.is_empty() {
+            config.prepend.extend(self.prepend_test_file_paths.clone());
+        }
+        if self.timeout_seconds > 0 {
+            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64));
+        }
+
+        config.with_defaults_from(&self.global.to_document_config())
+    }
+
+    /// Translates command line arguments into a testcase config, that has only
+    /// values set which are provided by the user.
+    fn to_testcase_config(&self) -> TestCaseConfig {
+        self.global.to_testcase_config()
     }
 }

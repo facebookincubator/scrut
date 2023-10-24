@@ -3,12 +3,15 @@ use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
+use scrut::config::DocumentConfig;
+use scrut::config::TestCaseConfig;
 use scrut::escaping::strip_colors;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
@@ -358,5 +361,21 @@ impl Args {
         }
         println!("{}", summary);
         Ok(())
+    }
+
+    fn to_document_config(&self) -> DocumentConfig {
+        let mut config = DocumentConfig::empty();
+        if self.markdown_languages.len() > 0 {
+            config.language_markers = self.markdown_languages.clone()
+        }
+        if self.timeout_seconds > 0 {
+            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64))
+        }
+
+        config.with_defaults_from(&self.global.to_document_config())
+    }
+
+    fn to_testcase_config(&self) -> TestCaseConfig {
+        self.global.to_testcase_config()
     }
 }

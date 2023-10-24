@@ -3,6 +3,9 @@ use std::path::PathBuf;
 use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
+use scrut::config::DocumentConfig;
+use scrut::config::OutputStreamControl;
+use scrut::config::TestCaseConfig;
 use scrut::escaping::Escaper;
 use scrut::executors::DEFAULT_SHELL;
 use scrut::parsers::parser::ParserType;
@@ -46,15 +49,19 @@ pub(crate) struct GlobalParameters {
 
     /// Per default only STDOUT will be considered. This flags combines STDOUT
     /// and STDERR into a single stream.
-    #[clap(long, global = true)]
+    #[clap(long, overrides_with = "no_combine_output", global = true)]
     pub(crate) combine_output: bool,
+    #[clap(long, overrides_with = "combine_output", global = true)]
+    pub(crate) no_combine_output: bool,
 
     /// Per default all CRLF line endings from outputs of shell expressions will
     /// be converted into LF line endings and need not be considered in output
     /// expectations. This flag surfaces CRLF line endings so that they can (and
     /// must be) addressed in output expectations (e.g. `output line\r (escaped)`)
-    #[clap(long, global = true)]
+    #[clap(long, overrides_with = "no_keep_output_crlf", global = true)]
     pub(crate) keep_output_crlf: bool,
+    #[clap(long, overrides_with = "keep_output_crlf", global = true)]
+    pub(crate) no_keep_output_crlf: bool,
 
     /// Optional output escaping mode. If not set then defaults to escaping
     /// all non-printable unicode characters for Scrut Markdown tests and
@@ -80,9 +87,13 @@ pub(crate) struct GlobalSharedParameters {
 
     #[clap(from_global)]
     pub(crate) combine_output: bool,
+    #[clap(from_global)]
+    pub(crate) no_combine_output: bool,
 
     #[clap(from_global)]
     pub(crate) keep_output_crlf: bool,
+    #[clap(from_global)]
+    pub(crate) no_keep_output_crlf: bool,
 
     #[clap(from_global)]
     pub(crate) shell: PathBuf,
@@ -99,8 +110,41 @@ impl GlobalSharedParameters {
         self.combine_output || self.cram_compat || parser == Some(ParserType::Cram)
     }
 
+    /// Translates global shared parameters into (defaults for) per-document configuration
+    pub(crate) fn to_document_config(&self) -> DocumentConfig {
+        let mut config = DocumentConfig::empty();
+        if !self.shell.as_os_str().is_empty() {
+            config.shell = Some(self.shell.clone())
+        }
+
+        config
+    }
+
     pub(crate) fn is_keep_output_crlf(&self, parser: Option<ParserType>) -> bool {
         self.keep_output_crlf || self.cram_compat || parser == Some(ParserType::Cram)
+    }
+
+    /// Translates global shared parameters into (defaults for) per-test configuration
+    pub(crate) fn to_testcase_config(&self) -> TestCaseConfig {
+        let mut config = TestCaseConfig::empty();
+
+        // look at which output stream(s)
+        // TODO: The new default here is supposed to be [`OutputStreamControl::Combined`].
+        //       Make sure all current use `--no-combine-output` flag.
+        if self.no_combine_output {
+            config.output_stream = Some(OutputStreamControl::Stdout)
+        } else if self.combine_output {
+            config.output_stream = Some(OutputStreamControl::Combined)
+        }
+
+        // keep CRLF or replace to LF?
+        if self.no_keep_output_crlf {
+            config.keep_crlf = Some(false)
+        } else if self.keep_output_crlf {
+            config.keep_crlf = Some(true)
+        }
+
+        config
     }
 
     pub(crate) fn output_escaping(&self, parser: Option<ParserType>) -> Escaper {
@@ -115,139 +159,87 @@ impl GlobalSharedParameters {
 
 #[cfg(test)]
 mod tests {
-    use scrut::parsers::parser::ParserType;
+
+    use scrut::config::DocumentConfig;
+    use scrut::config::OutputStreamControl;
+    use scrut::config::TestCaseConfig;
 
     use super::GlobalSharedParameters;
 
     #[test]
-    fn test_combine_output() {
-        let tests = &[
+    fn test_as_document_config() {
+        let tests = vec![
+            (GlobalSharedParameters::default(), DocumentConfig::empty()),
             (
-                false,
-                "all default",
                 GlobalSharedParameters {
+                    shell: "other-shell".into(),
                     ..Default::default()
                 },
-                None,
-            ),
-            (
-                false,
-                "all default, markdown parser",
-                GlobalSharedParameters {
+                DocumentConfig {
+                    shell: Some("other-shell".into()),
                     ..Default::default()
                 },
-                Some(ParserType::Markdown),
-            ),
-            (
-                true,
-                "all default, cram parser",
-                GlobalSharedParameters {
-                    ..Default::default()
-                },
-                Some(ParserType::Cram),
-            ),
-            (
-                true,
-                "combine output enabled",
-                GlobalSharedParameters {
-                    combine_output: true,
-                    ..Default::default()
-                },
-                None,
-            ),
-            (
-                true,
-                "cram compat enabled",
-                GlobalSharedParameters {
-                    cram_compat: true,
-                    ..Default::default()
-                },
-                None,
-            ),
-            (
-                true,
-                "both enabled",
-                GlobalSharedParameters {
-                    combine_output: true,
-                    cram_compat: true,
-                    ..Default::default()
-                },
-                None,
             ),
         ];
 
-        for (expect, description, params, parser_type) in tests {
-            assert!(
-                *expect == params.is_combine_output(*parser_type),
-                "{}",
-                *description
-            )
+        for (params, expected) in tests {
+            assert_eq!(params.to_document_config(), expected);
         }
     }
 
     #[test]
-    fn test_keep_output_crlf() {
-        let tests = &[
+    fn test_as_testcase_config() {
+        let tests = vec![
+            (GlobalSharedParameters::default(), TestCaseConfig::empty()),
             (
-                false,
-                "all default",
                 GlobalSharedParameters {
+                    no_combine_output: true,
                     ..Default::default()
                 },
-                None,
+                TestCaseConfig {
+                    output_stream: Some(OutputStreamControl::Stdout),
+                    ..TestCaseConfig::empty()
+                },
             ),
             (
-                false,
-                "all default, markdown parser",
                 GlobalSharedParameters {
+                    combine_output: true,
                     ..Default::default()
                 },
-                Some(ParserType::Markdown),
+                TestCaseConfig {
+                    output_stream: Some(OutputStreamControl::Combined),
+                    ..TestCaseConfig::empty()
+                },
             ),
             (
-                true,
-                "all default, cram parser",
                 GlobalSharedParameters {
+                    no_keep_output_crlf: true,
                     ..Default::default()
                 },
-                Some(ParserType::Cram),
+                TestCaseConfig {
+                    keep_crlf: Some(false),
+                    ..TestCaseConfig::empty()
+                },
             ),
             (
-                true,
-                "keep output crlf enabled",
                 GlobalSharedParameters {
                     keep_output_crlf: true,
                     ..Default::default()
                 },
-                None,
-            ),
-            (
-                true,
-                "cram compat enabled",
-                GlobalSharedParameters {
-                    cram_compat: true,
-                    ..Default::default()
+                TestCaseConfig {
+                    keep_crlf: Some(true),
+                    ..TestCaseConfig::empty()
                 },
-                None,
-            ),
-            (
-                true,
-                "both enabled",
-                GlobalSharedParameters {
-                    keep_output_crlf: true,
-                    cram_compat: true,
-                    ..Default::default()
-                },
-                None,
             ),
         ];
 
-        for (expect, description, params, parser_type) in tests {
-            assert!(
-                *expect == params.is_keep_output_crlf(*parser_type),
-                "{}",
-                *description
-            )
+        for (idx, (params, expected)) in tests.into_iter().enumerate() {
+            assert_eq!(
+                params.to_testcase_config(),
+                expected,
+                "test case #{}",
+                idx + 1
+            );
         }
     }
 }
