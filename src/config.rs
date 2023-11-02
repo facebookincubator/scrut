@@ -221,6 +221,36 @@ impl TestCaseConfig {
         Self::default() // TODO: review - default may soon not be empty anymore
     }
 
+    /// Returns default testcase configuration for Markdown documents
+    ///
+    /// Currently:
+    /// - Output Stream: STDOUT
+    /// - Skip Code: 80
+    ///
+    /// TODO: change the default output stream to Combined (adjust all uses!)
+    pub fn default_markdown() -> Self {
+        Self::default().with_defaults_from(&Self {
+            output_stream: Some(OutputStreamControl::Stdout),
+            skip_code: Some(80),
+            ..Default::default()
+        })
+    }
+
+    /// Returns default testcase configuration for Cram documents
+    ///
+    /// Currently:
+    /// - Output Stream: Combined STDOUT and STDERR
+    /// - Skip Code: 80
+    /// - Keep CRLF in output
+    pub fn default_cram() -> Self {
+        Self::default().with_defaults_from(&Self {
+            output_stream: Some(OutputStreamControl::Combined),
+            keep_crlf: Some(true),
+            skip_code: Some(80),
+            ..Default::default()
+        })
+    }
+
     /// Returns true if none the configuration parameters are set
     pub fn is_empty(&self) -> bool {
         self.output_stream.is_none()

@@ -64,7 +64,8 @@ impl Parser for MarkdownParser {
         let iterator = MarkdownIterator::new(languages, text.lines());
         let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
         let mut title_paragraph = vec![];
-        let mut config: DocumentConfig = Default::default();
+        let mut config = Default::default();
+        let testcase_config = TestCaseConfig::default_markdown();
 
         for token in iterator {
             match token {
@@ -91,12 +92,14 @@ impl Parser for MarkdownParser {
                     comment_lines: _,
                     code_lines,
                 } => {
-                    if !config_lines.is_empty() {
-                        let config: TestCaseConfig =
-                            serde_yaml::from_str(&config_lines.join_newline())
-                                .context("parse testcase config")?;
-                        line_parser.set_testcase_config(config);
-                    }
+                    let parsed_config = if config_lines.is_empty() {
+                        TestCaseConfig::empty()
+                    } else {
+                        serde_yaml::from_str(&config_lines.join_newline())
+                            .context("parse testcase config")?
+                    };
+                    line_parser
+                        .set_testcase_config(parsed_config.with_defaults_from(&testcase_config));
                     for (index, line) in &code_lines {
                         line_parser.add_testcase_body(line, *index)?;
                     }
@@ -349,7 +352,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -389,7 +392,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 10,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -416,14 +419,14 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
-                config: TestCaseConfig {
+                config: TestCaseConfig::default_markdown().with_overrides_from(&TestCaseConfig {
                     timeout: Some(Duration::from_secs(3 * 60 + 3)),
                     wait: Some(TestCaseWait {
                         timeout: Duration::from_secs(4 * 60 + 4),
                         path: None,
                     }),
-                    ..Default::default()
-                }
+                    ..TestCaseConfig::default_markdown()
+                })
             },
             testcases[0]
         );
@@ -453,7 +456,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 9,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -484,7 +487,7 @@ hello
                     .to_string(),
                 exit_code: None,
                 line_number: 9,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -512,7 +515,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -540,7 +543,7 @@ hello
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -587,7 +590,7 @@ world
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 12,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -598,7 +601,7 @@ world
                 title: "This is another title".to_string(),
                 exit_code: None,
                 line_number: 26,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[1]
         );
@@ -633,7 +636,7 @@ i am output 3
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },
             testcases[0]
         );
@@ -681,7 +684,7 @@ Hello World
                     title: "This is a title".to_string(),
                     exit_code: None,
                     line_number: 5,
-                    ..Default::default()
+                    config: TestCaseConfig::default_markdown(),
                 },
                 TestCase {
                     shell_expression: "cat test.md".to_string(),
@@ -696,7 +699,7 @@ Hello World
                     title: "And another title".to_string(),
                     exit_code: None,
                     line_number: 15,
-                    ..Default::default()
+                    config: TestCaseConfig::default_markdown(),
                 },
             ],
             testcases
@@ -727,7 +730,7 @@ world
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
-                ..Default::default()
+                config: TestCaseConfig::default_markdown(),
             },],
             testcases
         );

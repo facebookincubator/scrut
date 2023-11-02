@@ -190,9 +190,13 @@ impl PyTestCase {
             title: title.into(),
             shell_expression: shell_expression.into(),
             exit_code: Some(exit_code),
+            config: if cram_compat {
+                TestCaseConfig::default_cram()
+            } else {
+                TestCaseConfig::default_markdown()
+            },
             expectations,
             line_number,
-            ..Default::default()
         };
         Ok(Self {
             title: title.into(),

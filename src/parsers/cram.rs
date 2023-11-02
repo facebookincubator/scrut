@@ -7,6 +7,7 @@ use super::line_parser::is_comment;
 use super::line_parser::LineParser;
 use super::parser::Parser;
 use crate::config::DocumentConfig;
+use crate::config::TestCaseConfig;
 use crate::expectation::ExpectationMaker;
 use crate::testcase::TestCase;
 
@@ -65,17 +66,23 @@ impl Parser for CramParser {
                 continue;
             }
 
-            // starting with indentions
+            // starting with indentions, means either collecting testcase
+            // shell expression or testcase output expectations:
             if let Some(line) = line.strip_prefix(&indent) {
+                engine.set_testcase_config(TestCaseConfig::default_cram());
                 engine.add_testcase_body(line, index)?;
                 continue;
             }
 
+            // not indented, not empty line means: next testcase starts
             engine.end_testcase(index)?;
+
+            // title for the NEXT testcase
             engine.set_testcase_title(line);
         }
 
         if engine.has_testcase_body() {
+            engine.set_testcase_config(TestCaseConfig::default_cram());
             engine.end_testcase(lines.len())?
         }
         debug!("found {} testcases in cram file", engine.testcases.len());
@@ -89,6 +96,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::CramParser;
+    use crate::config::TestCaseConfig;
     use crate::expectation::tests::expectation_maker;
     use crate::parsers::cram::DEFAULT_CRAM_INDENTION;
     use crate::parsers::parser::Parser;
@@ -116,7 +124,7 @@ mod tests {
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 2,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -145,7 +153,7 @@ This is a title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -175,7 +183,7 @@ Title 2
                 title: "Title 2".to_string(),
                 exit_code: None,
                 line_number: 8,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -207,7 +215,7 @@ This is the yet more title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 3,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0],
             "testcase 1",
@@ -219,7 +227,7 @@ This is the yet more title
                 title: "This is the next title".to_string(),
                 exit_code: None,
                 line_number: 9,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[1],
             "testcase 2",
@@ -231,7 +239,7 @@ This is the yet more title
                 title: "This is the yet more title".to_string(),
                 exit_code: None,
                 line_number: 12,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[2],
             "testcase 3",
@@ -263,7 +271,7 @@ The title
                 title: "The title".into(),
                 exit_code: None,
                 line_number: 3,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -297,7 +305,7 @@ This has an exit code 3
                 title: "This has an exit code 1".to_string(),
                 exit_code: Some(4),
                 line_number: 3,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -308,7 +316,7 @@ This has an exit code 3
                 title: "This has an exit code 2".to_string(),
                 exit_code: Some(15),
                 line_number: 8,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[1]
         );
@@ -322,7 +330,7 @@ This has an exit code 3
                 title: "This has an exit code 3".to_string(),
                 exit_code: Some(106),
                 line_number: 12,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[2]
         );
@@ -377,7 +385,7 @@ This is a title
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 6,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -393,11 +401,12 @@ This is a title
   >     "//:bar",
   >     "//:baz",
   > ]
-  > EOF"#;
+  > EOF
+  $ bla"#;
         let parser = parser();
         let (_, testcases) = parser.parse(cram_test).expect("no error");
 
-        assert_eq!(3, testcases.len());
+        assert_eq!(4, testcases.len());
         assert_eq!(
             TestCase {
                 shell_expression: "source $TESTDIR/setup.sh".to_string(),
@@ -405,7 +414,7 @@ This is a title
                 title: "Setup a buck dir with a mock visibility list".to_string(),
                 exit_code: None,
                 line_number: 2,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[0]
         );
@@ -416,7 +425,7 @@ This is a title
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 3,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[1]
         );
@@ -435,9 +444,20 @@ This is a title
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 4,
-                ..Default::default()
+                config: TestCaseConfig::default_cram(),
             },
             testcases[2]
+        );
+        assert_eq!(
+            TestCase {
+                shell_expression: ["bla"].join("\n"),
+                expectations: vec![],
+                title: "".to_string(),
+                exit_code: None,
+                line_number: 10,
+                config: TestCaseConfig::default_cram(),
+            },
+            testcases[3]
         );
     }
 }

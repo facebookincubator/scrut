@@ -167,7 +167,7 @@ mod tests {
     use super::GlobalSharedParameters;
 
     #[test]
-    fn test_as_document_config() {
+    fn test_to_document_config() {
         let tests = vec![
             (GlobalSharedParameters::default(), DocumentConfig::empty()),
             (
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn test_as_testcase_config() {
+    fn test_to_testcase_config() {
         let tests = vec![
             (GlobalSharedParameters::default(), TestCaseConfig::empty()),
             (
