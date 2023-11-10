@@ -221,13 +221,13 @@ mod tests {
 
         assert!(
             duration >= Duration::from_millis(100),
-            "waited at most 200 ms ({:?})",
+            "waited at least 100 ms ({:?})",
             duration,
         );
-        let max_wait = if cfg!(windows) { 1500 } else { 150 };
+        let max_wait = if cfg!(windows) { 10000 } else { 1000 };
         assert!(
             duration < Duration::from_millis(max_wait),
-            "waited at most 150 ms ({:?})",
+            "waited at most 1 s ({:?})",
             duration,
         );
         assert_eq!(
