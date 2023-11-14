@@ -3,17 +3,16 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use tempfile::TempDir;
 use tracing::debug;
 
-use super::fsutil::split_path_abs;
-use super::nameutil::UniqueNamer;
-use crate::utils::executorutil::canonical_shell;
+use super::namer::UniqueNamer;
 
 /// A directory within a test environment
-pub(crate) enum EnvironmentDirectory {
+pub enum EnvironmentDirectory {
     /// A temporary directory, that will be cleaned up after is is not in use anymore
     Ephemeral(TempDir),
 
@@ -49,15 +48,15 @@ impl Debug for EnvironmentDirectory {
 }
 
 /// Encapsulate test directory and environment variables setup
-pub(crate) struct TestEnvironment {
-    pub(crate) shell: PathBuf,
+pub struct TestEnvironment {
+    pub shell: PathBuf,
 
     /// The base work directory in which tests are being executed. Can be:
     /// 1. A user provided directory in which all test files will be executed
     /// 2. A temporary generated directory, which will be removed/cleaned up after
     ///    all test executions and in which directories per test-file execution
     ///    will be created (default)
-    pub(crate) work_directory: EnvironmentDirectory,
+    pub work_directory: EnvironmentDirectory,
 
     /// A temporary directory, which will be made available to the test as the
     /// `TMPDIR` environment variable, which will be cleaned up after test
@@ -67,14 +66,14 @@ pub(crate) struct TestEnvironment {
     /// 2. If not user provided: Will be temporary directory `__tmp` at base
     ///    of temporary work directory where also the per-test directories
     ///    are being created in
-    pub(crate) tmp_directory: EnvironmentDirectory,
+    pub tmp_directory: EnvironmentDirectory,
 
     /// Ensure unique name of per-test-file directories created within work directory
-    pub(crate) namer: UniqueNamer,
+    namer: UniqueNamer,
 }
 
 impl TestEnvironment {
-    pub(crate) fn new(shell: &Path, provided_work_directory: Option<&Path>) -> Result<Self> {
+    pub fn new(shell: &Path, provided_work_directory: Option<&Path>) -> Result<Self> {
         let (work_directory, tmp_directory) = if let Some(directory) = provided_work_directory {
             (
                 EnvironmentDirectory::Permanent(directory.into()),
@@ -113,7 +112,7 @@ impl TestEnvironment {
     /// Returns a test environment for a specific test file, consisting of
     /// the work directory (which is unique per test file, unless user provided
     /// a work directory) and a set of environment variables
-    pub(crate) fn init_test_file(
+    pub fn init_test_file(
         &mut self,
         test_file_path: &Path,
         cram_compat: bool,
@@ -215,6 +214,43 @@ impl<'a> TestFileEnvironment<'a> {
         }
         Ok(env_vars)
     }
+}
+
+/// Returns the canonical path to the given shell
+pub fn canonical_shell(shell: &Path) -> Result<PathBuf> {
+    if shell.components().count() > 1 {
+        canonical_path(shell)
+    } else {
+        canonical_path(
+            which::which(shell)
+                .context("guessing path to shell")?
+                .as_path(),
+        )
+    }
+    .context("path to shell")
+}
+
+// All paths that Scrut outputs are canonicalized for the current operation system.
+// For windows `dunce` is used to assure that Windows NT forms are only used
+// if the path length or reserved words demand it.
+fn canonical_path<P: AsRef<Path> + Debug>(path: P) -> Result<PathBuf> {
+    Ok(dunce::canonicalize(&path)?)
+}
+
+/// Split given path into file name and base directory
+fn split_path_abs(path: &Path) -> Result<(PathBuf, PathBuf)> {
+    let mut directory = path.to_path_buf();
+    let file = directory
+        .file_name()
+        .ok_or_else(|| anyhow!("path is not a file"))?
+        .into();
+    directory.pop();
+    let directory = if directory.to_string_lossy().is_empty() {
+        std::env::current_dir().context("split path")?
+    } else {
+        canonical_path(&directory).context("split path")?
+    };
+    Ok((directory, file))
 }
 
 #[cfg(test)]

@@ -34,12 +34,12 @@ use tracing::info;
 use tracing::warn;
 
 use super::root::GlobalSharedParameters;
-use crate::utils::debugutil;
-use crate::utils::environment::TestEnvironment;
-use crate::utils::executorutil;
-use crate::utils::parserutil::ParsedTestFile;
-use crate::utils::parserutil::{self};
-use crate::utils::promptutil;
+use crate::utils::confirm;
+use crate::utils::debug_testcases;
+use crate::utils::make_executor;
+use crate::utils::FileParser;
+use crate::utils::ParsedTestFile;
+use crate::utils::TestEnvironment;
 
 /// Re-run all testcases in given file(s) and update the output expectations
 #[derive(Debug, Parser)]
@@ -109,21 +109,17 @@ pub struct Args {
 impl Args {
     pub(crate) fn run(&self) -> Result<()> {
         // init parser and determine suffices to look for
-        let (parser_generator, parser_acceptor) = parserutil::make_parser_generator(
-            &self.match_cram,
-            &self.match_markdown,
-            &self
-                .markdown_languages
-                .iter()
-                .map(|s| s as &str)
-                .collect::<Vec<_>>(),
-        )?;
+        let markdown_languages = &self
+            .markdown_languages
+            .iter()
+            .map(|s| &**s)
+            .collect::<Vec<_>>();
+        let parser = FileParser::new(&self.match_markdown, &self.match_cram, markdown_languages)
+            .context("create file parser")?;
 
-        let tests = parserutil::parse_test_files(
+        let tests = parser.find_and_parse(
             "test",
             &self.paths.iter().map(|p| p as &Path).collect::<Vec<_>>(),
-            &parser_generator,
-            &parser_acceptor,
             self.global.cram_compat,
         )?;
 
@@ -166,7 +162,7 @@ impl Args {
                 .collect::<Vec<_>>();
 
             let (timeout, executor) =
-                executorutil::make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+                make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
 
             let execution_result = executor.execute_all(
                 &executions.iter().collect::<Vec<_>>(),
@@ -209,7 +205,7 @@ impl Args {
                     }
 
                     if self.debug {
-                        debugutil::debug_testcases(&test.testcases, &test.path, &outputs);
+                        debug_testcases(&test.testcases, &test.path, &outputs);
                     }
 
                     // .. and create an updated content (either from actual update or conversion)
@@ -251,10 +247,7 @@ impl Args {
                     // always ask, in case the file exists
                     if !self.assume_yes
                         && Path::new(&output_path).exists()
-                        && !promptutil::confirm(&format!(
-                            "> Overwrite existing file {:?}?",
-                            &output_path
-                        ))?
+                        && !confirm(&format!("> Overwrite existing file {:?}?", &output_path))?
                     {
                         eprintln!("  Skipping!");
                         count_skipped += 1;
@@ -365,7 +358,7 @@ impl Args {
 
     fn to_document_config(&self) -> DocumentConfig {
         let mut config = DocumentConfig::empty();
-        if self.markdown_languages.len() > 0 {
+        if !self.markdown_languages.is_empty() {
             config.language_markers = self.markdown_languages.clone()
         }
         if self.timeout_seconds > 0 {

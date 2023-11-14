@@ -32,11 +32,10 @@ use tracing::info;
 
 use super::root::GlobalSharedParameters;
 use super::root::ScrutRenderer;
-use crate::utils::debugutil;
-use crate::utils::environment::TestEnvironment;
-use crate::utils::executorutil;
-use crate::utils::parserutil::ParsedTestFile;
-use crate::utils::parserutil::{self};
+use crate::utils::debug_testcases;
+use crate::utils::make_executor;
+use crate::utils::FileParser;
+use crate::utils::TestEnvironment;
 
 #[derive(Debug, Clone)]
 pub struct ValidationFailedError;
@@ -115,65 +114,44 @@ pub struct Args {
 impl Args {
     pub(crate) fn run(&self) -> Result<()> {
         // init parser and determine suffices to look for
-        let (parser_generator, parser_acceptor) = parserutil::make_parser_generator(
-            &self.match_cram,
-            &self.match_markdown,
-            &self
-                .markdown_languages
-                .iter()
-                .map(|s| s as &str)
-                .collect::<Vec<_>>(),
-        )?;
+        let markdown_languages = &self
+            .markdown_languages
+            .iter()
+            .map(|s| &**s)
+            .collect::<Vec<_>>();
+        let parser = FileParser::new(&self.match_markdown, &self.match_cram, markdown_languages)
+            .context("create file parser")?;
 
-        let tests = parserutil::parse_test_files(
+        let tests = parser.find_and_parse(
             "test",
             &self
                 .test_file_paths
                 .iter()
                 .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
-            &parser_generator,
-            &parser_acceptor,
             self.global.cram_compat,
         )?;
 
-        let prepend_tests = parserutil::parse_test_files(
+        let prepend_tests = parser.find_and_parse(
             "prepend test",
             &self
                 .prepend_test_file_paths
                 .iter()
                 .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
-            &parser_generator,
-            &parser_acceptor,
             self.global.cram_compat,
         )?;
 
-        let append_tests = parserutil::parse_test_files(
+        let append_tests = parser.find_and_parse(
             "append test",
             &self
                 .append_test_file_paths
                 .iter()
                 .map(|p| p as &Path)
                 .collect::<Vec<_>>(),
-            &parser_generator,
-            &parser_acceptor,
             self.global.cram_compat,
         )?;
 
-        self.run_all(
-            &tests.iter().collect::<Vec<_>>(),
-            &prepend_tests.iter().collect::<Vec<_>>(),
-            &append_tests.iter().collect::<Vec<_>>(),
-        )
-    }
-
-    fn run_all(
-        &self,
-        tests: &[&ParsedTestFile],
-        prepend_tests: &[&ParsedTestFile],
-        append_tests: &[&ParsedTestFile],
-    ) -> Result<()> {
         let mut has_failed = false;
         let mut outcomes = vec![];
 
@@ -225,7 +203,7 @@ impl Args {
                 .collect::<Vec<_>>();
 
             let (timeout, executor) =
-                executorutil::make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+                make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
 
             // run test cases and gather output ..
             let outputs = executor.execute_all(
@@ -263,7 +241,7 @@ impl Args {
                 // test execution succeeded
                 Ok(outputs) => {
                     if self.debug {
-                        debugutil::debug_testcases(&test.testcases, &test.path, &outputs);
+                        debug_testcases(&test.testcases, &test.path, &outputs);
                     }
 
                     if outputs.len() != testcases.len() {

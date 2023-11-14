@@ -22,8 +22,8 @@ use scrut::testcase::TestCase;
 use tracing::info;
 
 use super::root::GlobalSharedParameters;
-use crate::utils::environment::TestEnvironment;
-use crate::utils::executorutil::canonical_shell;
+use crate::utils::canonical_shell;
+use crate::utils::TestEnvironment;
 
 /// Create tests from provided shell expression
 #[derive(Debug, Parser)]
