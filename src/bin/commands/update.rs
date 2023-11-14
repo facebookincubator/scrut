@@ -53,7 +53,7 @@ pub struct Args {
     debug: bool,
 
     /// For markdown format: Language annotations that are considered test cases
-    #[clap(long, short = 'L', default_values = DEFAULT_MARKDOWN_LANGUAGES, num_args=1..)]
+    #[clap(long, hide = true, default_values = DEFAULT_MARKDOWN_LANGUAGES, num_args=1..)]
     markdown_languages: Vec<String>,
 
     /// Per default colo(u)r output is enabled on TTYs when the `diff` renderer
@@ -358,9 +358,6 @@ impl Args {
 
     fn to_document_config(&self) -> DocumentConfig {
         let mut config = DocumentConfig::empty();
-        if !self.markdown_languages.is_empty() {
-            config.language_markers = self.markdown_languages.clone()
-        }
         if self.timeout_seconds > 0 {
             config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64))
         }

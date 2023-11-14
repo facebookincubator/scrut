@@ -332,8 +332,6 @@ struct PyDocumentConfig {
     #[pyo3(get)]
     pub defaults: PyTestCaseConfig,
     #[pyo3(get)]
-    pub language_markers: Vec<String>,
-    #[pyo3(get)]
     pub prepend: Vec<String>,
     #[pyo3(get)]
     pub shell: Option<String>,
@@ -346,7 +344,6 @@ impl From<DocumentConfig> for PyDocumentConfig {
         Self {
             append: value.append.iter().map(path_to_str).collect::<Vec<_>>(),
             defaults: value.defaults.into(),
-            language_markers: value.language_markers.clone(),
             prepend: value.prepend.iter().map(path_to_str).collect::<Vec<_>>(),
             shell: value.shell.map(path_to_str),
             total_timeout: value.total_timeout.map(duration_to_millis),

@@ -26,11 +26,6 @@ pub struct DocumentConfig {
     #[serde(skip_serializing_if = "TestCaseConfig::is_empty")]
     pub defaults: TestCaseConfig,
 
-    /// List of code block annotation languages that are Scrut should consider
-    /// test cases.
-    #[serde(skip_serializing_if = "<[_]>::is_empty")]
-    pub language_markers: Vec<String>,
-
     /// Include these paths in order, as if they were part of this file. All tests
     /// within the prepend paths are prepended to the tests defined in this file.
     /// Use-case is common/shared test setup. Paths must be relative to the
@@ -61,7 +56,6 @@ impl DocumentConfig {
     pub fn is_empty(&self) -> bool {
         self.shell.is_none()
             && self.total_timeout.is_none()
-            && self.language_markers.is_empty()
             && self.prepend.is_empty()
             && self.append.is_empty()
             && self.defaults.is_empty()
@@ -78,11 +72,6 @@ impl DocumentConfig {
             append,
             prepend,
             defaults: self.defaults.with_defaults_from(&defaults.defaults),
-            language_markers: if self.language_markers.is_empty() {
-                defaults.language_markers.clone()
-            } else {
-                self.language_markers.clone()
-            },
             shell: self.shell.clone().or_else(|| defaults.shell.clone()),
             total_timeout: self.total_timeout.or(defaults.total_timeout),
         }
@@ -330,7 +319,6 @@ mod tests {
     const FULL_DOCUMENT_CONFIG: &str = "
 shell: the-shell
 total_timeout: 5m 3s
-language_markers: [lang, mark]
 prepend:
     - prep1
     - prep2
@@ -360,7 +348,6 @@ defaults:
             DocumentConfig {
                 shell: Some("the-shell".into()),
                 total_timeout: Some(Duration::from_secs(5 * 60 + 3)),
-                language_markers: vec!["lang".into(), "mark".into()],
                 prepend: vec!["prep1".into(), "prep2".into()],
                 append: vec!["app1".into(), "app2".into()],
                 defaults: TestCaseConfig {
