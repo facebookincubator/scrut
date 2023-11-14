@@ -10,6 +10,7 @@ use anyhow::Result;
 use globset::Glob;
 use globset::GlobMatcher;
 use scrut::config::DocumentConfig;
+use scrut::config::TestCaseConfig;
 use scrut::expectation::ExpectationMaker;
 use scrut::newline::replace_crlf;
 use scrut::parsers::cram::CramParser;
@@ -88,6 +89,11 @@ impl<'a> FileParser<'a> {
                 Box::new(MarkdownParser::new(
                     make_expectation_maker(cram_compat),
                     self.markdown_languages,
+                    if cram_compat {
+                        Some(TestCaseConfig::default_cram())
+                    } else {
+                        None
+                    },
                 )),
             ))
         } else if self.match_cram.is_match(path) {

@@ -19,7 +19,9 @@ use scrut::outcome::Outcome;
 use scrut::output::ExitStatus;
 use scrut::output::Output;
 use scrut::parsers::cram::CramParser;
+use scrut::parsers::cram::DEFAULT_CRAM_INDENTION;
 use scrut::parsers::markdown::MarkdownParser;
+use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::Parser;
 use scrut::parsers::parser::ParserType;
 use scrut::renderers::pretty::PrettyMonochromeRenderer;
@@ -358,9 +360,10 @@ struct PyCramParser(CramParser);
 impl PyCramParser {
     #[new]
     fn new() -> Self {
-        Self(CramParser::default_new(Arc::new(new_expectation_maker(
-            true,
-        ))))
+        Self(CramParser::new(
+            Arc::new(new_expectation_maker(true)),
+            DEFAULT_CRAM_INDENTION,
+        ))
     }
 
     fn parse(&self, text: &str) -> PyResult<(PyDocumentConfig, Vec<PyTestCase>)> {
@@ -382,14 +385,17 @@ impl PyMarkdownParser {
         Self(MarkdownParser::new(
             Arc::new(new_expectation_maker(false)),
             &languages.iter().map(|s| s as &str).collect::<Vec<_>>(),
+            None,
         ))
     }
 
     #[staticmethod]
     fn default() -> Self {
-        Self(MarkdownParser::default_new(Arc::new(
-            new_expectation_maker(false),
-        )))
+        Self(MarkdownParser::new(
+            Arc::new(new_expectation_maker(false)),
+            DEFAULT_MARKDOWN_LANGUAGES,
+            None,
+        ))
     }
 
     fn parse(&self, text: &str) -> PyResult<(PyDocumentConfig, Vec<PyTestCase>)> {

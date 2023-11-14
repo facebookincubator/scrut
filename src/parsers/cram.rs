@@ -33,10 +33,6 @@ impl CramParser {
             indention,
         }
     }
-
-    pub fn default_new(expectation_maker: Arc<ExpectationMaker>) -> Self {
-        Self::new(expectation_maker, DEFAULT_CRAM_INDENTION)
-    }
 }
 
 /* impl Default for CramParser {

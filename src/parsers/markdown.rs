@@ -37,18 +37,21 @@ pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut", "testcase"];
 pub struct MarkdownParser {
     expectation_maker: Arc<ExpectationMaker>,
     languages: Vec<String>,
+    base_testcase_config: TestCaseConfig,
 }
 
 impl MarkdownParser {
-    pub fn new(expectation_maker: Arc<ExpectationMaker>, languages: &[&str]) -> Self {
+    pub fn new(
+        expectation_maker: Arc<ExpectationMaker>,
+        languages: &[&str],
+        base_testcase_config: Option<TestCaseConfig>,
+    ) -> Self {
         Self {
             expectation_maker,
             languages: languages.iter().map(|lang| lang.to_string()).collect(),
+            base_testcase_config: base_testcase_config
+                .unwrap_or_else(TestCaseConfig::default_markdown),
         }
-    }
-
-    pub fn default_new(expectation_maker: Arc<ExpectationMaker>) -> Self {
-        Self::new(expectation_maker, DEFAULT_MARKDOWN_LANGUAGES)
     }
 }
 
@@ -64,19 +67,19 @@ impl Parser for MarkdownParser {
         let iterator = MarkdownIterator::new(languages, text.lines());
         let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
         let mut title_paragraph = vec![];
-        let mut config = Default::default();
-        let testcase_config = TestCaseConfig::default_markdown();
+        let mut config: DocumentConfig = Default::default();
 
         for token in iterator {
             match token {
                 MarkdownToken::DocumentConfig(config_lines) => {
-                    config =
-                        serde_yaml::from_str(&config_lines.join_newline()).with_context(|| {
+                    let parsed_config = serde_yaml::from_str(&config_lines.join_newline())
+                        .with_context(|| {
                             format!(
                                 "parse document config from front-matter:\n{:?}",
                                 config_lines.join_newline()
                             )
                         })?;
+                    config = config.with_overrides_from(&parsed_config);
                 }
                 MarkdownToken::Line(_, line) => {
                     if let Some((_, title)) = extract_title(&line) {
@@ -98,8 +101,9 @@ impl Parser for MarkdownParser {
                         serde_yaml::from_str(&config_lines.join_newline())
                             .context("parse testcase config")?
                     };
-                    line_parser
-                        .set_testcase_config(parsed_config.with_defaults_from(&testcase_config));
+                    line_parser.set_testcase_config(
+                        parsed_config.with_defaults_from(&self.base_testcase_config),
+                    );
                     for (index, line) in &code_lines {
                         line_parser.add_testcase_body(line, *index)?;
                     }
@@ -328,7 +332,7 @@ mod tests {
 
     fn parser() -> MarkdownParser {
         let maker = expectation_maker();
-        MarkdownParser::new(Arc::new(maker), DEFAULT_MARKDOWN_LANGUAGES)
+        MarkdownParser::new(Arc::new(maker), DEFAULT_MARKDOWN_LANGUAGES, None)
     }
 
     #[test]
@@ -380,7 +384,7 @@ hello
             DocumentConfig {
                 shell: Some(PathBuf::from("some-shell")),
                 total_timeout: Some(Duration::from_secs(3 * 60 + 3)),
-                ..Default::default()
+                ..DocumentConfig::empty()
             },
             "total timeout value is configured"
         );
