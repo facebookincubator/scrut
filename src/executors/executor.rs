@@ -42,6 +42,7 @@ pub(super) mod tests {
 
     use super::Executor;
     use super::Result;
+    use crate::config::DocumentConfig;
     use crate::config::OutputStreamControl;
     use crate::config::TestCaseConfig;
     use crate::escaping::Escaper;
@@ -51,7 +52,7 @@ pub(super) mod tests {
     use crate::testcase::TestCase;
 
     /// A suite of tests that every executor should be able to pass
-    pub(crate) fn standard_output_test_suite<T: Executor>(executor: T, context: &Context) {
+    pub(crate) fn standard_output_test_suite<T: Executor>(executor: T) {
         let create_testcase = |expr: &str| TestCase {
             title: "Test".into(),
             shell_expression: expr.into(),
@@ -132,11 +133,11 @@ pub(super) mod tests {
             ),
         ];
 
-        run_executor_tests(executor, tests, context);
+        run_executor_tests(executor, tests);
     }
 
     /// A suite of tests that asserts executor combines output
-    pub(crate) fn combined_output_test_suite<T: Executor>(executor: T, context: &Context) {
+    pub(crate) fn combined_output_test_suite<T: Executor>(executor: T) {
         let create_testcase = |expr: &str| TestCase {
             title: "Test".into(),
             shell_expression: expr.into(),
@@ -198,7 +199,7 @@ pub(super) mod tests {
             ),
         ];
 
-        run_executor_tests(executor, tests, context);
+        run_executor_tests(executor, tests);
     }
 
     /// An output expectation that can either be an expected
@@ -237,17 +238,13 @@ pub(super) mod tests {
             Option<Duration>,            // input duration
             Result<Vec<ExpectedOutput>>, // expected result
         )>,
-        context: &Context,
     ) {
         let total_tests = tests.len();
         for (test_index, (title, testcases, timeout, expected)) in tests.iter().enumerate() {
-            let mut config = context.config.clone();
-            config.total_timeout = timeout.to_owned();
-            let context = Context {
-                temp_directory: context.temp_directory.clone(),
-                work_directory: context.work_directory.clone(),
-                config,
-            };
+            let context = Context::new_for_test_with_config(DocumentConfig {
+                total_timeout: timeout.to_owned(),
+                ..Default::default()
+            });
             let test_num = test_index + 1;
             let total = testcases.len();
             let result = executor.execute_all(&testcases.iter().collect::<Vec<_>>(), &context);
@@ -302,13 +299,15 @@ pub(super) mod tests {
                     }
                 }
                 #[allow(clippy::expect_fun_call)]
-                Err(expected) => assert_eq!(
-                    *expected,
-                    result.expect_err(&format!(
-                        "expected failure in test #{test_num}/{total_tests} '{title}'"
-                    )),
-                    "expected error output in test #{test_num}/{total_tests} '{title}'",
-                ),
+                Err(expected) => {
+                    assert_eq!(
+                        *expected,
+                        result.expect_err(&format!(
+                            "expected failure in test #{test_num}/{total_tests} '{title}'"
+                        )),
+                        "expected error output in test #{test_num}/{total_tests} '{title}'",
+                    )
+                }
             }
         }
     }

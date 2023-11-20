@@ -56,13 +56,7 @@ impl Executor for StatefulExecutor {
         context: &ExecutionContext,
     ) -> Result<Vec<Output>> {
         // a temporary directory, that will be used to copy state in between the executions
-        let state_directory = context
-            .temp_directory
-            .as_ref()
-            .map_or_else(
-                || TempDir::with_prefix(".state."),
-                |dir| TempDir::with_prefix_in(".state.", dir),
-            )
+        let state_directory = TempDir::with_prefix_in(".state.", &context.temp_directory)
             .context("generate temporary output directory")
             .map_err(|err| ExecutionError::aborted(err, None))?;
 
@@ -178,7 +172,6 @@ mod tests {
 
     use super::StatefulExecutor;
     use crate::executors::bash_runner::BashRunner;
-    use crate::executors::context::Context as ExecutionContext;
     use crate::executors::error::ExecutionError;
     use crate::executors::error::ExecutionTimeout;
     use crate::executors::executor::tests::combined_output_test_suite;
@@ -190,18 +183,16 @@ mod tests {
 
     #[test]
     fn test_standard_test_suite() {
-        standard_output_test_suite(
-            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
-            &ExecutionContext::default(),
-        );
+        standard_output_test_suite(StatefulExecutor(BashRunner::stateful_generator(
+            *DEFAULT_SHELL,
+        )));
     }
 
     #[test]
     fn test_combined_output_test_suite() {
-        combined_output_test_suite(
-            StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
-            &ExecutionContext::default(),
-        );
+        combined_output_test_suite(StatefulExecutor(BashRunner::stateful_generator(
+            *DEFAULT_SHELL,
+        )));
     }
 
     #[test]
@@ -266,7 +257,6 @@ mod tests {
         run_executor_tests(
             StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
-            &ExecutionContext::default(),
         );
     }
 
@@ -319,7 +309,6 @@ mod tests {
         run_executor_tests(
             StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
-            &ExecutionContext::default(),
         );
     }
 
@@ -339,7 +328,6 @@ mod tests {
         run_executor_tests(
             StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
-            &ExecutionContext::default(),
         );
     }
 
@@ -407,7 +395,6 @@ mod tests {
         run_executor_tests(
             StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
-            &ExecutionContext::default(),
         );
     }
 
@@ -431,7 +418,6 @@ mod tests {
         run_executor_tests(
             StatefulExecutor(BashRunner::stateful_generator(*DEFAULT_SHELL)),
             tests,
-            &ExecutionContext::default(),
         );
     }
 }

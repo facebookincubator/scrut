@@ -182,8 +182,8 @@ impl Args {
             let execution_result = executor.execute_all(
                 &testcases,
                 &ContextBuilder::default()
-                    .work_directory(Some(PathBuf::from(&test_work_directory)))
-                    .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
+                    .work_directory(PathBuf::from(&test_work_directory))
+                    .temp_directory(test_environment.tmp_directory.as_path_buf())
                     .config(test.config.with_overrides_from(&document_config))
                     .build()
                     .context("failed to build execution context")?,

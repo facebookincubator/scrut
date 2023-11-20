@@ -126,7 +126,7 @@ mod tests {
         .run(
             "name",
             &TestCase::from_expression("echo OK1 && ( 1>&2 echo OK2 )"),
-            &ExecutionContext::default(),
+            &ExecutionContext::new_for_test(),
         )
         .expect("execute without error");
         let expect: Output = ("OK1\n", "OK2\n").into();
@@ -144,7 +144,7 @@ mod tests {
         .run(
             "name",
             &TestCase::from_expression("echo -e \"🦀\r\n😊\""),
-            &ExecutionContext::default(),
+            &ExecutionContext::new_for_test(),
         )
         .expect("execute without error");
 
@@ -163,7 +163,7 @@ mod tests {
         .run(
             "name",
             &TestCase::from_expression("( exit 123 )"),
-            &ExecutionContext::default(),
+            &ExecutionContext::new_for_test(),
         )
         .expect("execute without error");
 

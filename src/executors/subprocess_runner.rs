@@ -10,7 +10,6 @@ use subprocess::Exec;
 use subprocess::ExitStatus;
 use subprocess::NullFile;
 use subprocess::Redirection;
-use tempfile::tempfile;
 use tempfile::tempfile_in;
 use tracing::debug;
 use tracing::debug_span;
@@ -48,23 +47,16 @@ impl Runner for SubprocessRunner {
         let mut exec = Exec::cmd(shell)
             // TODO(T138035235) coverage is currently using wrong libs
             .env_remove("LD_PRELOAD")
-            .env_extend(&Vec::from_iter(envs.iter()));
-        if let Some(ref directory) = context.work_directory {
-            exec = exec.cwd(directory);
-        }
+            .env_extend(&Vec::from_iter(envs.iter()))
+            .cwd(&context.work_directory);
 
         let input = &testcase.shell_expression as &str;
         let is_detached = testcase.config.detached.unwrap_or(false);
         if is_detached {
             // Why is a temporary file created here? Because the subprocess crate closes the
             // STDIN pipe when it goes out of scope, which will interrupt the detached child.
-            // TODO: there is probably no scenario (anymore) where temp_directory needs to
-            //       be optional => change it so.
-            let mut tmp = context
-                .temp_directory
-                .as_ref()
-                .map_or_else(tempfile, tempfile_in)
-                .context("Create temporary STDIN file")?;
+            let mut tmp =
+                tempfile_in(&context.temp_directory).context("Create temporary STDIN file")?;
             tmp.write(input.as_bytes()).context("write to STDIN file")?;
             tmp.seek(std::io::SeekFrom::Start(0))
                 .context("reset STDIN file")?;
@@ -199,7 +191,7 @@ mod tests {
             .run(
                 "name",
                 &TestCase::from_expression("sleep 0.2 && echo OK1 && sleep 0.2 && echo OK2"),
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\nOK2\n", "").into();
@@ -212,7 +204,7 @@ mod tests {
             .run(
                 "name",
                 &TestCase::from_expression("echo OK1 && ( 1>&2 echo OK2 )"),
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\n", "OK2\n").into();
@@ -233,7 +225,7 @@ mod tests {
                     },
                     ..Default::default()
                 },
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\nOK2\n", "").into();
@@ -247,7 +239,7 @@ mod tests {
             .run(
                 "name",
                 &TestCase::from_expression("echo -e \"🦀\r\n😊\""),
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execute without error");
 
@@ -262,7 +254,7 @@ mod tests {
             .run(
                 "name",
                 &TestCase::from_expression("( exit 123 )"),
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execute without error");
 
@@ -280,7 +272,7 @@ mod tests {
                     "echo ONE && sleep 1 && echo TWO",
                     Some(Duration::from_millis(100)),
                 ),
-                &ExecutionContext::default(),
+                &ExecutionContext::new_for_test(),
             )
             .expect("execution still ends in non-error");
         let duration = std::time::SystemTime::now()

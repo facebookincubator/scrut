@@ -402,7 +402,6 @@ mod tests {
     use super::DividerSearch;
     use super::DIVIDER_PREFIX;
     use crate::config::TestCaseConfig;
-    use crate::executors::context::Context as ExecutionContext;
     use crate::executors::error::ExecutionError;
     use crate::executors::error::ExecutionTimeout;
     use crate::executors::executor::tests::combined_output_test_suite;
@@ -414,12 +413,12 @@ mod tests {
 
     #[test]
     fn test_standard_output_test_suite() {
-        standard_output_test_suite(BashScriptExecutor::default(), &ExecutionContext::default());
+        standard_output_test_suite(BashScriptExecutor::default());
     }
 
     #[test]
     fn test_combined_output_test_suite() {
-        combined_output_test_suite(BashScriptExecutor::default(), &ExecutionContext::default());
+        combined_output_test_suite(BashScriptExecutor::default());
     }
 
     #[test]
@@ -454,11 +453,7 @@ mod tests {
             ),
         ];
 
-        run_executor_tests(
-            BashScriptExecutor::default(),
-            tests,
-            &ExecutionContext::default(),
-        );
+        run_executor_tests(BashScriptExecutor::default(), tests);
     }
 
     #[test]
@@ -481,11 +476,7 @@ mod tests {
             )),
         )];
 
-        run_executor_tests(
-            BashScriptExecutor::default(),
-            tests,
-            &ExecutionContext::default(),
-        );
+        run_executor_tests(BashScriptExecutor::default(), tests);
     }
 
     #[test]
@@ -502,11 +493,7 @@ mod tests {
             Err(ExecutionError::Skipped(0)),
         )];
 
-        run_executor_tests(
-            BashScriptExecutor::default(),
-            tests,
-            &ExecutionContext::default(),
-        );
+        run_executor_tests(BashScriptExecutor::default(), tests);
     }
 
     #[test]
@@ -574,11 +561,7 @@ mod tests {
             ),
         ];
 
-        run_executor_tests(
-            BashScriptExecutor::default(),
-            tests,
-            &ExecutionContext::default(),
-        );
+        run_executor_tests(BashScriptExecutor::default(), tests);
     }
 
     #[test]
@@ -628,10 +611,6 @@ mod tests {
             Ok(vec![("😊🦀\n", "").into(), ("A\nB\n", "").into()]),
         )];
 
-        run_executor_tests(
-            BashScriptExecutor::default(),
-            tests,
-            &ExecutionContext::default(),
-        );
+        run_executor_tests(BashScriptExecutor::default(), tests);
     }
 }

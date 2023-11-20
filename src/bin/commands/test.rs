@@ -226,8 +226,8 @@ impl Args {
             let outputs = executor.execute_all(
                 testcases.as_slice(),
                 &ContextBuilder::default()
-                    .work_directory(Some(PathBuf::from(&test_work_directory)))
-                    .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
+                    .work_directory(PathBuf::from(&test_work_directory))
+                    .temp_directory(test_environment.tmp_directory.as_path_buf())
                     .config(config)
                     .build()
                     .context("failed to build execution context")?,
