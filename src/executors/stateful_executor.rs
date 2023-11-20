@@ -1,10 +1,12 @@
 use std::ops::Add;
 use std::path::Path;
+use std::thread::sleep;
 use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
 use tempfile::TempDir;
+use tracing::debug;
 use tracing::trace;
 use tracing::trace_span;
 
@@ -100,6 +102,15 @@ impl Executor for StatefulExecutor {
             let span = trace_span!("execution", expression = &testcase.shell_expression, timeout = ?&timeout);
             let _enter = span.enter();
 
+            if let Some(ref wait) = testcase.config.wait {
+                debug!("waiting {}", wait);
+                if let Some(ref path) = wait.path {
+                    wait_until_path_or_time(&context.temp_directory.join(path), wait.timeout)
+                } else {
+                    sleep(wait.timeout);
+                }
+            }
+
             // execute the execution, using the shared state directory
             let context = context.to_owned();
             let mut testcase = (*testcase).clone();
@@ -161,6 +172,17 @@ impl Executor for StatefulExecutor {
         }
 
         Ok(outputs)
+    }
+}
+
+fn wait_until_path_or_time(path: &Path, timeout: Duration) {
+    let end = Instant::now().add(timeout);
+    while end > Instant::now() {
+        if path.exists() {
+            eprintln!(">>> FOUND PATH {:?}", path);
+            return;
+        }
+        sleep(Duration::from_millis(50));
     }
 }
 

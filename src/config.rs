@@ -210,6 +210,13 @@ impl TestCaseWait {
     }
 }
 
+impl Display for TestCaseWait {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let out = serde_json::to_string(&self).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", out)
+    }
+}
+
 /// Configuration for the scope of a single [`crate::testcase::TestCase`]
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default)]
