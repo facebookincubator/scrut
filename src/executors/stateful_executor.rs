@@ -181,7 +181,6 @@ fn wait_until_path_or_time(path: &Path, timeout: Duration) {
     let end = Instant::now().add(timeout);
     while end > Instant::now() {
         if path.exists() {
-            eprintln!(">>> FOUND PATH {:?}", path);
             return;
         }
         sleep(Duration::from_millis(50));

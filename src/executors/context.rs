@@ -59,7 +59,6 @@ impl Drop for Context {
                         err
                     )
                 });
-                eprintln!("deleted directory {directory:?}");
             }
         }
     }
