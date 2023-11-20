@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::From;
 use std::path::Path;
 use std::sync::Arc;
@@ -299,7 +299,7 @@ struct PyTestCaseConfig {
     #[pyo3(get)]
     pub detached: Option<bool>,
     #[pyo3(get)]
-    pub environment: HashMap<String, String>,
+    pub environment: BTreeMap<String, String>,
     #[pyo3(get)]
     pub keep_crlf: Option<bool>,
     #[pyo3(get)]

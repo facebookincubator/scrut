@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
+use std::fmt::Display;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -10,6 +11,7 @@ use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use serde::Serializer;
 
 /// Configuration for the scope of a whole document, that may contain multiple testcases
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -41,7 +43,8 @@ pub struct DocumentConfig {
     /// Timeout for the executions of all tests.
     #[serde(
         skip_serializing_if = "Option::is_none",
-        deserialize_with = "parse_duration_opt"
+        deserialize_with = "parse_duration_opt",
+        serialize_with = "render_duration_opt"
     )]
     pub total_timeout: Option<Duration>,
 }
@@ -84,8 +87,16 @@ impl DocumentConfig {
     }
 }
 
+impl Display for DocumentConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let out = serde_json::to_string(&self).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", out)
+    }
+}
+
 /// Controls which output streams are being considered when comparing to tests
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum OutputStreamControl {
     /// Consider only STDOUT when evaluating expectations
     Stdout,
@@ -104,7 +115,10 @@ pub enum OutputStreamControl {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct TestCaseWait {
     /// How long to wait for
-    #[serde(deserialize_with = "parse_duration")]
+    #[serde(
+        deserialize_with = "parse_duration",
+        serialize_with = "render_duration"
+    )]
     pub timeout: Duration,
 
     /// If set then the wait will end early once the path exists
@@ -164,8 +178,8 @@ pub struct TestCaseConfig {
 
     /// A set of environment variable names and values that will be explicitly set
     /// for the test.
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub environment: HashMap<String, String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub environment: BTreeMap<String, String>,
 
     /// Whether CRLF should be translated to LF (=false) or whether CR needs to
     /// be explicitly handled (=true).
@@ -188,7 +202,8 @@ pub struct TestCaseConfig {
     /// will be aborted).
     #[serde(
         skip_serializing_if = "Option::is_none",
-        deserialize_with = "parse_duration_opt"
+        deserialize_with = "parse_duration_opt",
+        serialize_with = "render_duration_opt"
     )]
     pub timeout: Option<Duration>,
 
@@ -278,6 +293,13 @@ impl TestCaseConfig {
     }
 }
 
+impl Display for TestCaseConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let out = serde_json::to_string(&self).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", out)
+    }
+}
+
 fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
@@ -299,9 +321,29 @@ where
     Ok(Some(duration))
 }
 
+fn render_duration<S>(value: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let value = humantime::format_duration(*value).to_string();
+    serializer.serialize_str(&value)
+}
+
+fn render_duration_opt<S>(value: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let value = if let Some(value) = value {
+        humantime::format_duration(*value).to_string()
+    } else {
+        "null".to_string()
+    };
+    serializer.serialize_str(&value)
+}
+
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
     use std::time::Duration;
 
@@ -317,26 +359,26 @@ mod tests {
     }
 
     const FULL_DOCUMENT_CONFIG: &str = "
+append:
+- app1
+- app2
+defaults:
+  detached: true
+  environment:
+    BAZ: zoing
+    FOO: bar
+  keep_crlf: true
+  output_stream: stdout
+  skip_code: 123
+  timeout: 6m 4s
+  wait:
+    timeout: 2m 1s
+    path: the-wait-path
+prepend:
+- prep1
+- prep2
 shell: the-shell
 total_timeout: 5m 3s
-prepend:
-    - prep1
-    - prep2
-append:
-    - app1
-    - app2
-defaults:
-    output_stream: Stdout
-    keep_crlf: true
-    timeout: 6m 4s
-    detached: true
-    environment:
-        FOO: bar
-        BAZ: zoing
-    wait:
-        timeout: 2m 1s
-        path: the-wait-path
-    skip_code: 123
 ";
 
     #[test]
@@ -355,7 +397,7 @@ defaults:
                     keep_crlf: Some(true),
                     timeout: Some(Duration::from_secs(6 * 60 + 4)),
                     environment: {
-                        let mut m = HashMap::new();
+                        let mut m = BTreeMap::new();
                         m.insert("FOO".to_string(), "bar".to_string());
                         m.insert("BAZ".to_string(), "zoing".to_string());
                         m
@@ -371,18 +413,49 @@ defaults:
         )
     }
 
+    #[test]
+    fn test_render_full_document_config() {
+        let config = DocumentConfig {
+            shell: Some("the-shell".into()),
+            total_timeout: Some(Duration::from_secs(5 * 60 + 3)),
+            prepend: vec!["prep1".into(), "prep2".into()],
+            append: vec!["app1".into(), "app2".into()],
+            defaults: TestCaseConfig {
+                output_stream: Some(OutputStreamControl::Stdout),
+                keep_crlf: Some(true),
+                timeout: Some(Duration::from_secs(6 * 60 + 4)),
+                environment: {
+                    let mut m = BTreeMap::new();
+                    m.insert("FOO".to_string(), "bar".to_string());
+                    m.insert("BAZ".to_string(), "zoing".to_string());
+                    m
+                },
+                detached: Some(true),
+                wait: Some(TestCaseWait {
+                    timeout: Duration::from_secs(2 * 60 + 1),
+                    path: Some(PathBuf::from("the-wait-path")),
+                }),
+                skip_code: Some(123),
+            },
+        };
+        assert_eq!(
+            serde_yaml::to_string(&config).expect("render document config to YAML"),
+            FULL_DOCUMENT_CONFIG.to_string().trim_start(),
+        )
+    }
+
     const FULL_TESTCASE_CONFIG: &str = "
-output_stream: Stdout
-keep_crlf: true
-timeout: 6m 4s
 detached: true
 environment:
-    FOO: bar
-    BAZ: zoing
-wait:
-    timeout: 2m 1s
-    path: the-wait-path
+  BAZ: zoing
+  FOO: bar
+keep_crlf: true
+output_stream: stderr
 skip_code: 123
+timeout: 6m 4s
+wait:
+  timeout: 2m 1s
+  path: the-wait-path
 ";
 
     #[test]
@@ -392,11 +465,11 @@ skip_code: 123
         assert_eq!(
             config,
             TestCaseConfig {
-                output_stream: Some(OutputStreamControl::Stdout),
+                output_stream: Some(OutputStreamControl::Stderr),
                 keep_crlf: Some(true),
                 timeout: Some(Duration::from_secs(6 * 60 + 4)),
                 environment: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert("FOO".to_string(), "bar".to_string());
                     m.insert("BAZ".to_string(), "zoing".to_string());
                     m
@@ -408,6 +481,31 @@ skip_code: 123
                 }),
                 skip_code: Some(123),
             }
+        )
+    }
+
+    #[test]
+    fn test_render_full_testcase_config() {
+        let config = TestCaseConfig {
+            output_stream: Some(OutputStreamControl::Stderr),
+            keep_crlf: Some(true),
+            timeout: Some(Duration::from_secs(6 * 60 + 4)),
+            environment: {
+                let mut m = BTreeMap::new();
+                m.insert("FOO".to_string(), "bar".to_string());
+                m.insert("BAZ".to_string(), "zoing".to_string());
+                m
+            },
+            detached: Some(true),
+            wait: Some(TestCaseWait {
+                timeout: Duration::from_secs(2 * 60 + 1),
+                path: Some(PathBuf::from("the-wait-path")),
+            }),
+            skip_code: Some(123),
+        };
+        assert_eq!(
+            serde_yaml::to_string(&config).expect("render testcase config to YAML"),
+            FULL_TESTCASE_CONFIG.to_string().trim_start(),
         )
     }
 
