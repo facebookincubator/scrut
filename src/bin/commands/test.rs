@@ -3,7 +3,6 @@ use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use anyhow::anyhow;
 use anyhow::bail;
@@ -103,10 +102,6 @@ pub struct Args {
     #[clap(long)]
     absolute_line_numbers: bool,
 
-    /// For sequential: Timeout in seconds for whole execution. Use 0 for unlimited
-    #[clap(long, short = 'S', default_value = "900")]
-    timeout_seconds: usize,
-
     #[clap(flatten)]
     global: GlobalSharedParameters,
 }
@@ -203,7 +198,7 @@ impl Args {
                 .collect::<Vec<_>>();
 
             let (timeout, executor) =
-                make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+                make_executor(&self.global.shell, self.global.timeout_seconds, cram_compat)?;
 
             // run test cases and gather output ..
             let outputs = executor.execute_all(
@@ -319,9 +314,6 @@ impl Args {
         }
         if !self.prepend_test_file_paths.is_empty() {
             config.prepend.extend(self.prepend_test_file_paths.clone());
-        }
-        if self.timeout_seconds > 0 {
-            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64));
         }
 
         config.with_defaults_from(&self.global.to_document_config())

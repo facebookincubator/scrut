@@ -3,7 +3,6 @@ use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use anyhow::bail;
 use anyhow::Context;
@@ -84,10 +83,6 @@ pub struct Args {
     #[clap(long, short)]
     replace: bool,
 
-    /// For sequential: Timeout in seconds for whole execution. Use 0 for unlimited
-    #[clap(long, short = 'S', default_value = "900")]
-    timeout_seconds: usize,
-
     /// Per default, renderers that provide line numbers use relative numbers within
     /// the test case / the output of the execution. Setting this flag changes that
     /// to use absolute line numbers from within the test file.
@@ -162,7 +157,7 @@ impl Args {
                 .collect::<Vec<_>>();
 
             let (timeout, executor) =
-                make_executor(&self.global.shell, self.timeout_seconds, cram_compat)?;
+                make_executor(&self.global.shell, self.global.timeout_seconds, cram_compat)?;
 
             let execution_result = executor.execute_all(
                 &executions.iter().collect::<Vec<_>>(),
@@ -357,12 +352,7 @@ impl Args {
     }
 
     fn to_document_config(&self) -> DocumentConfig {
-        let mut config = DocumentConfig::empty();
-        if self.timeout_seconds > 0 {
-            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64))
-        }
-
-        config.with_defaults_from(&self.global.to_document_config())
+        self.global.to_document_config()
     }
 
     fn to_testcase_config(&self) -> TestCaseConfig {

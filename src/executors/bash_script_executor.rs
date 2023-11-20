@@ -15,6 +15,7 @@ use super::error::ExecutionTimeout;
 use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
+use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
 use super::subprocess_runner::SubprocessRunner;
 use super::DEFAULT_SHELL;
@@ -68,10 +69,15 @@ impl Executor for BashScriptExecutor {
     ) -> Result<Vec<Output>> {
         let script = self.build_script(executions, context)?;
         let runner = SubprocessRunner(self.0.to_owned());
+        let timeout = context.timeout.unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
         let output = runner
             .run(
                 "script",
-                &Execution::new(&script).timeout(context.timeout),
+                &Execution::new(&script).timeout(if timeout.is_zero() {
+                    None
+                } else {
+                    Some(timeout)
+                }),
                 context,
             )
             .map_err(|err| ExecutionError::from_execute(err, None, None))?;

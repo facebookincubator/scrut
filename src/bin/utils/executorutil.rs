@@ -11,13 +11,13 @@ use super::environment::canonical_shell;
 
 pub(crate) fn make_executor(
     shell: &Path,
-    timeout_seconds: usize,
+    timeout_seconds: u64,
     cram_compat: bool,
 ) -> Result<(Option<Duration>, Box<dyn Executor>)> {
     let shell = canonical_shell(shell)?;
     Ok((
         if timeout_seconds > 0 {
-            Some(Duration::from_secs(timeout_seconds as u64))
+            Some(Duration::from_secs(timeout_seconds))
         } else {
             None
         },

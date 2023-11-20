@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::time::Duration;
 
 use clap::Parser;
 use clap::Subcommand;
@@ -78,6 +79,10 @@ pub(crate) struct GlobalParameters {
     /// instead.
     #[clap(long, short, global = true)]
     pub(crate) work_directory: Option<PathBuf>,
+
+    /// Timeout in seconds for whole execution. Use 0 for unlimited.
+    #[clap(long, default_value = "900", global = true)]
+    pub(crate) timeout_seconds: u64,
 }
 
 #[derive(Parser, Debug, Default)]
@@ -103,6 +108,9 @@ pub(crate) struct GlobalSharedParameters {
 
     #[clap(from_global)]
     pub(crate) escaping: Option<Escaper>,
+
+    #[clap(from_global)]
+    pub(crate) timeout_seconds: u64,
 }
 
 impl GlobalSharedParameters {
@@ -115,6 +123,11 @@ impl GlobalSharedParameters {
         let mut config = DocumentConfig::empty();
         if !self.shell.as_os_str().is_empty() {
             config.shell = Some(self.shell.clone())
+        }
+
+        // TODO: remove defaulting to 900s here when enabling inline-configuration
+        if self.timeout_seconds > 0 {
+            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds))
         }
 
         config
@@ -159,7 +172,6 @@ impl GlobalSharedParameters {
 
 #[cfg(test)]
 mod tests {
-
     use scrut::config::DocumentConfig;
     use scrut::config::OutputStreamControl;
     use scrut::config::TestCaseConfig;

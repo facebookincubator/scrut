@@ -45,10 +45,6 @@ pub struct Args {
     #[clap(long, short, default_value = "Command executes successfully")]
     title: String,
 
-    /// Max execution time for the provided shell expression to execute
-    #[clap(long, short = 'S', default_value = "900")]
-    timeout_seconds: usize,
-
     #[clap(flatten)]
     global: GlobalSharedParameters,
 }
@@ -56,10 +52,10 @@ pub struct Args {
 impl Args {
     pub(crate) fn run(&self) -> Result<()> {
         // get timeout for executing of the expression
-        if self.timeout_seconds == 0 {
+        if self.global.timeout_seconds == 0 {
             bail!("timeout must be greater than zero")
         }
-        let timeout = Duration::from_secs(self.timeout_seconds as u64);
+        let timeout = Duration::from_secs(self.global.timeout_seconds);
 
         // get expression from either STDIN or command line argument(s)
         let expression = if self.shell_expression.len() == 1 && self.shell_expression[0] == "-" {
@@ -147,11 +143,6 @@ impl Args {
     }
 
     fn to_document_config(&self) -> DocumentConfig {
-        let mut config = DocumentConfig::empty();
-        if self.timeout_seconds > 0 {
-            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds as u64))
-        }
-
-        config.with_defaults_from(&self.global.to_document_config())
+        self.global.to_document_config()
     }
 }

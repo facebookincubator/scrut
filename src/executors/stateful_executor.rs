@@ -13,6 +13,7 @@ use super::error::ExecutionError;
 use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
+use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
 use crate::executors::error::ExecutionTimeout;
 use crate::output::ExitStatus;
@@ -65,7 +66,12 @@ impl Executor for StatefulExecutor {
             .map_err(|err| ExecutionError::aborted(err, None))?;
 
         // prepare "global" timeout, if there is any
-        let timeout_at = context.timeout.map(|duration| Instant::now().add(duration));
+        let timeout_duration = context.timeout.unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
+        let timeout_at = if timeout_duration.is_zero() {
+            None
+        } else {
+            Some(Instant::now().add(timeout_duration))
+        };
         let timeout_left = || timeout_at.map(|at| at.duration_since(Instant::now()));
         let runner_gen = &self.0;
 

@@ -9,10 +9,17 @@
 //!
 //! Then again: muh.
 
+use std::time::Duration;
+
 use super::context::Context;
 use super::error::ExecutionError;
 use super::execution::Execution;
 use crate::output::Output;
+
+lazy_static! {
+    /// Default timeout for all executions within a single test document
+    pub static ref DEFAULT_TOTAL_TIMEOUT: Duration = Duration::from_secs(900);
+}
 
 pub type Result<T> = anyhow::Result<T, ExecutionError>;
 
