@@ -133,7 +133,8 @@ impl Args {
         // initiate outputs
         let mut has_failed = false;
         let mut outcomes = vec![];
-        let (mut count_success, mut count_skipped, mut count_failed) = (0, 0, 0);
+        let (mut count_success, mut count_skipped, mut count_failed, mut count_detached) =
+            (0, 0, 0, 0);
 
         // load configuration from command line
         let document_config = self.to_document_config();
@@ -261,18 +262,27 @@ impl Args {
                         debug_testcases(&test.testcases, &test.path, &outputs);
                     }
 
+                    let testcase_count = testcases.len();
+                    let expected_testcases = testcases
+                        .into_iter()
+                        .filter(|t| !t.config.detached.unwrap_or(false))
+                        .collect::<Vec<_>>();
+                    count_detached += testcase_count - expected_testcases.len();
+
                     // this should not happen: different amount of outputs than executed testcases
-                    if outputs.len() != testcases.len() {
+                    if outputs.len() != expected_testcases.len() {
                         bail!(
                             "expected {} outputs from execution, but got {}",
-                            testcases.len(),
+                            expected_testcases.len(),
                             outputs.len()
                         )
                     }
 
                     // .. to compare the outputs with testcases and gather that
                     //    outcome for later rendering
-                    for (testcase, output) in testcases.into_iter().zip(outputs) {
+                    for (testcase, output) in
+                        expected_testcases.into_iter().zip(outputs.into_iter())
+                    {
                         let result = testcase.validate(&output);
                         if result.is_err() {
                             count_failed += 1;
@@ -315,7 +325,8 @@ impl Args {
         info!(
             success = count_success,
             skipped = count_skipped,
-            failed = count_failed
+            failed = count_failed,
+            detached = count_detached,
         );
         print!("{}", renderer.render(&outcomes.iter().collect::<Vec<_>>())?);
 

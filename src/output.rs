@@ -56,6 +56,16 @@ impl Debug for Output {
     }
 }
 
+impl Default for Output {
+    fn default() -> Self {
+        Self {
+            stdout: vec![].into(),
+            stderr: vec![].into(),
+            exit_code: ExitStatus::Unknown,
+        }
+    }
+}
+
 impl Serialize for Output {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -120,6 +130,10 @@ pub enum ExitStatus {
     /// Execution was skipped
     Skipped,
 
+    /// Implies the execution was intentionally detached and any output should
+    /// be ignored.
+    Detached,
+
     /// Execution failed for unknown reason
     Unknown,
 }
@@ -134,6 +148,7 @@ impl ExitStatus {
             Self::Code(code) => *code,
             Self::Skipped => DEFAULT_SKIP_DOCUMENT_CODE,
             Self::Timeout(_) => -1,
+            Self::Detached => -100,
             Self::Unknown => -255,
         }
     }
@@ -145,6 +160,7 @@ impl Display for ExitStatus {
             Self::Code(code) => write!(f, "{}", code),
             Self::Timeout(duration) => write!(f, "timeout[{:.2}ms]", duration.as_millis()),
             Self::Skipped => write!(f, "skipped"),
+            Self::Detached => write!(f, "detached"),
             Self::Unknown => write!(f, "unknown"),
         }
     }

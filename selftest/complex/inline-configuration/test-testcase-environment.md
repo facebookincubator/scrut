@@ -2,10 +2,6 @@
 
 Tests in this file validate that the `environment` configuration sets environment variables as intended.
 
-```scrut
-$ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
-```
-
 ## Environment variable is not set initially
 
 ```scrut

@@ -1,11 +1,19 @@
 use std::io::ErrorKind;
+use std::io::Seek;
+use std::io::Write;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
 use subprocess::Exec;
 use subprocess::ExitStatus;
+use subprocess::NullFile;
 use subprocess::Redirection;
+use tempfile::tempfile;
+use tempfile::tempfile_in;
+use tracing::debug;
+use tracing::debug_span;
 use tracing::trace;
 
 use super::context::Context as ExecutionContext;
@@ -23,6 +31,12 @@ use crate::testcase::TestCase;
 #[derive(Clone)]
 pub struct SubprocessRunner(pub(super) PathBuf);
 
+impl SubprocessRunner {
+    pub fn new(p: PathBuf) -> Self {
+        Self(p)
+    }
+}
+
 impl Runner for SubprocessRunner {
     fn run(&self, _name: &str, testcase: &TestCase, context: &ExecutionContext) -> Result<Output> {
         let shell = &self.0;
@@ -32,39 +46,83 @@ impl Runner for SubprocessRunner {
         envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 
         let mut exec = Exec::cmd(shell)
-            .stdout(Redirection::Pipe)
             // TODO(T138035235) coverage is currently using wrong libs
             .env_remove("LD_PRELOAD")
-            .stderr(
-                if testcase.config.output_stream
-                    == Some(crate::config::OutputStreamControl::Combined)
-                {
-                    Redirection::Merge
-                } else {
-                    Redirection::Pipe
-                },
-            )
-            .stdin(Redirection::Pipe)
-            //.stdin(&execution.expression as &str)
             .env_extend(&Vec::from_iter(envs.iter()));
         if let Some(ref directory) = context.work_directory {
             exec = exec.cwd(directory);
         }
 
         let input = &testcase.shell_expression as &str;
+        let is_detached = testcase.config.detached.unwrap_or(false);
+        if is_detached {
+            // Why is a temporary file created here? Because the subprocess crate closes the
+            // STDIN pipe when it goes out of scope, which will interrupt the detached child.
+            // TODO: there is probably no scenario (anymore) where temp_directory needs to
+            //       be optional => change it so.
+            let mut tmp = context
+                .temp_directory
+                .as_ref()
+                .map_or_else(tempfile, tempfile_in)
+                .context("Create temporary STDIN file")?;
+            tmp.write(input.as_bytes()).context("write to STDIN file")?;
+            tmp.seek(std::io::SeekFrom::Start(0))
+                .context("reset STDIN file")?;
+            exec = exec
+                .stdout(NullFile)
+                .stderr(NullFile)
+                .stdin(Redirection::File(tmp));
+        } else {
+            exec = exec
+                .stdout(Redirection::Pipe)
+                .stderr(
+                    if testcase.config.output_stream
+                        == Some(crate::config::OutputStreamControl::Combined)
+                    {
+                        Redirection::Merge
+                    } else {
+                        Redirection::Pipe
+                    },
+                )
+                .stdin(Redirection::Pipe);
+        }
+
         let mut process = exec.detached().popen().context("start process")?;
+        let span = debug_span!("process", pid = ?process.pid());
+        let _s = span.enter();
+        trace!(testcase = %&testcase, "running testcase in subprocess");
+
+        // when detaching, do not wait for the process to finish
+        if is_detached {
+            debug!("detaching, not waiting for output");
+            return Ok(Output {
+                exit_code: OutputExitStatus::Detached,
+                ..Default::default()
+            });
+        }
+
+        // constraint max execution time?
         let mut comm = process.communicate_start(Some(input.as_bytes().to_vec()));
         if let Some(timeout) = testcase.config.timeout {
             comm = comm.limit_time(timeout);
+            debug!(
+                "waiting for output (max {})",
+                humantime::format_duration(Duration::from_secs(timeout.as_secs()))
+            );
+        } else {
+            debug!("waiting for output (no timeout)");
         }
-        trace!(testcase = %&testcase, "running testcase in subprocess");
 
+        // wait for the process to finish and handle the result
         let (stdout, stderr, exit_code) = match comm.read() {
+            // successs! we are happy!
             Ok((stdout, stderr)) => (
                 stdout,
                 stderr,
                 process.wait().context("capture process exit")?.into(),
             ),
+
+            // bummer, a sad thing happened
             Err(err) => {
                 let kind = err.kind();
                 let (stdout, stderr) = err.capture;

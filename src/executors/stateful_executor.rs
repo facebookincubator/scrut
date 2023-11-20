@@ -148,6 +148,11 @@ impl Executor for StatefulExecutor {
                     return Err(ExecutionError::Skipped(index));
                 }
 
+                // user says the process is running detached and we should ignore it
+                ExitStatus::Detached => {
+                    // nothing to do, we just ignore it
+                }
+
                 // undefined: things are hairy, better end
                 ExitStatus::Unknown => {
                     outputs.push(output);
