@@ -8,6 +8,8 @@ All test files contain one or more test cases. As mentioned before, CLIs live on
 - **Coherent Test Suite** (recommended): One test file represents one use-case or behavior
 - **List of Tests**: One test file contains a list of simple, not necessarily related tests
 
+Markdown files additionally support document wide configuration in the form of "YAML Frontmatter".
+
 ### Test Case Anatomy
 
 Each individual test that lives in a test file is called _Test Case_ and consists of the following components:
@@ -16,6 +18,7 @@ Each individual test that lives in a test file is called _Test Case_ and consist
 2. A **Shell Expression**, that can be anything from a single command to a multi-line, multi-piped expression
 3. **[Expectations](Expectations.md)** of the output that the Shell Expression will yield
 4. Optionally the expected _Exit Code_ the Shell Expression must end in - if anything but successful execution (`0`) is expected
+5. Optionally per-test-case configuration (only supported by Markdown format)
 
 ## Markdown Format
 
@@ -52,22 +55,23 @@ With that in mind, consider the following markdown file that contains not only T
 ````
 # This is just regular markdown
 
-It contains information an code examples that are unrelated to Scrut.
+It contains both Scrut tests **and**  abitrary text, including code examples,
+that are unrelated to Scrut.
 
 ```python
 import os
 
-print("This is ignored by Scrut")
+print("This code block ignored by Scrut")
 ```
 
-# It also includes Scrut tests
+## Here is a scrut test
 
 ```scrut
 $ echo Hello
 Hello
 ```
 
-# Embedded with other documentation
+## Embedded with other documentation
 
 So it's a mix of test and not tests.
 
@@ -82,6 +86,138 @@ Just make sure to write only one Test Case per code-block.
 ````
 
 > **Note**: If you are testing actual markdown output, be aware that you can embed code blocks in other code blocks, if the outer code block uses one more backtick (opening and closing!) than the embedded one(s). Just have a look at the source code of this file right above this text.
+
+### Inline Configuration
+
+Scrut supports two kinds of inline configuration:
+1. **Per Document** (document-wide) configuration, which can be defined at the start of the test file
+2. **Per Test Case** (test-case-wide) configuration, which can be defined with eaach individual Test Case
+
+**Example**
+
+````markdown
+---
+total_timeout: 30s
+---
+
+# The test document
+
+The initial block that is initialized with `---` and terminated with `---` contains the configuration in YAML notation.
+
+## A simple test
+
+```scrut
+$ echo Hello One
+Hello One
+```
+
+The above test does not contain any per-test configuration
+
+## A test with configuration
+
+```scrut {timeout: 10s}
+$ echo Hello Two
+Hello Two
+```
+
+The above test contains per-test configuration
+````
+
+Some inline-configuration attribute can overwritten by parameters provided on the command-line. The order of precedence is:
+1. Command-line parameter
+2. Per-TestCase configuration
+3. Per-Document configuration
+4. Default
+
+#### Document Configuration
+
+| Name            | Type                                                           | Corresponding Command Line Parameter | Description                                                                                                                                                                                                                                      |
+| --------------- | -------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `append`        | list of strings                                                | `--append-test-file-paths`           | Include these paths in order, as if they were part of this file. All tests within the appended paths are appended to the tests defined in this file. Use-case is common/shared test tear-down. Paths must be relative to the current `$TESTDIR`. |
+| `defaults`      | [TestCase Configuration](#testcase-configuration)              | n/a                                  | Defaults for per-test-case configuration within the test file.                                                                                                                                                                                   |
+| `prepend`       | list of strings                                                | `--prepend-test-file-paths`          | Include these paths in order, as if they were part of this file. All tests within the prepend paths are prepended to the tests defined in this file. Use-case is common/shared test setup. Paths must be relative to the current `$TESTDIR`.     |
+| `shell`         | string                                                         | `--shell`                            | The path to the shell. If a full path is not provided, then the command must be in `$PATH`. **Only `bash` compatible shells are currently supported!**                                                                                           |
+| `total_timeout` | [duration string](https://docs.rs/humantime/latest/humantime/) | `--timeout-seconds`                  | All tests within the file (including appended and prepended) must finish executing within this time.                                                                                                                                             |
+
+**Defaults (Markdown and Cram)**
+
+```yaml
+append: []
+defaults: {}
+prepend: []
+shell: bash
+total_timeout: 15m
+```
+
+**Caveats**
+
+- Per-document configuration in files that are appended or prepended is ignored
+
+#### TestCase Configuration
+
+| Name                 | Type                                                                                                                | Corresponding Command Line Parameter         | Description                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `detached`           | boolean                                                                                                             | n/a                                          | Tell Scrut that the shell expression of this test will detach itself, so Scrut will not consider this a test (i.e. no output or exit code evaluation). Purpose is to allow the user to detach a command (like `nohup some-command &`) that is doing something asynchronous (e.g. starting a server to which the tested CLI is a client). |
+| `environment`        | object                                                                                                              | n/a                                          | A set of environment variable names and values that will be explicitly set for the test.                                                                                                                                                                                                                                                 |
+| `keep_crlf`          | boolean                                                                                                             | `--keep-output-crlf`                         | Whether CRLF should be translated to LF (=false) or whether CR needs to be explicitly handled (=true).                                                                                                                                                                                                                                   |
+| `output_stream`      | enum (`stdout`, `stderr`, `combined`)                                                                               | `--combine-output` and `--no-combine-output` | Which output stream to choose when applying output expectations: `stdout` (all expectations apply to what is printed on STDOUT), `stderr` (all expectations apply to what is printed on STDERR), `combined` (STDOUT and STDERR will combined into a single stream where all expectations are applied on)                                 |
+| `skip_document_code` | positive integer                                                                                                    | n/a                                          | The exit code, that if returned by any test, leads to skipping of the whole file.                                                                                                                                                                                                                                                        |
+| `timeout`            | null or [duration string](https://docs.rs/humantime/latest/humantime/)                                              | n/a                                          | A max execution time a test can run before it is considered failed (and will be aborted).                                                                                                                                                                                                                                                |
+| `wait`               | null or [duration string](https://docs.rs/humantime/latest/humantime/) or [Wait Configuration](#wait-configuration) | n/a                                          | See [Wait Configuration](#wait-configuration)                                                                                                                                                                                                                                                                                            |
+
+**Defaults (Markdown)**
+
+```yaml
+detached: false
+environment: {}
+keep_crlf: false
+output_stream: stdout
+skip_document_code: 80
+timeout: null
+wait: null
+```
+
+**Defaults (Cram)**
+
+```yaml
+detached: false
+environment: {}
+keep_crlf: true
+output_stream: combined
+skip_document_code: 80
+timeout: null
+wait: null
+```
+
+### Wait Configuration
+
+This configuration corresponds to the per-test-case `detached` configuration and helps to write client / server tests where first a server is started (i.e. a test that runs detached) and then a client communicates with the server (i.e. a test that waits)
+
+| Name      | Type                                                           | Description                                                                              |
+| --------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `timeout` | [duration string](https://docs.rs/humantime/latest/humantime/) | How long to wait for the test to run.                                                    |
+| `path`    | null or string                                                 | If set then the wait will end early once the path exists. This path must be in `$TMPDIR` |
+
+
+**Example**
+
+````markdown
+# A server/client test example
+
+Show-case how a server/client test that initially starts a server
+
+## Start a server
+
+```scrut {detached: true}
+$ my-server --start && touch "$TMPDIR"/server-started
+```
+
+## Run client test once server is up
+
+```scrut {wait: {timeout: 5m, path: server-started}}
+$ my-client --do-a-thing
+```
+````
 
 ## Cram Format
 

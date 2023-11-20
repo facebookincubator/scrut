@@ -160,7 +160,7 @@ impl Display for OutputStreamControl {
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct TestCaseWait {
-    /// How long to wait for
+    /// How long to wait for the test to run.
     #[serde(
         deserialize_with = "parse_duration",
         serialize_with = "render_duration"
@@ -240,10 +240,10 @@ pub struct TestCaseConfig {
     pub keep_crlf: Option<bool>,
 
     /// Which output stream to choose when applying output expectations:
-    /// - `Stdout`: All expectations apply to what is printed on STDOUT
-    /// - `Stderr`: All expectations apply to what is printed on STDERR
-    /// - `Combined`: STDOUT and STDERR will combined into a single stream where all expectations are applied on
-    /// - `Marked` (todo): User marks which expectations are intended for which stream explicitly
+    /// - `stdout`: All expectations apply to what is printed on STDOUT
+    /// - `stderr`: All expectations apply to what is printed on STDERR
+    /// - `combined`: STDOUT and STDERR will combined into a single stream where all expectations are applied on
+    /// - `marked` (todo): User marks which expectations are intended for which stream explicitly
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_stream: Option<OutputStreamControl>,
 
