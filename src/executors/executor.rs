@@ -13,8 +13,8 @@ use std::time::Duration;
 
 use super::context::Context;
 use super::error::ExecutionError;
-use super::execution::Execution;
 use crate::output::Output;
+use crate::testcase::TestCase;
 
 lazy_static! {
     /// Default timeout for all executions within a single test document
@@ -23,63 +23,76 @@ lazy_static! {
 
 pub type Result<T> = anyhow::Result<T, ExecutionError>;
 
-/// An Executor runs multiple [`super::execution::Execution`] at once and returns
-/// their Output in the order they were provided.
+/// An Executor runs the shell expressions of multiple [`crate::testcase::TestCase`]
+/// at once and returns their Output in the order they were provided.
 ///
 /// Failure in execution may result in [`super::error::ExecutionError`]
 pub trait Executor {
     /// Run multiple Executions and get their Output. May or may not support
     /// timeout per Execution or in total (or neither)
-    fn execute_all(&self, executions: &[&Execution], context: &Context) -> Result<Vec<Output>>;
+    fn execute_all(&self, testcases: &[&TestCase], context: &Context) -> Result<Vec<Output>>;
 }
 
 #[cfg(test)]
 pub(super) mod tests {
+    use std::collections::BTreeMap;
     use std::time::Duration;
 
     use regex::Regex;
 
     use super::Executor;
     use super::Result;
+    use crate::config::OutputStreamControl;
+    use crate::config::TestCaseConfig;
     use crate::escaping::Escaper;
     use crate::executors::context::Context;
-    use crate::executors::execution::Execution;
     use crate::output::ExitStatus;
     use crate::output::Output;
+    use crate::testcase::TestCase;
 
     /// A suite of tests that every executor should be able to pass
-    pub(crate) fn standard_test_suite<T: Executor>(executor: T, context: &Context) {
+    pub(crate) fn standard_output_test_suite<T: Executor>(executor: T, context: &Context) {
+        let create_testcase = |expr: &str| TestCase {
+            title: "Test".into(),
+            shell_expression: expr.into(),
+            config: TestCaseConfig {
+                output_stream: Some(OutputStreamControl::Stdout),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &str,                        // title
-            Vec<Execution>,              // input executions
+            Vec<TestCase>,               // input executions
             Option<Duration>,            // input duration
             Result<Vec<ExpectedOutput>>, // expected result
         )> = vec![
             (
                 "STDOUT is delegated",
-                vec![Execution::new("echo OK")],
+                vec![create_testcase("echo OK")],
                 None,
                 Ok(vec![("OK\n", "").into()]),
             ),
             (
                 "STDERR is delegated",
-                vec![Execution::new("1>&2 echo OK")],
+                vec![create_testcase("1>&2 echo OK")],
                 None,
                 Ok(vec![("", "OK\n").into()]),
             ),
             (
                 "Exit Code is delegated",
-                vec![Execution::new("( exit 123 )")],
+                vec![create_testcase("( exit 123 )")],
                 None,
                 Ok(vec![("", "", Some(123)).into()]),
             ),
             (
                 "Multiple Executions are Delegated",
                 vec![
-                    Execution::new("echo OK1 && 1>&2 echo EOK1"),
-                    Execution::new("echo OK2 && 1>&2 echo EOK2"),
-                    Execution::new("echo OK3 && 1>&2 echo EOK3"),
+                    create_testcase("echo OK1 && 1>&2 echo EOK1"),
+                    create_testcase("echo OK2 && 1>&2 echo EOK2"),
+                    create_testcase("echo OK3 && 1>&2 echo EOK3"),
                 ],
                 None,
                 Ok(vec![
@@ -91,9 +104,9 @@ pub(super) mod tests {
             (
                 "Exit code in between executions",
                 vec![
-                    Execution::new("echo OK1"),
-                    Execution::new("( exit 123 )"),
-                    Execution::new("echo OK2"),
+                    create_testcase("echo OK1"),
+                    create_testcase("( exit 123 )"),
+                    create_testcase("echo OK2"),
                 ],
                 None,
                 Ok(vec![
@@ -104,7 +117,16 @@ pub(super) mod tests {
             ),
             (
                 "Environment variables are set",
-                vec![Execution::new("echo have $FOOBAR").environment(&[("FOOBAR", "barfoo")])],
+                vec![TestCase {
+                    title: "Test".into(),
+                    shell_expression: "echo have $FOOBAR".into(),
+                    config: TestCaseConfig {
+                        environment: BTreeMap::from([("FOOBAR".into(), "barfoo".into())]),
+                        output_stream: Some(OutputStreamControl::Stdout),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }],
                 None,
                 Ok(vec![("have barfoo\n", "").into()]),
             ),
@@ -115,28 +137,38 @@ pub(super) mod tests {
 
     /// A suite of tests that asserts executor combines output
     pub(crate) fn combined_output_test_suite<T: Executor>(executor: T, context: &Context) {
+        let create_testcase = |expr: &str| TestCase {
+            title: "Test".into(),
+            shell_expression: expr.into(),
+            config: TestCaseConfig {
+                output_stream: Some(OutputStreamControl::Combined),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         #[allow(clippy::type_complexity)]
         let tests: Vec<(
             &str,                        // title
-            Vec<Execution>,              // input executions
+            Vec<TestCase>,               // input executions
             Option<Duration>,            // input duration
             Result<Vec<ExpectedOutput>>, // expected result
         )> = vec![
             (
                 "STDOUT is just delegated",
-                vec![Execution::new("echo OK")],
+                vec![create_testcase("echo OK")],
                 None,
                 Ok(vec![("OK\n", "").into()]),
             ),
             (
                 "Output in STDERR shows up in STDOUT",
-                vec![Execution::new("1>&2 echo OK")],
+                vec![create_testcase("1>&2 echo OK")],
                 None,
                 Ok(vec![("OK\n", "").into()]),
             ),
             (
                 "Output on STDERR and STDOUT is combined to STDOUT",
-                vec![Execution::new(
+                vec![create_testcase(
                     "( echo OKOUT1 ; 1>&2 echo OKERR1 ; echo OKOUT2 ; 2>&1 echo OKERR2 )",
                 )],
                 None,
@@ -144,7 +176,7 @@ pub(super) mod tests {
             ),
             (
                 "Output on STDERR and STDOUT is combined to STDOUT",
-                vec![Execution::new(
+                vec![create_testcase(
                     "( echo OKOUT1 ; 1>&2 echo OKERR1 ; echo -n OKOUT2 ; 2>&1 echo -n OKERR2 )",
                 )],
                 None,
@@ -153,9 +185,9 @@ pub(super) mod tests {
             (
                 "Multiple execution output combines each execution's",
                 vec![
-                    Execution::new("( echo OKOUT1 ; 1>&2 echo OKERR1 )"),
-                    Execution::new("( echo OKOUT2 ; 1>&2 echo OKERR2 )"),
-                    Execution::new("( echo OKOUT3 ; 1>&2 echo OKERR3 )"),
+                    create_testcase("( echo OKOUT1 ; 1>&2 echo OKERR1 )"),
+                    create_testcase("( echo OKOUT2 ; 1>&2 echo OKERR2 )"),
+                    create_testcase("( echo OKOUT3 ; 1>&2 echo OKERR3 )"),
                 ],
                 None,
                 Ok(vec![
@@ -201,59 +233,60 @@ pub(super) mod tests {
         executor: T,
         tests: Vec<(
             &str,                        // title
-            Vec<Execution>,              // input executions
+            Vec<TestCase>,               // input executions
             Option<Duration>,            // input duration
             Result<Vec<ExpectedOutput>>, // expected result
         )>,
         context: &Context,
     ) {
-        for (title, executions, timeout, expected) in tests {
-            let result = executor.execute_all(
-                &executions.iter().collect::<Vec<_>>(),
-                &context.with_timeout(timeout),
-            );
+        let total_tests = tests.len();
+        for (test_index, (title, testcases, timeout, expected)) in tests.iter().enumerate() {
+            let mut config = context.config.clone();
+            config.total_timeout = timeout.to_owned();
+            let context = Context {
+                temp_directory: context.temp_directory.clone(),
+                work_directory: context.work_directory.clone(),
+                config,
+            };
+            let test_num = test_index + 1;
+            let total = testcases.len();
+            let result = executor.execute_all(&testcases.iter().collect::<Vec<_>>(), &context);
             match expected {
                 #[allow(clippy::expect_fun_call)]
                 Ok(expected) => {
                     let result = result.unwrap_or_else(|err| {
-                        panic!("expected success in '{}', but got: {}", title, err)
+                        panic!("expected success in test #{test_num}/{total_tests} '{title}', but got: {err}")
                     });
                     assert_eq!(
                         expected.len(),
                         result.len(),
-                        "expected amount of outputs in '{}'",
-                        title
+                        "expected amount of outputs in test #{test_num}/{total_tests} '{title}'",
                     );
                     for (index, expected_output) in expected.iter().enumerate() {
+                        let num = index + 1;
                         match expected_output {
                             ExpectedOutput::Output(output) => assert_eq!(
                                 Some(output),
                                 result.get(index),
-                                "matching output in '{}' #{}",
-                                title,
-                                index,
+                                "matching output in test #{test_num}/{total_tests} '{title}', testcase #{num}/{total}",
                             ),
                             ExpectedOutput::Regex(stdout, stderr, exit_code) => {
                                 let output = result.get(index).unwrap_or_else(|| {
-                                    panic!("have output in '{}' #{}", title, index)
+                                    let count = result.len();
+                                    panic!("have output in test #{test_num}/{total_tests} '{title}', testcase #{num}/{total}: found only {count} results")
                                 });
                                 if let Some(exit_code) = exit_code {
                                     assert_eq!(
                                         &output.exit_code, exit_code,
-                                        "exit status in '{}' #{}",
-                                        title, index,
+                                        "exit status in test #{test_num}/{total_tests} '{title}', testcase #{num}/{total}",
                                     )
                                 }
                                 if let Some(regex) = stdout {
-                                    eprintln!("output is {:?}", output);
                                     let stdout =
                                         output.stdout.to_output_string(None, &Escaper::default());
                                     assert!(
                                         regex.is_match(&stdout),
-                                        "STDOUT matches '{:?}' #{}: {:?}",
-                                        regex,
-                                        index,
-                                        &stdout,
+                                        "STDOUT matches in test #{test_num}/{total_tests} '{title}' with regex '{regex:?}', testcase #{num}/{total}: {stdout:?}",
                                     )
                                 }
                                 if let Some(regex) = stderr {
@@ -261,10 +294,7 @@ pub(super) mod tests {
                                         output.stderr.to_output_string(None, &Escaper::default());
                                     assert!(
                                         regex.is_match(&stderr),
-                                        "STDERR matches '{:?}' #{}: {:?}",
-                                        regex,
-                                        index,
-                                        &stderr,
+                                        "STDERR matches in test #{test_num}/{total_tests} '{title}' with regex '{regex:?}', testcase #{num}/{total}: {stderr:?}",
                                     )
                                 }
                             }
@@ -273,10 +303,11 @@ pub(super) mod tests {
                 }
                 #[allow(clippy::expect_fun_call)]
                 Err(expected) => assert_eq!(
-                    expected,
-                    result.expect_err(&format!("expected failure in '{}'", title)),
-                    "expected error output in '{}'",
-                    title,
+                    *expected,
+                    result.expect_err(&format!(
+                        "expected failure in test #{test_num}/{total_tests} '{title}'"
+                    )),
+                    "expected error output in test #{test_num}/{total_tests} '{title}'",
                 ),
             }
         }

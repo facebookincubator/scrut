@@ -24,9 +24,10 @@ pub enum ExecutionTimeout {
 #[derive(Debug, Derivative)]
 #[derivative(PartialEq)]
 pub enum ExecutionError {
-    /// Returned if a specific [`super::execution::Execution`] failed
+    /// Returned if a specific [`crate::testcase::TestCase`] fails to execute.
+    /// This does not mean that that test iself failed, but that something went wrong.
     FailedExecution {
-        /// The index of the failed execution as it was passed to execute_all
+        /// The index of the failed testcase as it was passed to execute_all
         index: usize,
 
         /// The error that prevented the execution from concluding in an Output
@@ -34,7 +35,8 @@ pub enum ExecutionError {
         error: anyhow::Error,
     },
 
-    /// Returned on errors that are not specific to an [`super::execution::Execution`]
+    /// Returned on errors that happen during execution, but are not specific to
+    /// a particular [`crate::testcase::TestCase`].
     AbortedExecutions {
         /// The cause of the execution being aborted
         #[derivative(PartialEq(compare_with = "stringable_cmp"))]
@@ -44,12 +46,13 @@ pub enum ExecutionError {
         output: Option<Output>,
     },
 
-    /// Returned if either a single [`super::execution::Execution`] timed out
-    /// or if all are (see [`ExecutionTimeout`])
+    /// Returned if either a single [`crate::testcase::TestCase`] execution timed
+    /// out or if all are (see [`ExecutionTimeout`])
     Timeout(ExecutionTimeout),
 
-    /// Returned if an [`super::execution::Execution`] explicitly skips the
-    /// tests. Index of the [`super::execution::Execution`] is provided
+    /// Returned if a specific [`crate::testcase::TestCase`] execution is
+    /// intentionally skipped by the user.
+    /// This is not a final error.
     Skipped(usize),
 }
 

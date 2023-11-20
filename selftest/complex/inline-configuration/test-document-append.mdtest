@@ -1,0 +1,8 @@
+---
+append:
+  - test-document-appended-1.mdtest
+---
+
+# This test uses inline appends
+
+This test file does nothing, but appends another test file

@@ -27,9 +27,6 @@ pub mod stateful_executor;
 pub mod subprocess_runner;
 pub mod util;
 
-#[cfg(feature = "reap_on_timeout")]
-pub mod reaper;
-
 #[cfg(target_os = "windows")]
 lazy_static! {
     /// Default path to shell on Windows

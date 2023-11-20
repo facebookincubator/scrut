@@ -13,6 +13,9 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 
+/// The default total (per-document) timeout in seconds
+pub const DEFAULT_DOCUMENT_TIMEOUT: u64 = 900;
+
 /// Configuration for the scope of a whole document, that may contain multiple testcases
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default)]
@@ -42,7 +45,7 @@ pub struct DocumentConfig {
 
     /// Timeout for the executions of all tests.
     #[serde(
-        skip_serializing_if = "Option::is_none",
+        skip_serializing_if = "is_none_or_default_timeout",
         deserialize_with = "parse_duration_opt",
         serialize_with = "render_duration_opt"
     )]
@@ -52,7 +55,29 @@ pub struct DocumentConfig {
 impl DocumentConfig {
     /// Returns instance with all values set to [`None`]
     pub fn empty() -> Self {
-        Self::default() // TODO: review - default may soon not be empty anymore
+        Self::default()
+    }
+
+    /// Returns default testcase configuration for Markdown documents
+    ///
+    /// Currently:
+    /// - Total Timeout: 900s
+    pub fn default_markdown() -> Self {
+        Self {
+            total_timeout: Some(Duration::from_secs(DEFAULT_DOCUMENT_TIMEOUT)),
+            ..Default::default()
+        }
+    }
+
+    /// Returns default testcase configuration for Cram documents
+    ///
+    /// Currently:
+    /// - Total Timeout: 900s
+    pub fn default_cram() -> Self {
+        Self {
+            total_timeout: Some(Duration::from_secs(DEFAULT_DOCUMENT_TIMEOUT)),
+            ..Default::default()
+        }
     }
 
     /// Returns true if none the configuration parameters are set
@@ -67,10 +92,14 @@ impl DocumentConfig {
     /// Returns a new instance that fills in unset values from the provided defaults.
     /// Values for `append` and `prepend` are extended, not overwritten.
     pub fn with_defaults_from(&self, defaults: &Self) -> Self {
-        let mut append = self.append.clone();
-        append.extend(defaults.append.clone());
+        // append is added at the end ..
+        let mut append = defaults.append.clone();
+        append.extend(self.append.clone());
+
+        // prepend is added at the start
         let mut prepend = self.prepend.clone();
         prepend.extend(defaults.prepend.clone());
+
         Self {
             append,
             prepend,
@@ -91,6 +120,14 @@ impl Display for DocumentConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let out = serde_json::to_string(&self).map_err(|_| std::fmt::Error)?;
         write!(f, "{}", out)
+    }
+}
+
+fn is_none_or_default_timeout(timeout: &Option<Duration>) -> bool {
+    if let Some(timeout) = timeout {
+        timeout.as_secs() == DEFAULT_DOCUMENT_TIMEOUT
+    } else {
+        false
     }
 }
 
@@ -233,11 +270,11 @@ impl TestCaseConfig {
     ///
     /// TODO: change the default output stream to Combined (adjust all uses!)
     pub fn default_markdown() -> Self {
-        Self::default().with_defaults_from(&Self {
+        Self {
             output_stream: Some(OutputStreamControl::Stdout),
             skip_code: Some(80),
             ..Default::default()
-        })
+        }
     }
 
     /// Returns default testcase configuration for Cram documents
@@ -247,12 +284,12 @@ impl TestCaseConfig {
     /// - Skip Code: 80
     /// - Keep CRLF in output
     pub fn default_cram() -> Self {
-        Self::default().with_defaults_from(&Self {
+        Self {
             output_stream: Some(OutputStreamControl::Combined),
             keep_crlf: Some(true),
             skip_code: Some(80),
             ..Default::default()
-        })
+        }
     }
 
     /// Returns true if none the configuration parameters are set
@@ -290,6 +327,17 @@ impl TestCaseConfig {
     /// Returns a new instance that is overridden with provided (set) values
     pub fn with_overrides_from(&self, overrides: &Self) -> Self {
         overrides.with_defaults_from(self)
+    }
+
+    /// Insert any environment variables that are not already defined (no overwrites)
+    pub fn merge_environment(&self, environment: &BTreeMap<&str, &str>) -> Self {
+        let mut config = self.clone();
+        for (key, value) in environment {
+            if !config.environment.contains_key(*key) {
+                config.environment.insert((*key).into(), (*value).into());
+            }
+        }
+        config
     }
 }
 
@@ -351,12 +399,6 @@ mod tests {
     use super::TestCaseWait;
     use crate::config::OutputStreamControl;
     use crate::config::TestCaseConfig;
-
-    #[test]
-    fn test_default_document_config_is_empty() {
-        let config: DocumentConfig = Default::default();
-        assert!(config.is_empty(), "default is empty")
-    }
 
     const FULL_DOCUMENT_CONFIG: &str = "
 append:

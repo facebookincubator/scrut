@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::io::stdout;
 use std::io::IsTerminal;
@@ -13,7 +14,6 @@ use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
-use scrut::executors::execution::Execution;
 use scrut::outcome::Outcome;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
@@ -24,13 +24,16 @@ use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::renderer::Renderer;
 use scrut::renderers::structured::JsonRenderer;
 use scrut::renderers::structured::YamlRenderer;
+use scrut::testcase::TestCase;
 use scrut::testcase::TestCaseError;
 use tracing::debug;
 use tracing::debug_span;
 use tracing::info;
+use tracing::trace;
 
 use super::root::GlobalSharedParameters;
 use super::root::ScrutRenderer;
+use crate::utils::canonical_shell;
 use crate::utils::debug_testcases;
 use crate::utils::make_executor;
 use crate::utils::FileParser;
@@ -127,100 +130,117 @@ impl Args {
             self.global.cram_compat,
         )?;
 
-        let prepend_tests = parser.find_and_parse(
-            "prepend test",
-            &self
-                .prepend_test_file_paths
-                .iter()
-                .map(|p| p as &Path)
-                .collect::<Vec<_>>(),
-            self.global.cram_compat,
-        )?;
-
-        let append_tests = parser.find_and_parse(
-            "append test",
-            &self
-                .append_test_file_paths
-                .iter()
-                .map(|p| p as &Path)
-                .collect::<Vec<_>>(),
-            self.global.cram_compat,
-        )?;
-
+        // initiate outputs
         let mut has_failed = false;
         let mut outcomes = vec![];
-
-        let mut test_environment =
-            TestEnvironment::new(&self.global.shell, self.global.work_directory.as_deref())?;
-        debug!(
-            "running {} test files in {:?}",
-            tests.len(),
-            test_environment
-        );
-
         let (mut count_success, mut count_skipped, mut count_failed) = (0, 0, 0);
 
-        for test in tests {
-            let span = debug_span!("test", path = %&test.path.display());
-            let _s = span.enter();
+        // load configuration from command line
+        let document_config = self.to_document_config();
+        let testcase_config = self.to_testcase_config();
+        let current_directory = std::env::current_dir().context("get current directory")?;
 
-            // setup test file environment ..
-            let cram_compat = test.parser_type == ParserType::Cram || self.global.cram_compat;
-            let (test_work_directory, env_vars) =
-                test_environment.init_test_file(&test.path, cram_compat)?;
-            let env_vars = env_vars
-                .iter()
-                .map(|(k, v)| (k as &str, v as &str))
-                .collect::<Vec<_>>();
+        for mut test in tests {
+            // prefix append and prepend in document config with directory where test is
+            let test_directory = &test.path.parent().unwrap_or(&current_directory);
+            test.config.append = prefix_with_directory(test_directory, &test.config.append);
+            test.config.prepend = prefix_with_directory(test_directory, &test.config.prepend);
+
+            // compile configuration from test file and parameters
+            let config: DocumentConfig = test.config.with_overrides_from(&document_config);
+
+            // initialize environment in which test will run
+            let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
+            let mut test_environment =
+                TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
+
+            let span = debug_span!("test", path = %&test.path.display(), env = ?&test_environment);
+            let _s = span.enter();
 
             // extract test cases from content ..
             debug!(
                 format = %&test.parser_type,
                 num_cases = &test.testcases.len(),
+                config = %&config,
                 "running tests",
             );
+
+            // compile prepended and appended tests, based on both command line
+            // parameters and the inline per-document configuration
+            let prepend_tests = if !config.prepend.is_empty() {
+                parser.find_and_parse(
+                    "prepend test",
+                    &config
+                        .prepend
+                        .iter()
+                        .map(|p| p as &Path)
+                        .collect::<Vec<_>>(),
+                    self.global.cram_compat,
+                )?
+            } else {
+                vec![]
+            };
+            let append_tests = if !config.append.is_empty() {
+                parser.find_and_parse(
+                    "append test",
+                    &config.append.iter().map(|p| p as &Path).collect::<Vec<_>>(),
+                    self.global.cram_compat,
+                )?
+            } else {
+                vec![]
+            };
 
             // gather executions from prepended, test file and appended
             let mut testcases = prepend_tests
                 .iter()
-                .flat_map(|test| test.testcases.clone())
+                .flat_map(|parsed| parsed.testcases.clone())
                 .collect::<Vec<_>>();
             testcases.extend(test.testcases.clone());
-            testcases.extend(
-                append_tests
-                    .iter()
-                    .flat_map(|test| test.testcases.clone())
-                    .collect::<Vec<_>>(),
-            );
-            let executions = testcases
-                .iter()
-                .map(|testcase| Execution::new(&testcase.shell_expression).environment(&env_vars))
+            testcases.extend(append_tests.iter().flat_map(|test| test.testcases.clone()));
+
+            // setup testing environment
+            let cram_compat = test.parser_type == ParserType::Cram || self.global.cram_compat;
+            let (test_work_directory, env_vars) =
+                test_environment.init_test_file(&test.path, cram_compat)?;
+
+            // update testcase configuration from command line parameters
+            let env_vars =
+                BTreeMap::from_iter(env_vars.iter().map(|(k, v)| (k as &str, v as &str)));
+            let testcases = testcases
+                .iter_mut()
+                .map(|testcase| {
+                    testcase.config = testcase
+                        .config
+                        .with_overrides_from(&testcase_config)
+                        .merge_environment(&env_vars);
+                    trace!(testcase = %&testcase, "running test case");
+                    testcase as &TestCase
+                })
                 .collect::<Vec<_>>();
 
-            let (timeout, executor) =
-                make_executor(&self.global.shell, self.global.timeout_seconds, cram_compat)?;
+            // get the appropriate or requested executor
+            let executor = make_executor(&test_environment.shell, cram_compat)?;
 
-            // run test cases and gather output ..
+            // run all testcases from the file and gather output ..
             let outputs = executor.execute_all(
-                &executions.iter().collect::<Vec<_>>(),
+                testcases.as_slice(),
                 &ContextBuilder::default()
-                    .combine_output(self.global.is_combine_output(Some(test.parser_type)))
-                    .crlf_support(self.global.is_keep_output_crlf(Some(test.parser_type)))
                     .work_directory(Some(PathBuf::from(&test_work_directory)))
                     .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
-                    .timeout(timeout)
+                    .config(config)
                     .build()
                     .context("failed to build execution context")?,
             );
             match outputs {
                 // test execution failed
                 Err(err) => match err {
+                    // .. because test was skipped ..
                     ExecutionError::Skipped(_) => {
                         count_skipped += 1;
                         debug!("Received skip code -> skipping tests");
                         outcomes.extend(testcases.into_iter().map(|testcase| Outcome {
                             location: Some(test.path.display().to_string()),
-                            testcase,
+                            testcase: testcase.clone(),
                             output: ("", "", None).into(),
                             escaping: self.global.output_escaping(Some(test.parser_type)),
                             format: test.parser_type,
@@ -228,6 +248,8 @@ impl Args {
                         }));
                         continue;
                     }
+
+                    // TODO: continue on ExecutionError::Timeout, but warn! or error!
 
                     // because of a final error
                     _ => bail!("failing in {:?}: {}", test.path, err),
@@ -239,6 +261,7 @@ impl Args {
                         debug_testcases(&test.testcases, &test.path, &outputs);
                     }
 
+                    // this should not happen: different amount of outputs than executed testcases
                     if outputs.len() != testcases.len() {
                         bail!(
                             "expected {} outputs from execution, but got {}",
@@ -246,11 +269,10 @@ impl Args {
                             outputs.len()
                         )
                     }
-                    debug!("processing outputs");
 
                     // .. to compare the outputs with testcases and gather that
                     //    outcome for later rendering
-                    for (testcase, output) in testcases.into_iter().zip(outputs.into_iter()) {
+                    for (testcase, output) in testcases.into_iter().zip(outputs) {
                         let result = testcase.validate(&output);
                         if result.is_err() {
                             count_failed += 1;
@@ -260,7 +282,7 @@ impl Args {
                         }
                         outcomes.push(Outcome {
                             location: Some(test.path.display().to_string()),
-                            testcase,
+                            testcase: testcase.clone(),
                             output,
                             escaping: self.global.output_escaping(Some(test.parser_type)),
                             format: test.parser_type,
@@ -324,4 +346,11 @@ impl Args {
     fn to_testcase_config(&self) -> TestCaseConfig {
         self.global.to_testcase_config()
     }
+}
+
+fn prefix_with_directory(prefix: &Path, paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .map(|path| prefix.join(path))
+        .collect::<Vec<_>>()
 }

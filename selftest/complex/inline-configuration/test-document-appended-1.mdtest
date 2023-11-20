@@ -1,0 +1,10 @@
+# This file is supposed to be appended
+
+The following test ought to file, so we can validate that it was appended
+
+## This fails in appended
+
+```scrut
+$ echo FooInAppended1
+BarInAppended1
+```

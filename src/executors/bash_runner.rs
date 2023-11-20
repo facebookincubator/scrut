@@ -5,11 +5,11 @@ use anyhow::Result;
 use tracing::trace;
 
 use super::context::Context as ExecutionContext;
-use super::execution::Execution;
 use super::runner::Runner;
 use super::stateful_executor::StatefulExecutorRunnerGenerator;
 use super::subprocess_runner::SubprocessRunner;
 use crate::output::Output;
+use crate::testcase::TestCase;
 
 #[doc = include_str!("./bash_runner.excluded_variables.md")]
 pub const BASH_EXCLUDED_VARIABLES: &[&str] = &[
@@ -85,7 +85,7 @@ impl BashRunner {
 }
 
 impl Runner for BashRunner {
-    fn run(&self, name: &str, execution: &Execution, context: &ExecutionContext) -> Result<Output> {
+    fn run(&self, name: &str, testcase: &TestCase, context: &ExecutionContext) -> Result<Output> {
         let shell = self.shell.to_owned();
 
         // render the bash script
@@ -93,11 +93,14 @@ impl Runner for BashRunner {
         let expression = BASH_TEMPLATE
             .replace("{state_directory}", &state_directory_str)
             .replace("{name}", name)
-            .replace("{shell_expression}", &execution.expression)
+            .replace("{shell_expression}", &testcase.shell_expression)
             .replace("{excluded_variables}", &BASH_EXCLUDED_VARIABLES.join("|"));
         trace!("compiled expression {}", &expression);
 
-        SubprocessRunner(shell).run(name, &execution.to_owned().expression(&expression), context)
+        let mut testcase = testcase.clone();
+        testcase.shell_expression = expression;
+
+        SubprocessRunner(shell).run(name, &testcase, context)
     }
 }
 
@@ -108,9 +111,9 @@ mod tests {
     use super::BashRunner;
     use super::Runner;
     use crate::executors::context::Context as ExecutionContext;
-    use crate::executors::execution::Execution;
     use crate::executors::DEFAULT_SHELL;
     use crate::output::Output;
+    use crate::testcase::TestCase;
 
     #[cfg(not(target_os = "windows"))]
     #[test]
@@ -122,8 +125,8 @@ mod tests {
         }
         .run(
             "name",
-            &Execution::new("echo OK1 && ( 1>&2 echo OK2 )"),
-            &ExecutionContext::new(),
+            &TestCase::from_expression("echo OK1 && ( 1>&2 echo OK2 )"),
+            &ExecutionContext::default(),
         )
         .expect("execute without error");
         let expect: Output = ("OK1\n", "OK2\n").into();
@@ -140,8 +143,8 @@ mod tests {
         }
         .run(
             "name",
-            &Execution::new("echo -e \"🦀\r\n😊\""),
-            &ExecutionContext::new(),
+            &TestCase::from_expression("echo -e \"🦀\r\n😊\""),
+            &ExecutionContext::default(),
         )
         .expect("execute without error");
 
@@ -159,8 +162,8 @@ mod tests {
         }
         .run(
             "name",
-            &Execution::new("( exit 123 )"),
-            &ExecutionContext::new(),
+            &TestCase::from_expression("( exit 123 )"),
+            &ExecutionContext::default(),
         )
         .expect("execute without error");
 

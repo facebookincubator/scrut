@@ -8,7 +8,6 @@ use scrut::config::DocumentConfig;
 use scrut::config::OutputStreamControl;
 use scrut::config::TestCaseConfig;
 use scrut::escaping::Escaper;
-use scrut::executors::DEFAULT_SHELL;
 use scrut::parsers::parser::ParserType;
 
 #[derive(Debug, Subcommand)]
@@ -71,8 +70,8 @@ pub(crate) struct GlobalParameters {
     pub(crate) escaping: Option<Escaper>,
 
     /// Shell to execute expressions in
-    #[clap(long, short, default_value = (&*DEFAULT_SHELL).to_string_lossy().to_string(), global = true)]
-    pub(crate) shell: PathBuf,
+    #[clap(long, short, global = true)]
+    pub(crate) shell: Option<PathBuf>,
 
     /// Optional path to work directory in which the tests will be executed. Per
     /// default a temporary work directory for each test file will be created
@@ -80,9 +79,9 @@ pub(crate) struct GlobalParameters {
     #[clap(long, short, global = true)]
     pub(crate) work_directory: Option<PathBuf>,
 
-    /// Timeout in seconds for whole execution. Use 0 for unlimited.
-    #[clap(long, default_value = "900", global = true)]
-    pub(crate) timeout_seconds: u64,
+    /// Timeout in seconds for whole execution. Use 0 for unlimited. Defaults to 900, if not set.
+    #[clap(long, global = true)]
+    pub(crate) timeout_seconds: Option<u64>,
 }
 
 #[derive(Parser, Debug, Default)]
@@ -101,7 +100,7 @@ pub(crate) struct GlobalSharedParameters {
     pub(crate) no_keep_output_crlf: bool,
 
     #[clap(from_global)]
-    pub(crate) shell: PathBuf,
+    pub(crate) shell: Option<PathBuf>,
 
     #[clap(from_global)]
     pub(crate) work_directory: Option<PathBuf>,
@@ -110,31 +109,21 @@ pub(crate) struct GlobalSharedParameters {
     pub(crate) escaping: Option<Escaper>,
 
     #[clap(from_global)]
-    pub(crate) timeout_seconds: u64,
+    pub(crate) timeout_seconds: Option<u64>,
 }
 
 impl GlobalSharedParameters {
-    pub(crate) fn is_combine_output(&self, parser: Option<ParserType>) -> bool {
-        self.combine_output || self.cram_compat || parser == Some(ParserType::Cram)
-    }
-
     /// Translates global shared parameters into (defaults for) per-document configuration
     pub(crate) fn to_document_config(&self) -> DocumentConfig {
         let mut config = DocumentConfig::empty();
-        if !self.shell.as_os_str().is_empty() {
-            config.shell = Some(self.shell.clone())
+        if let Some(ref value) = self.shell {
+            config.shell = Some(value.clone())
         }
-
-        // TODO: remove defaulting to 900s here when enabling inline-configuration
-        if self.timeout_seconds > 0 {
-            config.total_timeout = Some(Duration::from_secs(self.timeout_seconds))
+        if let Some(value) = self.timeout_seconds {
+            config.total_timeout = Some(Duration::from_secs(value))
         }
 
         config
-    }
-
-    pub(crate) fn is_keep_output_crlf(&self, parser: Option<ParserType>) -> bool {
-        self.keep_output_crlf || self.cram_compat || parser == Some(ParserType::Cram)
     }
 
     /// Translates global shared parameters into (defaults for) per-test configuration
@@ -184,12 +173,12 @@ mod tests {
             (GlobalSharedParameters::default(), DocumentConfig::empty()),
             (
                 GlobalSharedParameters {
-                    shell: "other-shell".into(),
+                    shell: Some("other-shell".into()),
                     ..Default::default()
                 },
                 DocumentConfig {
                     shell: Some("other-shell".into()),
-                    ..Default::default()
+                    ..DocumentConfig::empty()
                 },
             ),
         ];

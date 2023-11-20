@@ -83,7 +83,7 @@ impl Parser for CramParser {
         }
         debug!("found {} testcases in cram file", engine.testcases.len());
 
-        Ok((DocumentConfig::default(), engine.testcases.clone()))
+        Ok((DocumentConfig::default_cram(), engine.testcases.clone()))
     }
 }
 

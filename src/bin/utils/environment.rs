@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use scrut::executors::DEFAULT_SHELL;
 use tempfile::TempDir;
 use tracing::debug;
 
@@ -99,10 +100,9 @@ impl TestEnvironment {
         );
 
         let namer = UniqueNamer::new(&work_directory.as_path_buf());
-        let shell = canonical_shell(shell)?;
 
         Ok(TestEnvironment {
-            shell,
+            shell: shell.into(),
             work_directory,
             tmp_directory,
             namer,
@@ -217,13 +217,14 @@ impl<'a> TestFileEnvironment<'a> {
 }
 
 /// Returns the canonical path to the given shell
-pub fn canonical_shell(shell: &Path) -> Result<PathBuf> {
+pub fn canonical_shell(shell: Option<&Path>) -> Result<PathBuf> {
+    let shell = shell.unwrap_or(*DEFAULT_SHELL);
     if shell.components().count() > 1 {
         canonical_path(shell)
     } else {
         canonical_path(
             which::which(shell)
-                .context("guessing path to shell")?
+                .with_context(|| format!("guessing path to shell `{}`", shell.display()))?
                 .as_path(),
         )
     }

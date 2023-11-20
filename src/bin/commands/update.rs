@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::stdout;
 use std::io::IsTerminal;
@@ -14,7 +15,6 @@ use scrut::config::TestCaseConfig;
 use scrut::escaping::strip_colors;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
-use scrut::executors::execution::Execution;
 use scrut::generators::cram::CramTestCaseGenerator;
 use scrut::generators::cram::CramUpdateGenerator;
 use scrut::generators::generator::TestCaseGenerator;
@@ -28,11 +28,13 @@ use scrut::renderers::pretty::PrettyColorRenderer;
 use scrut::renderers::pretty::PrettyMonochromeRenderer;
 use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::renderer::Renderer;
+use scrut::testcase::TestCase;
 use tracing::debug;
 use tracing::info;
 use tracing::warn;
 
 use super::root::GlobalSharedParameters;
+use crate::utils::canonical_shell;
 use crate::utils::confirm;
 use crate::utils::debug_testcases;
 use crate::utils::make_executor;
@@ -118,19 +120,20 @@ impl Args {
             self.global.cram_compat,
         )?;
 
-        let mut test_environment =
-            TestEnvironment::new(&self.global.shell, self.global.work_directory.as_deref())?;
+        let document_config = self.to_document_config();
+        let testcase_config = self.to_testcase_config();
 
         // iterate each test file
         debug!("updating {} test files", tests.len());
         let (mut count_updated, mut count_unchanged, mut count_skipped) = (0, 0, 0);
-        for test in tests {
+        for mut test in tests {
             debug!("updating test file {:?}", test.path);
 
-            // setup test file environment ..
-            let cram_compat = test.parser_type == ParserType::Cram;
-            let (test_work_directory, environment) =
-                test_environment.init_test_file(&test.path, cram_compat)?;
+            let config = test.config.with_overrides_from(&document_config);
+            let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
+
+            let mut test_environment =
+                TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
 
             // must have test-cases to continue
             if test.testcases.is_empty() {
@@ -142,30 +145,46 @@ impl Args {
                 continue;
             }
 
-            // run the test cases, get the output
-            let executions = test
+            // TODO(config): Add support for updating prepended and appended files (or reason why not)
+            if !config.prepend.is_empty() || !config.prepend.is_empty() {
+                warn!(
+                    "Skipping file {:?} that contains 'prepend' or 'append' configuration, which is currently not supported in update command",
+                    &test.path
+                );
+                count_skipped += 1;
+                continue;
+            }
+
+            // setup test file environment ..
+            let cram_compat = test.parser_type == ParserType::Cram;
+            let (test_work_directory, env_vars) =
+                test_environment.init_test_file(&test.path, cram_compat)?;
+
+            // extract testcases and update with config from parameters
+            let env_vars =
+                BTreeMap::from_iter(env_vars.iter().map(|(k, v)| (k as &str, v as &str)));
+            let testcases = test
                 .testcases
-                .iter()
-                .map(|a| {
-                    Execution::new(&a.shell_expression).environment(
-                        &environment
-                            .iter()
-                            .map(|(k, v)| (k as &str, v as &str))
-                            .collect::<Vec<_>>(),
-                    )
+                .iter_mut()
+                .map(|testcase| {
+                    testcase.config = testcase
+                        .config
+                        .with_overrides_from(&testcase_config)
+                        .merge_environment(&env_vars);
+                    testcase as &TestCase
                 })
                 .collect::<Vec<_>>();
 
-            let (timeout, executor) =
-                make_executor(&self.global.shell, self.global.timeout_seconds, cram_compat)?;
+            // get the appropriate or requested executor
+            let executor = make_executor(&test_environment.shell, cram_compat)?;
 
+            // execute the tests to use the updated result to update the test file
             let execution_result = executor.execute_all(
-                &executions.iter().collect::<Vec<_>>(),
+                &testcases,
                 &ContextBuilder::default()
-                    .combine_output(self.global.is_combine_output(Some(test.parser_type)))
-                    .crlf_support(self.global.is_keep_output_crlf(Some(test.parser_type)))
                     .work_directory(Some(PathBuf::from(&test_work_directory)))
-                    .timeout(timeout)
+                    .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
+                    .config(test.config.with_overrides_from(&document_config))
                     .build()
                     .context("failed to build execution context")?,
             );
@@ -178,6 +197,9 @@ impl Args {
                         info!("Skipping test file {:?}", &test.path);
                         continue;
                     }
+
+                    // TODO: continue on ExecutionError::Timeout, but warn! or error!
+
                     // .. unintentionally with an error -> give up
                     _ => bail!("failing in {:?}: {}", test.path, err),
                 },

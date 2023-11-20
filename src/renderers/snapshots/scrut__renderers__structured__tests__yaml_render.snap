@@ -1,5 +1,5 @@
 ---
-source: clifoundation/scrut/src/renderers/structured.rs
+source: fbcode/clifoundation/scrut/src/renderers/structured.rs
 assertion_line: 80
 expression: rendered
 ---
@@ -25,4 +25,3 @@ expression: rendered
     kind: invalid_exit_code
     actual: 123
     expected: 234
-

@@ -67,7 +67,7 @@ impl Parser for MarkdownParser {
         let iterator = MarkdownIterator::new(languages, text.lines());
         let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
         let mut title_paragraph = vec![];
-        let mut config: DocumentConfig = Default::default();
+        let mut config = DocumentConfig::default_markdown();
 
         for token in iterator {
             match token {
@@ -113,8 +113,9 @@ impl Parser for MarkdownParser {
             }
         }
         debug!(
-            "found {} testcases in markdown file",
-            line_parser.testcases.len()
+            "found {} testcases in markdown file with configuration: {}",
+            line_parser.testcases.len(),
+            &config
         );
 
         Ok((config, line_parser.testcases.clone()))
@@ -347,7 +348,11 @@ hello
 "#;
         let parser = parser();
         let (config, testcases) = parser.parse(cram_test).expect("must parse");
-        assert_eq!(config, Default::default(), "no extra configuration");
+        assert_eq!(
+            config,
+            DocumentConfig::default_markdown(),
+            "no extra configuration"
+        );
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {
@@ -414,7 +419,11 @@ hello
 "#;
         let parser = parser();
         let (config, testcases) = parser.parse(cram_test).expect("must parse");
-        assert_eq!(config, Default::default(), "no extra configuration");
+        assert_eq!(
+            config,
+            DocumentConfig::default_markdown(),
+            "no extra configuration"
+        );
         assert_eq!(1, testcases.len());
         assert_eq!(
             TestCase {

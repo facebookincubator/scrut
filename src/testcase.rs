@@ -1,11 +1,20 @@
+use std::borrow::Cow;
+use std::fmt::Display;
+#[cfg(test)]
+use std::time::Duration;
+
 use serde::ser::SerializeMap;
 use serde::Serialize;
 use serde::Serializer;
+use serde_json::json;
+use serde_json::Value;
 
+use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
 use crate::diff::Diff;
 use crate::diff::DiffTool;
 use crate::expectation::Expectation;
+use crate::newline::replace_crlf;
 use crate::output::ExitStatus;
 use crate::output::Output;
 
@@ -52,13 +61,50 @@ impl TestCase {
             }
         }
         let diff_tool = DiffTool::new(self.expectations.clone());
+        let stream = if self.config.output_stream == Some(OutputStreamControl::Stderr) {
+            &output.stderr
+        } else {
+            &output.stdout
+        };
         let diff = diff_tool
-            .diff((&output.stdout).into())
+            .diff(stream.into())
             .map_err(TestCaseError::InternalError)?;
         if diff.has_differences() {
             Err(TestCaseError::MalformedOutput(diff))
         } else {
             Ok(())
+        }
+    }
+
+    /// Update the given output by either replacing CRLF with LF or keeping as-is
+    /// depending on the [`TestCaseConfig`] settings
+    pub fn render_output<'a>(&self, output: &'a [u8]) -> Cow<'a, [u8]> {
+        if self.config.keep_crlf == Some(true) {
+            Cow::from(output)
+        } else {
+            replace_crlf(output)
+        }
+    }
+
+    #[cfg(test)]
+    pub fn from_expression(expression: &str) -> Self {
+        Self {
+            title: "Test".into(),
+            shell_expression: expression.into(),
+            ..Default::default()
+        }
+    }
+
+    #[cfg(test)]
+    pub fn from_expression_timed(expression: &str, timeout: Option<Duration>) -> Self {
+        Self {
+            title: "Test".into(),
+            shell_expression: expression.into(),
+            config: TestCaseConfig {
+                timeout,
+                ..Default::default()
+            },
+            ..Default::default()
         }
     }
 
@@ -68,6 +114,24 @@ impl TestCase {
 
     pub(crate) fn expectations_lines(&self) -> usize {
         self.expectations.len()
+    }
+}
+
+impl Display for TestCase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let map = json!({
+            "title": self.title.clone(),
+            "shell_expression": self.shell_expression.clone(),
+            "expectations": self.expectations
+                .iter()
+                .map(|e| Value::String(e.to_expression_string(&Default::default())))
+                .collect::<Vec<_>>(),
+            "exit_code": self.exit_code.unwrap_or(0),
+            "line_number": self.line_number,
+            "config": &self.config,
+        });
+        let out = serde_json::to_string(&map).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", out)
     }
 }
 
@@ -163,8 +227,10 @@ impl Serialize for TestCaseError {
 mod tests {
     use super::TestCase;
     use super::TestCaseError;
+    use crate::config::TestCaseConfig;
     use crate::diff::Diff;
     use crate::diff::DiffLine;
+    use crate::lossy_string;
     use crate::test_expectation;
 
     #[test]
@@ -244,6 +310,39 @@ mod tests {
                     "expected exit code is delegated"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_render_output() {
+        let tests = &[
+            (false, "foo", "foo"),
+            (true, "foo", "foo"),
+            (false, "foo\nbar\nbaz", "foo\nbar\nbaz"),
+            (true, "foo\nbar\nbaz", "foo\nbar\nbaz"),
+            (false, "foo\r\nbar\r\nbaz", "foo\nbar\nbaz"),
+            (true, "foo\r\nbar\r\nbaz", "foo\r\nbar\r\nbaz"),
+        ];
+        for (crlf_support, from, expect) in tests {
+            let tc = TestCase {
+                title: "an testcase".to_string(),
+                shell_expression: "a command".to_string(),
+                expectations: vec![test_expectation!("no-eol", "the stdout")],
+                exit_code: Some(123),
+                line_number: 234,
+                config: TestCaseConfig {
+                    keep_crlf: Some(*crlf_support),
+                    ..Default::default()
+                },
+            };
+            let output = tc.render_output(from.as_bytes());
+            assert_eq!(
+                *expect,
+                lossy_string!(&output),
+                "from {} (crlf = {})",
+                *from,
+                *crlf_support
+            );
         }
     }
 }

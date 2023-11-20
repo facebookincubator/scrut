@@ -12,18 +12,20 @@ use tracing::debug;
 use super::context::Context as ExecutionContext;
 use super::error::ExecutionError;
 use super::error::ExecutionTimeout;
-use super::execution::Execution;
 use super::executor::Executor;
 use super::executor::Result;
 use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
 use super::subprocess_runner::SubprocessRunner;
 use super::DEFAULT_SHELL;
+use crate::config::OutputStreamControl;
+use crate::config::TestCaseConfig;
 use crate::lossy_string;
 use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
 use crate::output::ExitStatus;
 use crate::output::Output;
+use crate::testcase::TestCase;
 
 // Amount of random characters that will be appended to divider string
 const SUFFIX_RANDOM_SIZE: usize = 20;
@@ -39,6 +41,8 @@ const DIVIDER_PREFIX_BYTES: &[u8] = b"~~~~~~~~EXECDIVIDER::";
 ///
 /// The output is then separated by dividing strings, that are printed in
 /// between the sequential executions.
+///
+/// The executor always processes STDOUT and STDERR combined.
 ///
 /// As a result only timeout over all executions is supported, not per
 /// execution. Also, if any of the executions calls explicitly to `exit` (or
@@ -64,24 +68,14 @@ impl Default for BashScriptExecutor {
 impl Executor for BashScriptExecutor {
     fn execute_all(
         &self,
-        executions: &[&Execution],
+        testcases: &[&TestCase],
         context: &ExecutionContext,
     ) -> Result<Vec<Output>> {
-        let script = self.build_script(executions, context)?;
+        let testcase = compile_testcase(testcases, context)?;
         let runner = SubprocessRunner(self.0.to_owned());
-        let timeout = context.timeout.unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
         let output = runner
-            .run(
-                "script",
-                &Execution::new(&script).timeout(if timeout.is_zero() {
-                    None
-                } else {
-                    Some(timeout)
-                }),
-                context,
-            )
+            .run("script", &testcase, context)
             .map_err(|err| ExecutionError::from_execute(err, None, None))?;
-
         match output.exit_code {
             ExitStatus::SKIP => return Err(ExecutionError::Skipped(0)),
             ExitStatus::Timeout(_) => return Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
@@ -117,19 +111,19 @@ impl Executor for BashScriptExecutor {
         }
 
         // check for malformed
-        if outputs.len() != executions.len() {
+        if outputs.len() != testcases.len() {
             // debug!("---- SCRIPT\n{}\n", &expression);
             return Err(ExecutionError::aborted(
                 anyhow!(
                     "expected {} execution result(s) but found {}",
-                    executions.len(),
+                    testcases.len(),
                     outputs.len()
                 ),
                 Some(output),
             ));
         }
 
-        if !context.combine_output {
+        if testcase.config.output_stream != Some(OutputStreamControl::Combined) {
             iterate_divided_output(
                 "STDERR",
                 (&output.stderr).into(),
@@ -154,65 +148,117 @@ impl Executor for BashScriptExecutor {
     }
 }
 
-impl BashScriptExecutor {
-    /// Create a bash script, that contains all executions. Following each
-    /// a divider (one on STDOUT, one on STDERR) is printed, so that the
-    /// resulting output can be assigned to individual executions.
-    ///
-    /// The created shell expressions are known to work in bash. No other shells
-    /// are intended to work.
-    fn build_script(
-        &self,
-        executions: &[&Execution],
-        context: &ExecutionContext,
-    ) -> Result<String> {
-        use std::borrow::Cow;
+/// Reduce a list of [`TestCase`] into a single one that has as it's shell
+/// expression a compiled bash script that executes all expressions and that
+/// uses a shared configuration
+fn compile_testcase(testcases: &[&TestCase], context: &ExecutionContext) -> Result<TestCase> {
+    let mut config = TestCaseConfig::empty();
 
-        let mut expressions = vec![];
-        let salt = random_string(SUFFIX_RANDOM_SIZE);
-        for (index, execution) in executions.iter().enumerate() {
-            if execution.timeout.is_some() {
+    // iterate all test cases and make sure that they have a consistent configuration
+    // as there is no support for a divergent, per-testcase config.
+    for (index, testcase) in testcases.iter().enumerate() {
+        macro_rules! set_consistent {
+            ($attrib:ident) => {
+                if config.$attrib.is_none() {
+                    config.$attrib = testcase.config.$attrib.clone();
+                } else if config.$attrib != testcase.config.$attrib {
+                    return Err(ExecutionError::failed(
+                        index,
+                        anyhow!(
+                            "inconsistent configuration value for {}",
+                            stringify!($attrib),
+                        ),
+                    ));
+                }
+            };
+        }
+        set_consistent!(detached);
+        set_consistent!(keep_crlf);
+        set_consistent!(output_stream);
+        set_consistent!(skip_code);
+        set_consistent!(wait);
+        if !config.environment.is_empty() && config.environment != testcase.config.environment {
+            return Err(ExecutionError::failed(
+                index,
+                anyhow!("inconsistent value for environment"),
+            ));
+        }
+        config.environment = testcase.config.environment.clone();
+    }
+
+    let timeout = context
+        .config
+        .total_timeout
+        .unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
+    if !timeout.is_zero() {
+        config.timeout = Some(timeout);
+    }
+
+    let script = compile_script(testcases, &config)?;
+
+    Ok(TestCase {
+        title: "Test Script".into(),
+        shell_expression: script,
+        config,
+        ..Default::default()
+    })
+}
+
+/// Compiles all shell expressions of a list of [`TestCase`]s into a single bash script
+fn compile_script(testcases: &[&TestCase], config: &TestCaseConfig) -> Result<String> {
+    use std::borrow::Cow;
+
+    let mut expressions = vec![];
+    let salt = random_string(SUFFIX_RANDOM_SIZE);
+    for (index, testcase) in testcases.iter().enumerate() {
+        /* if let Some(ref stream) = testcase.config.output_stream {
+            if stream != &OutputStreamControl::Combined {
                 return Err(ExecutionError::failed(
                     index,
-                    anyhow!("timeout per execution not supported in sequential execution",),
+                    anyhow!("bash-script execution supports only the combined output streams",),
                 ));
             }
+        } */
 
-            // add exported environment variables before expression
-            let mut unset = vec![];
-            if let Some(ref environment) = execution.environment {
-                for (key, value) in environment {
-                    // variable keys and values are assumed to be escaped in bash-like
-                    // environments, that means even when executing in windows within
-                    // a `bash.exe` process, the unix escaping is needed
-                    let qkey = shell_escape::unix::escape(Cow::from(key)).to_string();
-                    if qkey != *key {
-                        return Err(ExecutionError::failed(
-                            index,
-                            anyhow!("Environment variable {} contains invalid characters", &qkey),
-                        ));
-                    }
-                    let qval = shell_escape::unix::escape(Cow::from(value)).to_string();
-                    expressions.push(format!("export {}={}", &qkey, &qval));
-                    unset.push(format!("unset {}", &qkey));
-                }
-            }
-
-            // add actual expression
-            expressions.push(execution.expression.to_string());
-
-            // add footer that divides from next execution and captures exit code
-            let footer = generate_divider(&salt, index);
-            expressions.push("".to_string());
-            expressions.push(format!(r#"echo "{}""#, &footer));
-            if !context.combine_output {
-                expressions.push(format!(r#"1>&2 echo "{}""#, &footer));
-            }
-            expressions.append(&mut unset);
+        if testcase.config.timeout.is_some() {
+            return Err(ExecutionError::failed(
+                index,
+                anyhow!("timeout per execution not supported in bash-script execution",),
+            ));
         }
 
-        Ok(expressions.join("\n"))
+        // add exported environment variables before expression
+        let mut unset = vec![];
+        for (key, value) in &testcase.config.environment {
+            // variable keys and values are assumed to be escaped in bash-like
+            // environments, that means even when executing in windows within
+            // a `bash.exe` process, the unix escaping is needed
+            let qkey = shell_escape::unix::escape(Cow::from(key)).to_string();
+            if qkey != *key {
+                return Err(ExecutionError::failed(
+                    index,
+                    anyhow!("Environment variable {} contains invalid characters", &qkey),
+                ));
+            }
+            let qval = shell_escape::unix::escape(Cow::from(value)).to_string();
+            expressions.push(format!("export {}={}", &qkey, &qval));
+            unset.push(format!("unset {}", &qkey));
+        }
+
+        // add actual expression
+        expressions.push(testcase.shell_expression.to_string());
+
+        // add footer that divides from next execution and captures exit code
+        let footer = generate_divider(&salt, index);
+        expressions.push("".to_string());
+        expressions.push(format!(r#"echo "{}""#, &footer));
+        if config.output_stream != Some(OutputStreamControl::Combined) {
+            expressions.push(format!(r#"1>&2 echo "{}""#, &footer));
+        }
+        expressions.append(&mut unset);
     }
+
+    Ok(expressions.join("\n"))
 }
 
 fn iterate_divided_output<C>(name: &str, output: &[u8], mut callback: C) -> Result<()>
@@ -342,36 +388,31 @@ mod tests {
     use std::time::Duration;
 
     use anyhow::anyhow;
+    use regex::Regex;
 
     use super::parse_divider_bytes;
     use super::BashScriptExecutor;
     use super::DividerSearch;
     use super::DIVIDER_PREFIX;
+    use crate::config::TestCaseConfig;
     use crate::executors::context::Context as ExecutionContext;
-    use crate::executors::context::ContextBuilder;
     use crate::executors::error::ExecutionError;
     use crate::executors::error::ExecutionTimeout;
-    use crate::executors::execution::Execution;
     use crate::executors::executor::tests::combined_output_test_suite;
     use crate::executors::executor::tests::run_executor_tests;
-    use crate::executors::executor::tests::standard_test_suite;
-    use crate::executors::DEFAULT_SHELL;
+    use crate::executors::executor::tests::standard_output_test_suite;
     use crate::formatln;
+    use crate::output::ExitStatus;
+    use crate::testcase::TestCase;
 
     #[test]
-    fn test_standard_test_suite() {
-        standard_test_suite(BashScriptExecutor::default(), &ExecutionContext::new());
+    fn test_standard_output_test_suite() {
+        standard_output_test_suite(BashScriptExecutor::default(), &ExecutionContext::default());
     }
 
     #[test]
     fn test_combined_output_test_suite() {
-        combined_output_test_suite(
-            BashScriptExecutor::default(),
-            &ContextBuilder::default()
-                .combine_output(true)
-                .build()
-                .unwrap(),
-        );
+        combined_output_test_suite(BashScriptExecutor::default(), &ExecutionContext::default());
     }
 
     #[test]
@@ -380,9 +421,9 @@ mod tests {
             (
                 "Total timeout is respected",
                 vec![
-                    Execution::new("sleep 1.0 && echo OK1"),
-                    Execution::new("sleep 1.0 && echo OK2"),
-                    Execution::new("sleep 1.0 && echo OK3"),
+                    TestCase::from_expression("sleep 1.0 && echo OK1"),
+                    TestCase::from_expression("sleep 1.0 && echo OK2"),
+                    TestCase::from_expression("sleep 1.0 && echo OK3"),
                 ],
                 Some(Duration::from_millis(150)),
                 Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
@@ -390,9 +431,9 @@ mod tests {
             (
                 "Execution within timeout",
                 vec![
-                    Execution::new("sleep 0.1 && echo OK1"),
-                    Execution::new("sleep 0.1 && echo OK2"),
-                    Execution::new("sleep 0.1 && echo OK3"),
+                    TestCase::from_expression("sleep 0.1 && echo OK1"),
+                    TestCase::from_expression("sleep 0.1 && echo OK2"),
+                    TestCase::from_expression("sleep 0.1 && echo OK3"),
                 ],
                 // windows execution takes a long time to start up, test intends
                 // to assert that timeout > actual execution does not return
@@ -409,7 +450,7 @@ mod tests {
         run_executor_tests(
             BashScriptExecutor::default(),
             tests,
-            &ExecutionContext::new(),
+            &ExecutionContext::default(),
         );
     }
 
@@ -417,18 +458,26 @@ mod tests {
     fn test_does_not_support_timeout_per_execution() {
         let tests = vec![(
             "Sufficient timeout has no effect",
-            vec![Execution::new("sleep 0.1 && echo OK1").timeout(Some(Duration::from_millis(200)))],
+            vec![TestCase {
+                title: "Test".into(),
+                shell_expression: "sleep 0.1 && echo OK1".into(),
+                config: TestCaseConfig {
+                    timeout: Some(Duration::from_millis(200)),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }],
             None,
             Err(ExecutionError::failed(
                 0,
-                anyhow!("timeout per execution not supported in sequential execution"),
+                anyhow!("timeout per execution not supported in bash-script execution"),
             )),
         )];
 
         run_executor_tests(
             BashScriptExecutor::default(),
             tests,
-            &ExecutionContext::new(),
+            &ExecutionContext::default(),
         );
     }
 
@@ -437,9 +486,9 @@ mod tests {
         let tests = vec![(
             "Sufficient timeout has no effect",
             vec![
-                Execution::new("echo OK1"),
-                Execution::new("exit 80"),
-                Execution::new("echo OK2"),
+                TestCase::from_expression("echo OK1"),
+                TestCase::from_expression("exit 80"),
+                TestCase::from_expression("echo OK2"),
             ],
             None,
             // sequential cannot identify which of the tests returned an error
@@ -449,7 +498,7 @@ mod tests {
         run_executor_tests(
             BashScriptExecutor::default(),
             tests,
-            &ExecutionContext::new(),
+            &ExecutionContext::default(),
         );
     }
 
@@ -459,10 +508,10 @@ mod tests {
             (
                 "Environment variable persists",
                 vec![
-                    Execution::new("export FOO=bar"),
-                    Execution::new("echo FOO=${FOO:-undefined}"),
-                    Execution::new("unset FOO"),
-                    Execution::new("echo FOO=${FOO:-undefined}"),
+                    TestCase::from_expression("export FOO=bar"),
+                    TestCase::from_expression("echo FOO=${FOO:-undefined}"),
+                    TestCase::from_expression("unset FOO"),
+                    TestCase::from_expression("echo FOO=${FOO:-undefined}"),
                 ],
                 None,
                 Ok(vec![
@@ -475,10 +524,10 @@ mod tests {
             (
                 "Shell variable persists",
                 vec![
-                    Execution::new("BAR=foo"),
-                    Execution::new("echo BAR=${BAR:-undefined}"),
-                    Execution::new("unset BAR"),
-                    Execution::new("echo BAR=${BAR:-undefined}"),
+                    TestCase::from_expression("BAR=foo"),
+                    TestCase::from_expression("echo BAR=${BAR:-undefined}"),
+                    TestCase::from_expression("unset BAR"),
+                    TestCase::from_expression("echo BAR=${BAR:-undefined}"),
                 ],
                 None,
                 Ok(vec![
@@ -491,25 +540,27 @@ mod tests {
             (
                 "Alias persists",
                 vec![
-                    Execution::new("shopt -s expand_aliases"),
-                    Execution::new("alias foo='echo BAR'"),
-                    Execution::new("foo"),
-                    Execution::new("unalias foo"),
-                    Execution::new("foo"),
+                    TestCase::from_expression("shopt -s expand_aliases"),
+                    TestCase::from_expression("alias foo='echo BAR'"),
+                    TestCase::from_expression("alias"),
+                    TestCase::from_expression("foo"),
+                    TestCase::from_expression("unalias foo"),
+                    TestCase::from_expression("foo"),
                 ],
                 None,
                 Ok(vec![
                     ("", "").into(),
                     ("", "").into(),
+                    ("alias foo='echo BAR'\n", "").into(),
                     ("BAR\n", "").into(),
                     ("", "").into(),
                     (
-                        "",
-                        format!(
-                            "{}: line 17: foo: command not found\n",
-                            DEFAULT_SHELL.to_string_lossy()
+                        None,
+                        Some(
+                            Regex::new(": line \\d+: foo: command not found")
+                                .expect("compile command not found regex"),
                         ),
-                        Some(127),
+                        Some(ExitStatus::Code(127)),
                     )
                         .into(),
                 ]),
@@ -519,7 +570,7 @@ mod tests {
         run_executor_tests(
             BashScriptExecutor::default(),
             tests,
-            &ExecutionContext::new(),
+            &ExecutionContext::default(),
         );
     }
 
@@ -563,22 +614,17 @@ mod tests {
         let tests = vec![(
             "Skip ends execution",
             vec![
-                Execution::new("echo \"😊🦀\""),
-                Execution::new("echo -e \"A\r\nB\""),
-                Execution::new("echo \"🦀😊\" >&2"),
+                TestCase::from_expression("echo \"😊🦀\""),
+                TestCase::from_expression("echo -e \"A\r\nB\""),
             ],
             None,
-            Ok(vec![
-                ("😊🦀\n", "").into(),
-                ("A\nB\n", "").into(),
-                ("", "🦀😊\n").into(),
-            ]),
+            Ok(vec![("😊🦀\n", "").into(), ("A\nB\n", "").into()]),
         )];
 
         run_executor_tests(
             BashScriptExecutor::default(),
             tests,
-            &ExecutionContext::new(),
+            &ExecutionContext::default(),
         );
     }
 }

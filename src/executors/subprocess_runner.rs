@@ -6,43 +6,44 @@ use anyhow::Result;
 use subprocess::Exec;
 use subprocess::ExitStatus;
 use subprocess::Redirection;
+use tracing::trace;
 
 use super::context::Context as ExecutionContext;
-use super::execution::Execution;
 use super::runner::Runner;
 use super::DEFAULT_SHELL;
 use crate::output::ExitStatus as OutputExitStatus;
 use crate::output::Output;
+use crate::testcase::TestCase;
 
-/// A runner that starts a (shell) sub-process and writes the expression of
-/// the given [`crate::executors::execution::Execution`] into STDIN.
-/// Each output stream is read from an individual thread.
+/// A runner that starts an interpreter (usually `bash`) in a sub-process and
+/// writes the shell expression of a given [`crate::testcase::TestCase`] into
+/// STDIN.
+///
 /// Constraining the max execution time is supported.
 #[derive(Clone)]
 pub struct SubprocessRunner(pub(super) PathBuf);
 
 impl Runner for SubprocessRunner {
-    fn run(
-        &self,
-        _name: &str,
-        execution: &Execution,
-        context: &ExecutionContext,
-    ) -> Result<Output> {
+    fn run(&self, _name: &str, testcase: &TestCase, context: &ExecutionContext) -> Result<Output> {
         let shell = &self.0;
 
         // apply environment variables (assure SHELL is set)
-        let mut envs = execution.environment.as_ref().cloned().unwrap_or_default();
+        let mut envs = testcase.config.environment.clone();
         envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 
         let mut exec = Exec::cmd(shell)
             .stdout(Redirection::Pipe)
             // TODO(T138035235) coverage is currently using wrong libs
             .env_remove("LD_PRELOAD")
-            .stderr(if context.combine_output {
-                Redirection::Merge
-            } else {
-                Redirection::Pipe
-            })
+            .stderr(
+                if testcase.config.output_stream
+                    == Some(crate::config::OutputStreamControl::Combined)
+                {
+                    Redirection::Merge
+                } else {
+                    Redirection::Pipe
+                },
+            )
             .stdin(Redirection::Pipe)
             //.stdin(&execution.expression as &str)
             .env_extend(&Vec::from_iter(envs.iter()));
@@ -50,12 +51,13 @@ impl Runner for SubprocessRunner {
             exec = exec.cwd(directory);
         }
 
-        let input = &execution.expression as &str;
+        let input = &testcase.shell_expression as &str;
         let mut process = exec.detached().popen().context("start process")?;
         let mut comm = process.communicate_start(Some(input.as_bytes().to_vec()));
-        if let Some(timeout) = execution.timeout {
+        if let Some(timeout) = testcase.config.timeout {
             comm = comm.limit_time(timeout);
         }
+        trace!(testcase = %&testcase, "running testcase in subprocess");
 
         let (stdout, stderr, exit_code) = match comm.read() {
             Ok((stdout, stderr)) => (
@@ -72,14 +74,14 @@ impl Runner for SubprocessRunner {
                 let exit = if cfg!(windows) {
                     let process_result = process.wait().unwrap_or(ExitStatus::Undetermined);
                     if kind == ErrorKind::TimedOut {
-                        OutputExitStatus::Timeout(execution.timeout.unwrap_or_default())
+                        OutputExitStatus::Timeout(testcase.config.timeout.unwrap_or_default())
                     } else if let ExitStatus::Exited(code) = process_result {
                         (code as i32).into()
                     } else {
                         OutputExitStatus::Unknown
                     }
                 } else if kind == ErrorKind::TimedOut {
-                    OutputExitStatus::Timeout(execution.timeout.unwrap_or_default())
+                    OutputExitStatus::Timeout(testcase.config.timeout.unwrap_or_default())
                 } else {
                     OutputExitStatus::Unknown
                 };
@@ -88,11 +90,11 @@ impl Runner for SubprocessRunner {
         };
 
         Ok(Output {
-            stderr: context
+            stderr: testcase
                 .render_output(&stderr.unwrap_or_default()[..])
                 .to_vec()
                 .into(),
-            stdout: context
+            stdout: testcase
                 .render_output(&stdout.unwrap_or_default()[..])
                 .to_vec()
                 .into(),
@@ -124,11 +126,12 @@ mod tests {
 
     use super::Runner;
     use super::SubprocessRunner;
+    use crate::config::OutputStreamControl;
+    use crate::config::TestCaseConfig;
     use crate::executors::context::Context as ExecutionContext;
-    use crate::executors::context::ContextBuilder;
-    use crate::executors::execution::Execution;
     use crate::output::ExitStatus;
     use crate::output::Output;
+    use crate::testcase::TestCase;
 
     #[cfg(not(target_os = "windows"))]
     #[cfg(feature = "volatile_tests")]
@@ -137,8 +140,8 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("sleep 0.2 && echo OK1 && sleep 0.2 && echo OK2"),
-                &ExecutionContext::new(),
+                &TestCase::from_expression("sleep 0.2 && echo OK1 && sleep 0.2 && echo OK2"),
+                &ExecutionContext::default(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\nOK2\n", "").into();
@@ -150,8 +153,8 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("echo OK1 && ( 1>&2 echo OK2 )"),
-                &ExecutionContext::new(),
+                &TestCase::from_expression("echo OK1 && ( 1>&2 echo OK2 )"),
+                &ExecutionContext::default(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\n", "OK2\n").into();
@@ -163,11 +166,16 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("echo OK1 && ( 1>&2 echo OK2 )"),
-                &ContextBuilder::default()
-                    .combine_output(true)
-                    .build()
-                    .expect("create execution context"),
+                &TestCase {
+                    title: "Test".into(),
+                    shell_expression: "echo OK1 && ( 1>&2 echo OK2 )".into(),
+                    config: TestCaseConfig {
+                        output_stream: Some(OutputStreamControl::Combined),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                &ExecutionContext::default(),
             )
             .expect("execute without error");
         let expect: Output = ("OK1\nOK2\n", "").into();
@@ -180,8 +188,8 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("echo -e \"🦀\r\n😊\""),
-                &ExecutionContext::new(),
+                &TestCase::from_expression("echo -e \"🦀\r\n😊\""),
+                &ExecutionContext::default(),
             )
             .expect("execute without error");
 
@@ -195,8 +203,8 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("( exit 123 )"),
-                &ExecutionContext::new(),
+                &TestCase::from_expression("( exit 123 )"),
+                &ExecutionContext::default(),
             )
             .expect("execute without error");
 
@@ -210,9 +218,11 @@ mod tests {
         let output = SubprocessRunner::default()
             .run(
                 "name",
-                &Execution::new("echo ONE && sleep 1 && echo TWO")
-                    .timeout(Some(Duration::from_millis(100))),
-                &ExecutionContext::new(),
+                &TestCase::from_expression_timed(
+                    "echo ONE && sleep 1 && echo TWO",
+                    Some(Duration::from_millis(100)),
+                ),
+                &ExecutionContext::default(),
             )
             .expect("execution still ends in non-error");
         let duration = std::time::SystemTime::now()

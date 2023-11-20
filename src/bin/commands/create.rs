@@ -1,17 +1,17 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::BufRead;
+use std::path::Path;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use scrut::config::DocumentConfig;
+use scrut::config::TestCaseConfig;
 use scrut::executors::bash_script_executor::BashScriptExecutor;
 use scrut::executors::context::ContextBuilder;
-use scrut::executors::execution::Execution;
 use scrut::executors::executor::Executor;
 use scrut::generators::cram::CramTestCaseGenerator;
 use scrut::generators::generator::TestCaseGenerator;
@@ -51,12 +51,6 @@ pub struct Args {
 
 impl Args {
     pub(crate) fn run(&self) -> Result<()> {
-        // get timeout for executing of the expression
-        if self.global.timeout_seconds == 0 {
-            bail!("timeout must be greater than zero")
-        }
-        let timeout = Duration::from_secs(self.global.timeout_seconds);
-
         // get expression from either STDIN or command line argument(s)
         let expression = if self.shell_expression.len() == 1 && self.shell_expression[0] == "-" {
             std::io::stdin()
@@ -68,7 +62,7 @@ impl Args {
         } else {
             self.shell_expression.join(" ")
         };
-        let shell_path = canonical_shell(&self.global.shell)?;
+        let shell_path = canonical_shell(self.global.shell.as_ref().map(|p| p as &Path))?;
         let executor = BashScriptExecutor::new(&shell_path);
 
         // initialize test environment
@@ -80,45 +74,59 @@ impl Args {
             PathBuf::try_from(&test_environment.work_directory)?.join("testfile.tmp");
         let (test_work_directory, environment) =
             test_environment.init_test_file(&test_file_path, self.format == ParserType::Cram)?;
-        let environment: &[(&str, &str)] = &environment
-            .iter()
-            .map(|(k, v)| (k as &str, v as &str))
-            .collect::<Vec<_>>();
 
-        // execute the shell expression, get the output
+        // generate configuration
+        let env_vars = BTreeMap::from_iter(environment.iter().map(|(k, v)| (k as &str, v as &str)));
+        let (document_config, testcase_config) = if self.format == ParserType::Markdown {
+            (
+                DocumentConfig::default_markdown(),
+                TestCaseConfig::default_markdown(),
+            )
+        } else {
+            (
+                DocumentConfig::default_cram(),
+                TestCaseConfig::default_cram(),
+            )
+        };
+
+        // execute the test to get the output
         let outputs = executor
             .execute_all(
-                &[&Execution::new(&expression).environment(environment)],
+                &[&TestCase {
+                    shell_expression: expression.clone(),
+                    config: testcase_config.merge_environment(&env_vars),
+                    ..Default::default()
+                }],
                 &ContextBuilder::default()
-                    .combine_output(self.global.is_combine_output(None))
-                    .crlf_support(self.global.is_keep_output_crlf(None))
                     .work_directory(Some(PathBuf::from(&test_work_directory)))
                     .temp_directory(Some(test_environment.tmp_directory.as_path_buf()))
-                    .timeout(Some(timeout))
+                    .config(document_config.with_overrides_from(&self.to_document_config()))
                     .build()
                     .context("construct build execution context")?,
             )
             .map_err(|err| anyhow!("{}", err))?;
         assert_eq!(1, outputs.len(), "execution yielded result");
 
-        // generate the testcase
-        let generator: Box<dyn TestCaseGenerator> = match self.format {
-            ParserType::Cram => Box::<CramTestCaseGenerator>::default(),
-            ParserType::Markdown => Box::<MarkdownTestCaseGenerator>::default(),
-        };
-
-        // build testcase, run tests to get result
+        // build and validate testcase
         let testcase = TestCase {
             title: self.title.clone(),
             shell_expression: expression,
             expectations: vec![],
             exit_code: None,
             line_number: 0,
-            ..Default::default()
+            config: if self.format == ParserType::Markdown {
+                TestCaseConfig::default_markdown()
+            } else {
+                TestCaseConfig::default_cram()
+            },
         };
         let result = testcase.validate(&outputs[0]);
 
         // generate testcase document
+        let generator: Box<dyn TestCaseGenerator> = match self.format {
+            ParserType::Cram => Box::<CramTestCaseGenerator>::default(),
+            ParserType::Markdown => Box::<MarkdownTestCaseGenerator>::default(),
+        };
         let generated = generator
             .generate_testcases(&[&Outcome {
                 location: None,

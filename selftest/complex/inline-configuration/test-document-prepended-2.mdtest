@@ -1,0 +1,10 @@
+# This file is supposed to be prepended
+
+The following test ought to file, so we can validate that it was prepended
+
+## This fails in prepended
+
+```scrut
+$ echo FooInPrepended2
+BarInPrepended2
+```

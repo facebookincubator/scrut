@@ -1,0 +1,14 @@
+---
+shell: something-really-invalid-inline
+---
+
+This file uses non-standard language markers
+
+## This test cannot execute with an invalid shell
+
+```scrut
+$ echo Test1
+Output1
+```
+
+

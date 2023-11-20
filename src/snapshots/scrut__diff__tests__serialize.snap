@@ -1,5 +1,5 @@
 ---
-source: clifoundation/scrut/src/diff.rs
+source: fbcode/clifoundation/scrut/src/diff.rs
 assertion_line: 865
 expression: "&rendered"
 ---
@@ -19,4 +19,3 @@ lines:
   - - 0
     - |
       line content
-
