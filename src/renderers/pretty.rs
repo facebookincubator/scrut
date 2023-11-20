@@ -16,6 +16,7 @@ use crate::testcase::TestCaseError;
 
 pub const DEFAULT_SURROUNDING_LINES: usize = 5;
 pub const DEFAULT_ABSOLUTE_LINE_NUMBERS: bool = false;
+pub const DEFAULT_SUMMARIZE: bool = true;
 
 /// Renders errors in a human readable way, that higlights the differences eper
 /// test case.
@@ -23,11 +24,8 @@ pub const DEFAULT_ABSOLUTE_LINE_NUMBERS: bool = false;
 pub struct PrettyMonochromeRenderer(PrettyColorRenderer);
 
 impl PrettyMonochromeRenderer {
-    pub fn new(max_surrounding_lines: usize, absolute_line_numbers: bool) -> Self {
-        Self(PrettyColorRenderer::new(
-            max_surrounding_lines,
-            absolute_line_numbers,
-        ))
+    pub fn new(color_renderer: PrettyColorRenderer) -> Self {
+        Self(color_renderer)
     }
 }
 
@@ -41,18 +39,12 @@ impl Renderer for PrettyMonochromeRenderer {
 /// Renders errors in a human readable way, that higlights the differences eper
 /// test case. Uses colors!
 pub struct PrettyColorRenderer {
-    max_surrounding_lines: usize,
-    absolute_line_numbers: bool,
+    pub max_surrounding_lines: usize,
+    pub absolute_line_numbers: bool,
+    pub summarize: bool,
 }
 
 impl PrettyColorRenderer {
-    pub fn new(max_surrounding_lines: usize, absolute_line_numbers: bool) -> Self {
-        Self {
-            max_surrounding_lines,
-            absolute_line_numbers,
-        }
-    }
-
     fn render_summary(&self, files: usize, ok: usize, errors: usize, ignored: usize) -> String {
         let summary = "Summary".underline();
         let total = ok + errors + ignored;
@@ -78,7 +70,11 @@ impl PrettyColorRenderer {
 
 impl Default for PrettyColorRenderer {
     fn default() -> Self {
-        Self::new(DEFAULT_SURROUNDING_LINES, DEFAULT_ABSOLUTE_LINE_NUMBERS)
+        PrettyColorRenderer {
+            max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
+            absolute_line_numbers: DEFAULT_ABSOLUTE_LINE_NUMBERS,
+            summarize: DEFAULT_SUMMARIZE,
+        }
     }
 }
 
@@ -108,12 +104,14 @@ impl Renderer for PrettyColorRenderer {
             }
         }
 
-        output.push_str(&self.render_summary(
-            locations.len(),
-            count_ok,
-            count_errors,
-            count_skipped,
-        ));
+        if self.summarize {
+            output.push_str(&self.render_summary(
+                locations.len(),
+                count_ok,
+                count_errors,
+                count_skipped,
+            ));
+        }
         Ok(output)
     }
 }
@@ -358,6 +356,7 @@ impl Decorator {
 mod tests {
     use anyhow::anyhow;
 
+    use super::PrettyColorRenderer;
     use super::PrettyMonochromeRenderer;
     use crate::bformatln;
     use crate::diff::Diff;
@@ -371,9 +370,17 @@ mod tests {
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
 
+    fn new_test_renderer() -> PrettyMonochromeRenderer {
+        PrettyMonochromeRenderer::new(PrettyColorRenderer {
+            max_surrounding_lines: 0,
+            absolute_line_numbers: false,
+            summarize: true,
+        })
+    }
+
     #[test]
     fn test_render_success() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let rendered = renderer
             .render(&[&Outcome {
                 output: ("the stdout", "the stderr").into(),
@@ -399,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_render_multiline() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let rendered = renderer
             .render(&[&Outcome {
                 output: ("the stdout", "the stderr").into(),
@@ -425,7 +432,7 @@ mod tests {
 
     #[test]
     fn test_render_allows_for_utf8() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let rendered = renderer
             .render(&[&Outcome {
                 output: ("the stdout", "the stderr").into(),
@@ -474,7 +481,11 @@ mod tests {
             },
         ];
         tests.iter().for_each(|test| {
-            let renderer = PrettyMonochromeRenderer::new(0, test.absolute_line_numbers);
+            let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
+                max_surrounding_lines: 0,
+                absolute_line_numbers: test.absolute_line_numbers,
+                summarize: true,
+            });
             let rendered = renderer
                 .render(&[&Outcome {
                     output: ("the stdout", "the stderr").into(),
@@ -508,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_render_internal_error() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let rendered = renderer
             .render(&[&Outcome {
                 location: None,
@@ -531,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_render_malformed_output() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
@@ -573,7 +584,11 @@ mod tests {
 
     #[test]
     fn test_render_malformed_output_multiple_lines() {
-        let renderer = PrettyMonochromeRenderer::new(10, false);
+        let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
+            max_surrounding_lines: 10,
+            absolute_line_numbers: false,
+            summarize: true,
+        });
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
@@ -683,7 +698,11 @@ mod tests {
         }
 
         for surrounding in 1..8 {
-            let renderer = PrettyMonochromeRenderer::new(surrounding, false);
+            let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
+                max_surrounding_lines: surrounding,
+                absolute_line_numbers: false,
+                summarize: true,
+            });
             let testcase = TestCase {
                 title: "the title".to_string(),
                 shell_expression: "the command".to_string(),
@@ -712,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_render_malformed_output_with_no_expectations_but_output() {
-        let renderer = PrettyMonochromeRenderer::new(0, false);
+        let renderer = new_test_renderer();
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
@@ -793,7 +812,11 @@ mod tests {
         };
 
         [false, true].iter().for_each(|absolute_numbers| {
-            let renderer = PrettyMonochromeRenderer::new(0, *absolute_numbers);
+            let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
+                max_surrounding_lines: 0,
+                absolute_line_numbers: *absolute_numbers,
+                summarize: true,
+            });
             let rendered = renderer
                 .render(&[&Outcome {
                     location: None,

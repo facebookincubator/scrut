@@ -306,16 +306,15 @@ impl Args {
         // finally render all outcomes of testcase validations
         let renderer: Box<dyn Renderer> = match self.renderer {
             ScrutRenderer::Auto | ScrutRenderer::Pretty => {
+                let color_renderer = PrettyColorRenderer {
+                    max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
+                    absolute_line_numbers: self.absolute_line_numbers,
+                    summarize: true,
+                };
                 if stdout().is_terminal() && !self.no_color {
-                    Box::new(PrettyColorRenderer::new(
-                        DEFAULT_SURROUNDING_LINES,
-                        self.absolute_line_numbers,
-                    ))
+                    Box::new(color_renderer)
                 } else {
-                    Box::new(PrettyMonochromeRenderer::new(
-                        DEFAULT_SURROUNDING_LINES,
-                        self.absolute_line_numbers,
-                    ))
+                    Box::new(PrettyMonochromeRenderer::new(color_renderer))
                 }
             }
             ScrutRenderer::Diff => Box::<DiffRenderer>::default(),

@@ -330,16 +330,15 @@ impl Args {
     }
 
     fn print_changes(&self, outcomes: &[&Outcome]) {
+        let color_renderer = PrettyColorRenderer {
+            max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
+            absolute_line_numbers: self.absolute_line_numbers,
+            summarize: false,
+        };
         let diff: Box<dyn Renderer> = if self.no_color {
-            Box::new(PrettyMonochromeRenderer::new(
-                DEFAULT_SURROUNDING_LINES,
-                self.absolute_line_numbers,
-            ))
+            Box::new(PrettyMonochromeRenderer::new(color_renderer))
         } else {
-            Box::new(PrettyColorRenderer::new(
-                DEFAULT_SURROUNDING_LINES,
-                self.absolute_line_numbers,
-            ))
+            Box::new(color_renderer)
         };
         eprint!("{}", diff.render(outcomes).expect("outcomes rendered"));
     }
