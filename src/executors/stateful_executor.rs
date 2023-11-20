@@ -80,6 +80,8 @@ impl Executor for StatefulExecutor {
         let mut outputs = vec![];
         for (index, testcase) in testcases.iter().enumerate() {
             let name = format!("exec{}", index + 1);
+            let mut testcase = (*testcase).clone();
+            testcase.config = testcase.config.with_defaults_from(&context.config.defaults);
 
             // timeout is whatever the lowest provided value of:
             // - global (over all executions) timeout
@@ -113,8 +115,8 @@ impl Executor for StatefulExecutor {
 
             // execute the execution, using the shared state directory
             let context = context.to_owned();
-            let mut testcase = (*testcase).clone();
             testcase.config.timeout = timeout;
+            trace!("effective testcase configuration: {}", &testcase.config);
             let output = runner_gen(state_directory.path())
                 .run(&name, &testcase, &context)
                 .map_err(|err| ExecutionError::failed(index, err))?;
