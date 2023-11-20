@@ -28,7 +28,7 @@ Converted Markdown test file looks like this:
 $ cat test.md
 # Command executes successfully
 
-```scrut
+```scrut {output_stream: combined, keep_crlf: true}
 $ echo Hello World
 Hello World
 ```

@@ -170,7 +170,7 @@ impl Args {
                     testcase.config = testcase
                         .config
                         .with_overrides_from(&testcase_config)
-                        .merge_environment(&env_vars);
+                        .with_environment(&env_vars);
                     testcase as &TestCase
                 })
                 .collect::<Vec<_>>();
@@ -211,9 +211,11 @@ impl Args {
                     // take test execution output, run validation and store all outcomes ...
                     for (testcase, output) in test.testcases.iter().zip(outputs.iter()) {
                         let result = testcase.validate(output);
+                        let mut testcase = testcase.to_owned();
+                        testcase.config = testcase.config.without_environment(&env_vars);
                         outcomes.push(Outcome {
+                            testcase,
                             location: Some(test.path.to_string_lossy().to_string()),
-                            testcase: testcase.to_owned(),
                             output: output.to_owned(),
                             escaping: self.global.output_escaping(Some(test.parser_type)),
                             format: test.parser_type,

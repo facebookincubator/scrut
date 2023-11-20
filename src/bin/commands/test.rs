@@ -212,7 +212,7 @@ impl Args {
                     testcase.config = testcase
                         .config
                         .with_overrides_from(&testcase_config)
-                        .merge_environment(&env_vars);
+                        .with_environment(&env_vars);
                     trace!(testcase = %&testcase, "running test case");
                     testcase as &TestCase
                 })

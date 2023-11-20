@@ -5,6 +5,7 @@ use anyhow::Result;
 
 use super::generator::TestCaseGenerator;
 use super::generator::UpdateGenerator;
+use crate::config::TestCaseConfig;
 use crate::formatln;
 use crate::generators::outcome::OutcomeTestGenerator;
 use crate::newline::StringNewline;
@@ -65,7 +66,7 @@ impl UpdateGenerator for MarkdownUpdateGenerator {
                     let config = if config_lines.is_empty() {
                         "".into()
                     } else {
-                        format!(" {}", config_lines.join_newline().trim_start())
+                        format!(" {{{}}}", config_lines.join_newline().trim_start())
                     };
                     let generated = outcomes[testcase_index]
                         .generate_testcase()
@@ -103,6 +104,7 @@ impl Default for MarkdownTestCaseGenerator {
 
 impl TestCaseGenerator for MarkdownTestCaseGenerator {
     fn generate_testcases(&self, outcomes: &[&Outcome]) -> anyhow::Result<String> {
+        let default_config = TestCaseConfig::default_markdown();
         outcomes
             .iter()
             .map(|outcome| {
@@ -117,10 +119,17 @@ impl TestCaseGenerator for MarkdownTestCaseGenerator {
                     })?;
                 }
 
+                let config_diff = outcome.testcase.config.diff(&default_config);
+                let config = if config_diff.is_empty() {
+                    "".into()
+                } else {
+                    format!(" {}", config_diff.to_yaml_one_liner())
+                };
+
                 // start with shell expressions
                 let generated = outcome.generate_testcase()?;
                 let backticks = "`".repeat(max_backtick_size(&generated) + 1);
-                rendered.push_str(&formatln!("{}{}", &backticks, self.0));
+                rendered.push_str(&formatln!("{}{}{}", &backticks, self.0, config));
                 rendered.push_str(&generated);
                 rendered.push_str(&formatln!("{}", &backticks));
                 Ok(rendered)

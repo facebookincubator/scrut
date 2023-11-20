@@ -90,11 +90,14 @@ impl Args {
         };
 
         // execute the test to get the output
+        let testcase_config = testcase_config
+            .with_overrides_from(&self.to_testcase_config())
+            .with_environment(&env_vars);
         let outputs = executor
             .execute_all(
                 &[&TestCase {
                     shell_expression: expression.clone(),
-                    config: testcase_config.merge_environment(&env_vars),
+                    config: testcase_config.clone(),
                     ..Default::default()
                 }],
                 &ContextBuilder::default()
@@ -114,11 +117,7 @@ impl Args {
             expectations: vec![],
             exit_code: None,
             line_number: 0,
-            config: if self.format == ParserType::Markdown {
-                TestCaseConfig::default_markdown()
-            } else {
-                TestCaseConfig::default_cram()
-            },
+            config: testcase_config.without_environment(&env_vars),
         };
         let result = testcase.validate(&outputs[0]);
 
@@ -152,5 +151,9 @@ impl Args {
 
     fn to_document_config(&self) -> DocumentConfig {
         self.global.to_document_config()
+    }
+
+    fn to_testcase_config(&self) -> TestCaseConfig {
+        self.global.to_testcase_config()
     }
 }

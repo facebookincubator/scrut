@@ -98,7 +98,7 @@ impl Parser for MarkdownParser {
                     let parsed_config = if config_lines.is_empty() {
                         TestCaseConfig::empty()
                     } else {
-                        serde_yaml::from_str(&config_lines.join_newline())
+                        serde_yaml::from_str(&format!("{{{}}}", config_lines.join_newline()))
                             .context("parse testcase config")?
                     };
                     line_parser.set_testcase_config(
@@ -201,10 +201,14 @@ impl<'a> Iterator for MarkdownIterator<'a> {
                 }
 
                 // gather optional per-test config
-                let config_lines: Vec<(usize, String)> = if config.is_empty() {
-                    vec![]
-                } else {
+                let config_lines: Vec<(usize, String)> = if let Some(config) = config
+                    .strip_prefix('{')
+                    .and_then(|s| s.strip_suffix('}'))
+                    .and_then(|s| if s.is_empty() { None } else { Some(s) })
+                {
                     vec![(self.line_index - 1, config.into())]
+                } else {
+                    vec![]
                 };
 
                 // gather optional comments

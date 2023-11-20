@@ -152,6 +152,12 @@ pub enum OutputStreamControl {
     // TODO(implement) Marked,
 }
 
+impl Display for OutputStreamControl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct TestCaseWait {
     /// How long to wait for
@@ -332,15 +338,109 @@ impl TestCaseConfig {
         overrides.with_defaults_from(self)
     }
 
-    /// Insert any environment variables that are not already defined (no overwrites)
-    pub fn merge_environment(&self, environment: &BTreeMap<&str, &str>) -> Self {
+    /// Returns a new configuration that contains the provided environment variables
+    pub fn with_environment(&self, environment: &BTreeMap<&str, &str>) -> Self {
         let mut config = self.clone();
         for (key, value) in environment {
-            if !config.environment.contains_key(*key) {
-                config.environment.insert((*key).into(), (*value).into());
+            config.environment.insert((*key).into(), (*value).into());
+        }
+        config
+    }
+
+    /// Return new configuration that does not contain the provided environment
+    /// variables - unless they have a different value.
+    pub fn without_environment(&self, environment: &BTreeMap<&str, &str>) -> Self {
+        let mut config = self.clone();
+        for (key, value) in environment {
+            if config.environment.get(*key) == Some(&value.to_string()) {
+                config.environment.remove(*key);
             }
         }
         config
+    }
+
+    /// Returns what makes this configuration different from another one.
+    /// Will be equal to [`Self::empty()`] if they are equal.
+    pub fn diff(&self, other: &Self) -> Self {
+        let mut diff = Self::empty();
+        if self.output_stream != other.output_stream {
+            diff.output_stream = self.output_stream.clone();
+        }
+        if self.keep_crlf != other.keep_crlf {
+            diff.keep_crlf = self.keep_crlf;
+        }
+        if self.timeout != other.timeout {
+            diff.timeout = self.timeout;
+        }
+        if self.detached != other.detached {
+            diff.detached = self.detached;
+        }
+        if self.skip_document_code != other.skip_document_code {
+            diff.skip_document_code = self.skip_document_code;
+        }
+        if self.wait != other.wait {
+            diff.wait = self.wait.clone();
+        }
+
+        // difference here is: all env vars that are set in self, but not in other
+        // and all that env vars that have different values in self than in other
+        if self.environment != other.environment {
+            let mut env_diff = self.environment.clone();
+            for (k, v) in other.environment.iter() {
+                if env_diff.get(k) != Some(v) {
+                    env_diff.remove(k);
+                }
+            }
+            diff.environment = env_diff;
+        }
+
+        diff
+    }
+
+    /// Serde YAML does not support one-line-formatted YAML and currently Scrut
+    /// supports only parsing one-line-formatted YAML.
+    /// This implementation provides a least-effort
+    pub fn to_yaml_one_liner(&self) -> String {
+        let mut output = vec![];
+        if let Some(ref value) = self.output_stream {
+            output.push(format!(
+                "output_stream: {}",
+                value.to_string().to_lowercase()
+            ));
+        }
+        if let Some(value) = self.keep_crlf {
+            output.push(format!("keep_crlf: {}", value))
+        }
+        if let Some(value) = self.timeout {
+            output.push(format!("timeout: {}", humantime::format_duration(value)))
+        }
+        if let Some(value) = self.detached {
+            output.push(format!("detached: {}", value))
+        }
+        if let Some(value) = self.skip_document_code {
+            output.push(format!("skip_document_code: {}", value))
+        }
+        if let Some(ref wait) = self.wait {
+            let duration = humantime::format_duration(wait.timeout).to_string();
+            if let Some(ref path) = wait.path {
+                output.push(format!(
+                    "wait: {{timeout: {}, path: {}}}",
+                    duration,
+                    path.to_string_lossy(),
+                ))
+            } else {
+                output.push(format!("wait: {}", duration))
+            }
+        }
+        if !self.environment.is_empty() {
+            let mut envvars = vec![];
+            for (key, value) in self.environment.iter() {
+                // TODO: this will bereak break if the value contains double quotes => use `quote-string` crate?
+                envvars.push(format!("{}: \"{}\"", key, value))
+            }
+            output.push(format!("environment: {{{}}}", envvars.join(", ")));
+        }
+        format!("{{{}}}", output.join(", "))
     }
 }
 
@@ -552,6 +652,53 @@ wait:
             serde_yaml::to_string(&config).expect("render testcase config to YAML"),
             FULL_TESTCASE_CONFIG.to_string().trim_start(),
         )
+    }
+
+    #[test]
+    fn test_testcase_config_yaml_one_liner() {
+        let tests = vec![
+            (TestCaseConfig::empty(), "{}"),
+            (
+                TestCaseConfig {
+                    keep_crlf: Some(true),
+                    ..Default::default()
+                },
+                "{keep_crlf: true}",
+            ),
+            (
+                TestCaseConfig {
+                    wait: Some(TestCaseWait {
+                        timeout: Duration::from_secs(123),
+                        path: None,
+                    }),
+                    ..Default::default()
+                },
+                "{wait: 2m 3s}",
+            ),
+            (
+                TestCaseConfig {
+                    output_stream: Some(OutputStreamControl::Stderr),
+                    keep_crlf: Some(true),
+                    detached: Some(false),
+                    environment: BTreeMap::from([("foo".to_string(), "bar".to_string())]),
+                    skip_document_code: Some(123),
+                    timeout: Some(Duration::from_secs(234)),
+                    wait: Some(TestCaseWait {
+                        timeout: Duration::from_secs(123),
+                        path: Some(PathBuf::from("/tmp/wait")),
+                    }),
+                },
+                "{output_stream: stderr, keep_crlf: true, timeout: 3m 54s, detached: false, skip_document_code: 123, wait: {timeout: 2m 3s, path: /tmp/wait}, environment: {foo: \"bar\"}}",
+            ),
+        ];
+        for (idx, (config, expected)) in tests.iter().enumerate() {
+            let yaml = config.to_yaml_one_liner();
+            assert_eq!(
+                expected.to_string(),
+                yaml,
+                "test {idx}: for config {config:?}"
+            );
+        }
     }
 
     #[test]
