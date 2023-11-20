@@ -5,6 +5,7 @@ use std::time::Duration;
 use serde::ser::SerializeMap;
 use serde::Serialize;
 
+use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::escaping::Escaper;
 use crate::formatln;
 use crate::lossy_string;
@@ -127,14 +128,11 @@ impl ExitStatus {
     /// Exit code 0 denotes success
     pub const SUCCESS: Self = Self::Code(0);
 
-    /// Exit code 80 denotes intention to skip all tests in the file
-    pub const SKIP: Self = Self::Code(80);
-
     /// Returns exit code as integer with -1 for timeout and -255 for unknown
     pub fn as_code(&self) -> i32 {
         match self {
             Self::Code(code) => *code,
-            Self::Skipped => Self::SKIP.as_code(),
+            Self::Skipped => DEFAULT_SKIP_DOCUMENT_CODE,
             Self::Timeout(_) => -1,
             Self::Unknown => -255,
         }

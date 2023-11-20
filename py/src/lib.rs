@@ -305,7 +305,7 @@ struct PyTestCaseConfig {
     #[pyo3(get)]
     pub output_stream: Option<PyOutputStreamControl>,
     #[pyo3(get)]
-    pub skip_code: Option<u32>,
+    pub skip_document_code: Option<i32>,
     #[pyo3(get)]
     pub timeout: Option<usize>,
     #[pyo3(get)]
@@ -319,7 +319,7 @@ impl From<TestCaseConfig> for PyTestCaseConfig {
             environment: value.environment,
             keep_crlf: value.keep_crlf,
             output_stream: value.output_stream.map(PyOutputStreamControl::from),
-            skip_code: value.skip_code,
+            skip_document_code: value.skip_document_code,
             timeout: value.timeout.map(duration_to_millis),
             wait: value.wait.map(PyTestCaseWait::from),
         }

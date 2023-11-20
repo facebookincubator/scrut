@@ -1,0 +1,24 @@
+# This test skips shows skipping with the default skip code
+
+This file runs some failing tests and lastly skips with the default skip code
+
+## Run failing test
+
+```scrut
+$ echo Output1
+Whatever1
+```
+
+## Skip on custom skip code
+
+```scrut {skip_document_code: 123}
+$ echo Output2 && exit 123
+Whatever2
+```
+
+## Run another failing test
+
+```scrut
+$ echo Output3
+Whatever3
+```

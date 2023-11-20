@@ -1,0 +1,24 @@
+# This test skips shows skipping with a custom skip code
+
+This file runs some failing tests and lastly skips with the custom skip code
+
+## Run failing test
+
+```scrut
+$ echo Output1
+Whatever1
+```
+
+## Skip on default skip code
+
+```scrut
+$ echo Output2 && exit 80
+Whatever2
+```
+
+## Run another failing test
+
+```scrut
+$ echo Output3
+Whatever3
+```

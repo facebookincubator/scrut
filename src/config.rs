@@ -16,6 +16,9 @@ use serde::Serializer;
 /// The default total (per-document) timeout in seconds
 pub const DEFAULT_DOCUMENT_TIMEOUT: u64 = 900;
 
+/// The exit code that any test execution can return to skip all tests in one document
+pub const DEFAULT_SKIP_DOCUMENT_CODE: i32 = 80;
+
 /// Configuration for the scope of a whole document, that may contain multiple testcases
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default)]
@@ -233,7 +236,7 @@ pub struct TestCaseConfig {
 
     /// The exit code, that if returned by any test, leads to skipping of the whole file.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub skip_code: Option<u32>,
+    pub skip_document_code: Option<i32>,
 
     /// A max execution time a test can run before it is considered failed (and
     /// will be aborted).
@@ -272,7 +275,7 @@ impl TestCaseConfig {
     pub fn default_markdown() -> Self {
         Self {
             output_stream: Some(OutputStreamControl::Stdout),
-            skip_code: Some(80),
+            skip_document_code: Some(DEFAULT_SKIP_DOCUMENT_CODE),
             ..Default::default()
         }
     }
@@ -287,7 +290,7 @@ impl TestCaseConfig {
         Self {
             output_stream: Some(OutputStreamControl::Combined),
             keep_crlf: Some(true),
-            skip_code: Some(80),
+            skip_document_code: Some(DEFAULT_SKIP_DOCUMENT_CODE),
             ..Default::default()
         }
     }
@@ -299,7 +302,7 @@ impl TestCaseConfig {
             && self.timeout.is_none()
             && self.detached.is_none()
             && self.wait.is_none()
-            && self.skip_code.is_none()
+            && self.skip_document_code.is_none()
             && self.environment.is_empty()
     }
 
@@ -320,7 +323,7 @@ impl TestCaseConfig {
                 .collect(),
             detached: self.detached.or(defaults.detached),
             wait: self.wait.clone().or_else(|| defaults.wait.clone()),
-            skip_code: self.skip_code.or(defaults.skip_code),
+            skip_document_code: self.skip_document_code.or(defaults.skip_document_code),
         }
     }
 
@@ -411,7 +414,7 @@ defaults:
     FOO: bar
   keep_crlf: true
   output_stream: stdout
-  skip_code: 123
+  skip_document_code: 123
   timeout: 6m 4s
   wait:
     timeout: 2m 1s
@@ -449,7 +452,7 @@ total_timeout: 5m 3s
                         timeout: Duration::from_secs(2 * 60 + 1),
                         path: Some(PathBuf::from("the-wait-path")),
                     }),
-                    skip_code: Some(123),
+                    skip_document_code: Some(123),
                 }
             }
         )
@@ -477,7 +480,7 @@ total_timeout: 5m 3s
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
                 }),
-                skip_code: Some(123),
+                skip_document_code: Some(123),
             },
         };
         assert_eq!(
@@ -493,7 +496,7 @@ environment:
   FOO: bar
 keep_crlf: true
 output_stream: stderr
-skip_code: 123
+skip_document_code: 123
 timeout: 6m 4s
 wait:
   timeout: 2m 1s
@@ -521,7 +524,7 @@ wait:
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
                 }),
-                skip_code: Some(123),
+                skip_document_code: Some(123),
             }
         )
     }
@@ -543,7 +546,7 @@ wait:
                 timeout: Duration::from_secs(2 * 60 + 1),
                 path: Some(PathBuf::from("the-wait-path")),
             }),
-            skip_code: Some(123),
+            skip_document_code: Some(123),
         };
         assert_eq!(
             serde_yaml::to_string(&config).expect("render testcase config to YAML"),

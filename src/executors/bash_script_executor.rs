@@ -20,6 +20,7 @@ use super::subprocess_runner::SubprocessRunner;
 use super::DEFAULT_SHELL;
 use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
+use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::lossy_string;
 use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
@@ -76,8 +77,14 @@ impl Executor for BashScriptExecutor {
         let output = runner
             .run("script", &testcase, context)
             .map_err(|err| ExecutionError::from_execute(err, None, None))?;
+        let skip_document_code = testcase
+            .config
+            .skip_document_code
+            .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE);
         match output.exit_code {
-            ExitStatus::SKIP => return Err(ExecutionError::Skipped(0)),
+            ExitStatus::Code(code) if code == skip_document_code => {
+                return Err(ExecutionError::Skipped(0));
+            }
             ExitStatus::Timeout(_) => return Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
             ExitStatus::Unknown => {
                 return Err(ExecutionError::aborted(
@@ -105,7 +112,7 @@ impl Executor for BashScriptExecutor {
 
         // skip this?
         for (index, output) in outputs.iter().enumerate() {
-            if output.exit_code == ExitStatus::SKIP {
+            if output.exit_code == ExitStatus::Code(skip_document_code) {
                 return Err(ExecutionError::Skipped(index));
             }
         }
@@ -175,7 +182,7 @@ fn compile_testcase(testcases: &[&TestCase], context: &ExecutionContext) -> Resu
         set_consistent!(detached);
         set_consistent!(keep_crlf);
         set_consistent!(output_stream);
-        set_consistent!(skip_code);
+        set_consistent!(skip_document_code);
         set_consistent!(wait);
         if !config.environment.is_empty() && config.environment != testcase.config.environment {
             return Err(ExecutionError::failed(

@@ -14,6 +14,7 @@ use super::executor::Executor;
 use super::executor::Result;
 use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
+use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::executors::error::ExecutionTimeout;
 use crate::output::ExitStatus;
 use crate::output::Output;
@@ -114,16 +115,22 @@ impl Executor for StatefulExecutor {
                 .map_err(|err| ExecutionError::failed(index, err))?;
             trace!("{output:?}");
 
+            // handle exit code
+            let skip_document_code = testcase
+                .config
+                .skip_document_code
+                .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE);
             match output.exit_code {
                 // having an actual numeric exit code ..
-                ExitStatus::Code(code) => match code.into() {
-                    // .. that signals to skip execution -> stop here
-                    ExitStatus::SKIP => {
+                ExitStatus::Code(code) => {
+                    // .. ends collecting if user signals to skip
+                    if code == skip_document_code {
                         return Err(ExecutionError::Skipped(index));
                     }
-                    // .. that is collected
-                    _ => outputs.push(output),
-                },
+
+                    // .. otherwise keep collecting output
+                    outputs.push(output);
+                }
 
                 // running into a timeout ends all execution ..
                 ExitStatus::Timeout(_) => {
