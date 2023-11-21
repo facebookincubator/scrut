@@ -94,7 +94,15 @@ impl Runner for BashRunner {
             .replace("{state_directory}", &state_directory_str)
             .replace("{name}", name)
             .replace("{shell_expression}", &testcase.shell_expression)
-            .replace("{excluded_variables}", &BASH_EXCLUDED_VARIABLES.join("|"));
+            .replace("{excluded_variables}", &BASH_EXCLUDED_VARIABLES.join("|"))
+            .replace(
+                "{persist_state}",
+                if testcase.config.detached.unwrap_or(false) {
+                    "0"
+                } else {
+                    "1"
+                },
+            );
         trace!("compiled expression {}", &expression);
 
         let mut testcase = testcase.clone();
@@ -169,5 +177,48 @@ mod tests {
 
         let expect: Output = ("", "", Some(123)).into();
         assert_eq!(expect, output);
+    }
+
+    #[test]
+    fn test_execute_persists_state_file_in_state_directory() {
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
+        let output = BashRunner {
+            shell: DEFAULT_SHELL.to_owned(),
+            state_directory: temp_dir.path().into(),
+        }
+        .run(
+            "name",
+            &TestCase::from_expression("true"),
+            &ExecutionContext::new_for_test(),
+        )
+        .expect("execute without error");
+
+        let state_file = temp_dir.path().join("state");
+        assert!(
+            state_file.exists(),
+            "state file was created during execution"
+        );
+    }
+
+    #[test]
+    fn test_detached_execute_does_not_persist_state_file_in_state_directory() {
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
+        let mut testcase = TestCase::from_expression("true");
+        testcase.config.detached = Some(true);
+        let output = BashRunner {
+            shell: DEFAULT_SHELL.to_owned(),
+            state_directory: temp_dir.path().into(),
+        }
+        .run("name", &testcase, &ExecutionContext::new_for_test())
+        .expect("execute without error");
+
+        // wait until after execution execution
+        std::thread::sleep(std::time::Duration::from_millis(300));
+
+        let state_file = temp_dir.path().join("state");
+        assert!(
+            !state_file.exists(),
+            "state file was not created during execution"
+        );
     }
 }

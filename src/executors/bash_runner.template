@@ -46,7 +46,7 @@ shopt -s expand_aliases
 [ -f "$__SCRUT_TEMP_STATE_PATH/state" ] && source "$__SCRUT_TEMP_STATE_PATH/state"
 
 # ensure the state of this execution will be persisted for the next execution
-trap __scrut_persist_state EXIT
+[ {persist_state} -eq 1 ] && trap __scrut_persist_state EXIT
 
 # execute the shell expression
 {shell_expression}
