@@ -45,8 +45,6 @@ impl Runner for SubprocessRunner {
         envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 
         let mut exec = Exec::cmd(shell)
-            // TODO(T138035235) coverage is currently using wrong libs
-            .env_remove("LD_PRELOAD")
             .env_extend(&Vec::from_iter(envs.iter()))
             .cwd(&context.work_directory);
 
