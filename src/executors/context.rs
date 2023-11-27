@@ -54,7 +54,7 @@ impl Drop for Context {
             {
                 std::fs::remove_dir_all(directory).unwrap_or_else(|err| {
                     panic!(
-                        "failed to delete {name} directory recursively in \"{}\": {}",
+                        "failed to clean up testing {name} directory recursively in \"{}\": {}",
                         directory.display(),
                         err
                     )

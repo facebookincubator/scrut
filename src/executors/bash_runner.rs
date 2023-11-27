@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn test_execute_persists_state_file_in_state_directory() {
         let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
-        let output = BashRunner {
+        let _ = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
         }
@@ -205,11 +205,12 @@ mod tests {
         let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
         let mut testcase = TestCase::from_expression("true");
         testcase.config.detached = Some(true);
-        let output = BashRunner {
+        let context = ExecutionContext::new_for_test();
+        let _ = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),
             state_directory: temp_dir.path().into(),
         }
-        .run("name", &testcase, &ExecutionContext::new_for_test())
+        .run("name", &testcase, &context)
         .expect("execute without error");
 
         // wait until after execution execution
