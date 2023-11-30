@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 //! This module provides convenient handlers for handling common newline relating
 //! operations, like assuring that strings do end (or do not end) in a newline.
 //! Also, since Scrut deals with raw byte output of scripts, that may not even

@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 //! This module is concerned with the execution of shell expressions from
 //! [`crate::testcase::TestCase`]s. The output of such executions are stored
 //! in [`crate::output::Output`] structures, that capture the STDOUT, STDERR

@@ -64,3 +64,7 @@ Head over to [the tutorial](docs/Tutorial.md) to get learn how to write your own
 
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+## License
+
+- [LICENSE](LICENSE)
