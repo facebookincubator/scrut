@@ -21,7 +21,7 @@ lazy_static! {
         Regex::new(r"^(#+\s+)(.+)$").expect("header start expression must compile");
 }
 
-pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut", "testcase"];
+pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut"];
 
 /// A parser for Cram `.t` files, which reads [`crate::testcase::TestCase`]s
 /// that are encoded in the form:
@@ -592,7 +592,7 @@ hello3
 
 This is another title
 
-```testcase
+```scrut
 $ echo world
 world
 ```

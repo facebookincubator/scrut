@@ -60,8 +60,7 @@ $ acme --version > /dev/null
 
 Head over to [the tutorial](docs/Tutorial.md) to get learn how to write your own tests.
 
-####
-
 ## Contribute
 
-TODO
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)

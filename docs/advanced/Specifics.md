@@ -221,40 +221,11 @@ Instead of SSHing into a machine, consider also running a bash process in docker
 
 ## STDOUT and STDERR
 
-[Expectations](Expectations.md) always only test [the primary output of a CLI program](https://clig.dev/#:~:text=primary%20output%20for%20your%20command). This means: only `STDOUT` is considered.
+Commands-line applications can generate output on to two streams: `STDOUT` and `STDERR`. There is no general agreement on which stream is supposed to contain what kind of data, but commonly `STDOUT` contains the primary output and `STDERR` contains logs, debug messages, etc. This is also the recommendation of the [CLI guidelines](https://clig.dev/#:~:text=primary%20output%20for%20your%20command).
 
-To make that clear: Assuming you have a command `foo` that outputs `Hello` on `STDOUT` and `World` on `STDERR` then the following test will suffice:
+Scrut validates CLI output via [Expectations](Expectations.md). Which output that entails can be configured via the [`output_stream` configuration directive](File_Formats.md#testcase-configuration) (and the `--(no-)combine-output` command-line parameters).
 
-````
-```scrut
-# Only STDOUT is considered
-$ foo
-Hello
-```
-````
-
-If you need to test the output of `STDERR` instead of `STDOUT`, you can drop `STDOUT` and redirect `STDERR` to it like so:
-
-````
-```scrut
-# Only STDERR is considered
-$ foo 2>&1 1>/dev/null
-World
-```
-````
-
-Of course, you can combine the output of either:
-
-````
-```scrut
-# Only STDERR is considered
-$ foo 2>&1
-Hello
-World
-```
-````
-
-> **Caution**: The order of the output is not guaranteed.
+**Note:** While you can configure which output streams Scrut considers when evaluating output expecations, you can also steer this by using stream control bash primitives like `some-command 2>&1`.
 
 ## Exit Codes
 
@@ -270,9 +241,9 @@ an expected line of output
 ```
 ````
 
-Unless otherwise specified an exit code of 0 (zero) is assumed. You can explicitly denote it, but why?
+Unless otherwise specified an exit code of 0 (zero) is assumed. You can explicitly denote it with `[0]` if you prefer.
 
-> **Note**: Exit code evaluation happens before output expectations are evaluated
+> **Note**: Exit code evaluation happens before output expectations are evaluated.
 
 ### Skip Tests with Exit Code 80
 
@@ -288,6 +259,8 @@ $ [[ "$(uname)" == "Darwin" ]] || exit 80
 ```
 ````
 
+**Note:** The code that Scrut accepts to skip a whole file can be modified with the [`skip_document_code` configuration directive](File_Formats.md#testcase-configuration).
+
 ### Scrut Exit Code
 
 Scrut itself communicates the outcome of executions with exit codes. Currently three possible exit codes are supported:
@@ -300,4 +273,15 @@ Scrut itself communicates the outcome of executions with exit codes. Currently t
 
 [Newline](https://en.wikipedia.org/wiki/Newline) endings is a sad story in computer history. In Unix / MacOS ( / \*BSD / Amiga / ..) the standard line ending is the line feed (LF) character `\n`. Windows (also Palm OS and OS/2?) infamously attempted to make a combination of carriage return (CR) and line feed the standard: CRLF (`\r\n`). Everybody got mad and still is.
 
-Scrut internally _only_ works with LF. At the input boundaries of reading test files and reading output from test command execution Scrut transforms any CRLF into LF. Currently Scrut does _not output_ any CRLF anywhere.
+See the [`keep_crlf` configuration directive](File_Formats.md#testcase-configuration) to understand how Scrut handles LF and CRLF and how you can modify the default behavior.
+
+## Execution Environment
+
+A [Scrut test file](File_Formats.md) can contain arbitrary amounts of tests. Scrut provides a shared execution environment for all tests within a single file, which comes with certain behaviors and side-effects that should be known:
+
+- **Shared Shell Environment**: Each subsequent testcase in the same file inherits the shell environment of the previous testcase. This means: All environment variables, shell variables, aliases, functions, etc that have are set in test are available to the immediate following test.
+  - *Exception*: Environments from [`detached`](File_Formats.md#testcase-configuration) testcases are not passed along
+- **Shared Ephemeral Directories**: Each testcase in the same test file executes in the the same work directory and is provided with the same temporary directory ([`$TEMPDIR`](#test-environment-variables)). Both directories will be removed (cleaned up) after test execution - independent of whether the test execution succeeds or fails.
+  - *Exception*: If the `--work-directory` command-line parameter is provided, then this directory will not be cleaned up (deleted) after execution. A temporary directory, that will be removed after execution, will be created within the working directory.
+- **Process Isolation**: Scrut starts individual `bash` processes for executing each testcase of the same test file. Each shell expression. The environment of the previous execution is pulled in through a shared `state` file, that contains all environment variables, shell variables, aliases, functions and settings as they were set when the the previous testcase execution ended.
+  - *Exception*: All testcases in cram files are currently executed within the same `bash` process - this is likely to change in the future.

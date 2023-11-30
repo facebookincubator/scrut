@@ -1,18 +1,19 @@
 # File Formats
 
-Scrut supports multiple test file formats.
+Scrut supports multiple test file formats. The recommended format is [Markdown](#markdown-format).
 
 ## File Anatomy
 
-All test files contain one or more test cases. As mentioned before, CLIs live on a spectrum from very simple to very complicated. Reflecting that, there are two common patterns to structure test files in Scrut:
-- **Coherent Test Suite** (recommended): One test file represents one use-case or behavior
-- **List of Tests**: One test file contains a list of simple, not necessarily related tests
+All test files contain one or more test cases. There are two common patterns to structure test files in Scrut:
 
-Markdown files additionally support document wide configuration in the form of "YAML Frontmatter".
+- **Coherent Test Suite** (recommended): One test file represents one use-case or behavior. This makes it easy to identify broken functionality.
+- **List of Tests**: One test file contains a list of simple, not necessarily related tests.
+
+Markdown files support [document wide configuration](#inline-configuration) in the form of "YAML Frontmatter".
 
 ### Test Case Anatomy
 
-Each individual test that lives in a test file is called _Test Case_ and consists of the following components:
+Each individual test that lives in a test file is called a _Test Case_ and consists of the following components:
 
 1. A **Title**, so that a human can understand what is being done
 2. A **Shell Expression**, that can be anything from a single command to a multi-line, multi-piped expression
@@ -24,13 +25,14 @@ Each individual test that lives in a test file is called _Test Case_ and consist
 
 [Markdown](https://www.markdownguide.org/) is an amazingly simple, yet powerful language. To write _Test Cases_ in Markdown follow this guidance:
 
-- _Shell Expressions_ and _Expectations_ live in the same code-block, that must be annotated with the language `assumption` or `scrut`
+- _Shell Expressions_ and _Expectations_ live in the same code-block, that must be annotated with the language `scrut`
   - The first line of a _Shell Expressions_ must start with `$ ` (dollar, sign followed by a space), any subsequent with `> ` (closing angle bracket / chevron, followed by a space)
   - All other lines in the code block (including empty ones) that follow the _Shell Expression_ are considered _Expectations_
+  - Lines starting with `#` that precede the shell expression are ignored (comments)
   - If an _Exit Code_ other than 0 is expected, it can be denoted in square brackets `[123]` once per _Test Case_
 - The first line before the code block that is either a paragraph or a header will be used as the _Title_ of the _Test Case_
 
-Basically like that:
+Here an example:
 
 ````markdown
 This is the title
@@ -48,7 +50,7 @@ The following **constraints** apply:
 
 - A markdown file can contain as many Test Cases as needed (1..n)
 - Each code block in a Test Case may only have _one_ (1) Shell Expression (each Test Case is considered atomic)
-- Code blocks that do not denote a language (or a different language than `assumption` or `scrut`) will be ignored
+- Code blocks that do not denote a language (or a different language than `scrut`) will be ignored
 
 With that in mind, consider the following markdown file that contains not only Test Cases but arbitrary other text and other code blocks. This is idiomatic Scrut markdown files that combines tests and documentation:
 
@@ -77,7 +79,7 @@ So it's a mix of test and not tests.
 
 Any amount of tests are fine:
 
-```assumption
+```scrut
 $ echo World
 World
 ```
@@ -90,13 +92,15 @@ Just make sure to write only one Test Case per code-block.
 ### Inline Configuration
 
 Scrut supports two kinds of inline configuration:
+
 1. **Per Document** (document-wide) configuration, which can be defined at the start of the test file
-2. **Per Test Case** (test-case-wide) configuration, which can be defined with eaach individual Test Case
+2. **Per Test Case** (test-case-wide) configuration, which can be defined with each individual Test Case
 
 **Example**
 
 ````markdown
 ---
+# document-wide YAML configuration
 total_timeout: 30s
 ---
 
@@ -257,7 +261,7 @@ A title for the first Test Case
 
 ## Which format to chose?
 
-This is up to you. The Markdown format was introduced with primarily two reasons in mind:
+We recommend the Markdown format which was introduced with two goals in mind:
 
 1. **Tests ❤️ Documentation**: The value of tests is not only in proving behavior, but also in documenting it - and thereby also in teaching it. The Markdown Test Case format allows you to keep tests around in a way that future generations of maintainers will love you for.
 2. **Bad Spaces 👾**: To denote an expected empty line of output in Cram format you have to provide two empty spaces ` `. This goes counter a lot of default behavior in the development toolchain. Many CI/CD tools are tuned to automatically ignore changes that only pertain spaces. Code review tools often deliberately hide those changes. Spaces are generally hard to see in code editors - if they are visualized at all. Breaking tests that are caused by an accidentally removed or added space cause rage quitting.

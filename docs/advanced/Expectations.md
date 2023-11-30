@@ -36,7 +36,7 @@ Quantifiers can be used with most expectations, see the examples and description
 
 ## Equal Expectation
 
-The Equal Expectation is the most common one, which denotes a single line of output that ends in a newline character (`\n`). Because this expectation is so widespread, it is also the only one where you can omit the Kind. Here an example:
+The Equal Expectation denotes a single line of output that ends in a [newline character](Specifics.md#newline-handling). Because this expectation is the most common one you do not need to provide the specific kind. Here an example:
 
 ````
 A test
