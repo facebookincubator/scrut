@@ -1,0 +1,27 @@
+---
+source: src/outcome.rs
+assertion_line: 106
+expression: outcome
+---
+{
+  "location": "path/file.md",
+  "output": {
+    "exit_code": "123",
+    "stdout": "stdout",
+    "stderr": "stderr"
+  },
+  "testcase": {
+    "title": "the title",
+    "shell_expression": "the command",
+    "expectations": [
+      "foo (equal)"
+    ],
+    "exit_code": 234,
+    "line_number": 234
+  },
+  "result": {
+    "kind": "invalid_exit_code",
+    "actual": 123,
+    "expected": 234
+  }
+}

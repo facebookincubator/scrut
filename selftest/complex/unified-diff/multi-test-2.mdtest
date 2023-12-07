@@ -1,0 +1,18 @@
+# This is the test 1
+
+```scrut
+$ echo -e "FOO\n BAR\n  BAZ"
+FOO
+ NOT-BAR
+  BAZ
+```
+
+# This is the test 2
+
+```scrut
+$ echo -e "AAA\n BBB\n  CCC"
+AAA
+ NOT-BBB
+  CCC
+```
+

@@ -1,0 +1,12 @@
+---
+source: src/generators/generator.rs
+assertion_line: 52
+expression: result
+---
+This is a test
+
+```scrut {timeout: 3m 4s, wait: {timeout: 4m 5s, path: some-path}}
+$ the command
+new output
+```
+

@@ -1,0 +1,30 @@
+---
+total_timeout: 1s
+---
+
+# Time is of the essence
+
+The cumulative execution time of all tests in this document is constrained to 1 second.
+
+## Run the first test
+
+```scrut
+$ sleep 0.5 && echo Test1
+Test1
+```
+
+## Run the second test
+
+```scrut
+$ sleep 0.5 && echo Test2
+Test2
+```
+
+## Run the third test
+
+```scrut
+$ sleep 0.5 && echo Test3
+Test3
+```
+
+

@@ -1,0 +1,10 @@
+---
+source: src/diff.rs
+expression: diffs
+---
+[matched: 1, unmatched: 2, unexpected: 0]
+0001      | = foo
+     0001 | = foo
+0002      | - bar
+0003      | - baz
+

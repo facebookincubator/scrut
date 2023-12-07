@@ -1,0 +1,9 @@
+---
+source: src/generators/generator.rs
+expression: result
+---
+This is a test
+  $ the command
+  the output
+  [123]
+

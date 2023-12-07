@@ -1,0 +1,4 @@
+Cram is always nitpicky about CRLF
+  $ echo -e "Foo\r\nBar"
+  Foo\r (esc)
+  Bar

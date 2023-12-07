@@ -1,0 +1,8 @@
+---
+append:
+  - test-document-prepended-1.mdtest
+---
+
+# This test uses inline prepends
+
+This test file does nothing, but prepends another test file

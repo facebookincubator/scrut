@@ -1,0 +1,9 @@
+# The actual test
+
+Scrut supports prepending of tests in front of a list of other files.
+
+## Run tests with assumption that cleanup test will be appended
+
+```scrut
+$ touch some-file
+```

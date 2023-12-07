@@ -1,0 +1,14 @@
+---
+source: src/diff.rs
+expression: diffs
+---
+[matched: 5, unmatched: 0, unexpected: 0]
+0001      | = baz (+)
+     0001 | = baz
+0002      | = f* (glob+)
+     0002 | = foo
+     0003 | = fun
+     0004 | = fact
+0003      | = bar (+)
+     0005 | = bar
+

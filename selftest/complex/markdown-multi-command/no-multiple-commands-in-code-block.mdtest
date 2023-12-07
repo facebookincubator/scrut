@@ -1,0 +1,8 @@
+# Multiple commands in a single code block
+
+```scrut
+$ echo Foo
+Foo
+$ echo Bar
+Bar
+```

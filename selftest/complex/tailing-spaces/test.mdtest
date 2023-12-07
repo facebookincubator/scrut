@@ -1,0 +1,31 @@
+# Tests that fail due to tailing spaces
+
+Show-case how Scrut highlights tailign spaces in the pretty renderer
+
+## This first test does not fail
+
+```scrut
+$ echo foo
+foo
+```
+
+## Test fails due to tailing spaces in output
+
+```scrut
+$ echo "foo   "
+foo
+```
+
+## Test fails due to tailing spaces in expectation
+
+```scrut
+$ echo foo
+foo   
+```
+
+## Do not highlight tailing spaces when the expectation (kind) is provided
+
+```scrut
+$ echo -e "foo\t  "
+foo
+```

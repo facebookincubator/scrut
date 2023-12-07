@@ -1,0 +1,13 @@
+---
+source: src/generators/generator.rs
+assertion_line: 50
+expression: result
+---
+This is a test
+
+```scrut
+$ the command
+same output
+[20]
+```
+
