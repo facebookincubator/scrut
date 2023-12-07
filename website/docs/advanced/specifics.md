@@ -1,3 +1,8 @@
+---
+sidebar_position: 3
+---
+
+
 # Specifics
 
 This chapter describes behaviors of Scrut that should be known by the user to prevent surprises in the wrong moment.
@@ -46,14 +51,14 @@ The failure output consists of two components:
 The header contains three relevant information. Given the above output:
 
 - `@ /path/to/a-failing-test.md:4`, tells you that the test that failed is in the provided file `/path/to/a-failing-test.md` and that the shell expression (that failed the test) starts in line four of that file.
-- `# <test title>`, gives you the optional title of the test in the file. See [File Formats](File_Formats.md)) to learn more. *If the test does not have a title, this line is omitted.*
-- `$ <test command>`, is the shell expectation from the test file that is tested and that has failed. Again, see [File Formats](File_Formats.md)) for more information.
+- `# <test title>`, gives you the optional title of the test in the file. See [File Formats](file-formats.md)) to learn more. *If the test does not have a title, this line is omitted.*
+- `$ <test command>`, is the shell expectation from the test file that is tested and that has failed. Again, see [File Formats](file-formats.md)) for more information.
 
 **Body**
 
 There are two possible variants that the `diff` renderer may return:
 
-1. Failed [output expectations](Expectations.md)
+1. Failed [output expectations](expectations.md)
 2. Failed [exit code expectation](#exit-codes)
 
 The above output is a failed output expectations and you can read it as following:
@@ -161,7 +166,7 @@ The directory within which tests are being executed can be explicitly set using 
 ## Test execution
 
 As Scrut is primarily intended as an integration testing framework for CLI applications, it is tightly integrated with the shell.
-Each Scrut test must define a [shell expression](File_Formats.md#test-case-anatomy) (called an "execution").
+Each Scrut test must define a [shell expression](file-formats.md#test-case-anatomy) (called an "execution").
 Each of those executions is then run within an actual shell (bash) process, as they would be when a human or automation would execute the expression manually on the shell.
 
 With that in mind:
@@ -223,7 +228,7 @@ Instead of SSHing into a machine, consider also running a bash process in docker
 
 Commands-line applications can generate output on to two streams: `STDOUT` and `STDERR`. There is no general agreement on which stream is supposed to contain what kind of data, but commonly `STDOUT` contains the primary output and `STDERR` contains logs, debug messages, etc. This is also the recommendation of the [CLI guidelines](https://clig.dev/#:~:text=primary%20output%20for%20your%20command).
 
-Scrut validates CLI output via [Expectations](Expectations.md). Which output that entails can be configured via the [`output_stream` configuration directive](File_Formats.md#testcase-configuration) (and the `--(no-)combine-output` command-line parameters).
+Scrut validates CLI output via [Expectations](expectations.md). Which output that entails can be configured via the [`output_stream` configuration directive](file-formats.md#testcase-configuration) (and the `--(no-)combine-output` command-line parameters).
 
 **Note:** While you can configure which output streams Scrut considers when evaluating output expecations, you can also steer this by using stream control bash primitives like `some-command 2>&1`.
 
@@ -259,7 +264,7 @@ $ [[ "$(uname)" == "Darwin" ]] || exit 80
 ```
 ````
 
-**Note:** The code that Scrut accepts to skip a whole file can be modified with the [`skip_document_code` configuration directive](File_Formats.md#testcase-configuration).
+**Note:** The code that Scrut accepts to skip a whole file can be modified with the [`skip_document_code` configuration directive](file-formats.md#testcase-configuration).
 
 ### Scrut Exit Code
 
@@ -273,14 +278,14 @@ Scrut itself communicates the outcome of executions with exit codes. Currently t
 
 [Newline](https://en.wikipedia.org/wiki/Newline) endings is a sad story in computer history. In Unix / MacOS ( / \*BSD / Amiga / ..) the standard line ending is the line feed (LF) character `\n`. Windows (also Palm OS and OS/2?) infamously attempted to make a combination of carriage return (CR) and line feed the standard: CRLF (`\r\n`). Everybody got mad and still is.
 
-See the [`keep_crlf` configuration directive](File_Formats.md#testcase-configuration) to understand how Scrut handles LF and CRLF and how you can modify the default behavior.
+See the [`keep_crlf` configuration directive](file-formats.md#testcase-configuration) to understand how Scrut handles LF and CRLF and how you can modify the default behavior.
 
 ## Execution Environment
 
-A [Scrut test file](File_Formats.md) can contain arbitrary amounts of tests. Scrut provides a shared execution environment for all tests within a single file, which comes with certain behaviors and side-effects that should be known:
+A [Scrut test file](file-formats.md) can contain arbitrary amounts of tests. Scrut provides a shared execution environment for all tests within a single file, which comes with certain behaviors and side-effects that should be known:
 
 - **Shared Shell Environment**: Each subsequent testcase in the same file inherits the shell environment of the previous testcase. This means: All environment variables, shell variables, aliases, functions, etc that have are set in test are available to the immediate following test.
-  - *Exception*: Environments from [`detached`](File_Formats.md#testcase-configuration) testcases are not passed along
+  - *Exception*: Environments from [`detached`](file-formats.md#testcase-configuration) testcases are not passed along
 - **Shared Ephemeral Directories**: Each testcase in the same test file executes in the the same work directory and is provided with the same temporary directory ([`$TEMPDIR`](#test-environment-variables)). Both directories will be removed (cleaned up) after test execution - independent of whether the test execution succeeds or fails.
   - *Exception*: If the `--work-directory` command-line parameter is provided, then this directory will not be cleaned up (deleted) after execution. A temporary directory, that will be removed after execution, will be created within the working directory.
 - **Process Isolation**: Scrut starts individual `bash` processes for executing each testcase of the same test file. Each shell expression. The environment of the previous execution is pulled in through a shared `state` file, that contains all environment variables, shell variables, aliases, functions and settings as they were set when the the previous testcase execution ended.

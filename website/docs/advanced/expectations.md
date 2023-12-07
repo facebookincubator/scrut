@@ -1,3 +1,8 @@
+---
+sidebar_position: 2
+---
+
+
 # Expectations
 
 Expectations are predictions of one or more lines of output. _What you think a command will print out when you execute it_. My expectation when I execute `uname` is that the operating system name is printed out to the shell. On a mac, I expect the following:
@@ -7,7 +12,7 @@ $ uname
 Darwin
 ```
 
-> See also: [STDOUT or STDERR? What is tested](Specifics.md#stdout-and-stderr)
+> See also: [STDOUT or STDERR? What is tested](specifics.md#stdout-and-stderr)
 
 The Backus-Naur form for Expectations is sweet and short:
 
@@ -36,7 +41,7 @@ Quantifiers can be used with most expectations, see the examples and description
 
 ## Equal Expectation
 
-The Equal Expectation denotes a single line of output that ends in a [newline character](Specifics.md#newline-handling). Because this expectation is the most common one you do not need to provide the specific kind. Here an example:
+The Equal Expectation denotes a single line of output that ends in a [newline character](specifics.md#newline-handling). Because this expectation is the most common one you do not need to provide the specific kind. Here an example:
 
 ````
 A test
@@ -47,7 +52,7 @@ Hello
 ```
 ````
 
-The line that consists only of `Hello` _is_ the Equal Expectation and specifies that the (first line of the) output must be equal to `Hello\n` (with `\n` being the [newline of the operating system](Specifics.md#newline-handling)).
+The line that consists only of `Hello` _is_ the Equal Expectation and specifies that the (first line of the) output must be equal to `Hello\n` (with `\n` being the [newline of the operating system](specifics.md#newline-handling)).
 
 An extended for of the same Equal Expectation with explicit kind works as well and looks like that:
 

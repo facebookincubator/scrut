@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+---
+
+
 # File Formats
 
 Scrut supports multiple test file formats. The recommended format is [Markdown](#markdown-format).
@@ -17,7 +22,7 @@ Each individual test that lives in a test file is called a _Test Case_ and consi
 
 1. A **Title**, so that a human can understand what is being done
 2. A **Shell Expression**, that can be anything from a single command to a multi-line, multi-piped expression
-3. **[Expectations](Expectations.md)** of the output that the Shell Expression will yield
+3. **[Expectations](expectations.md)** of the output that the Shell Expression will yield
 4. Optionally the expected _Exit Code_ the Shell Expression must end in - if anything but successful execution (`0`) is expected
 5. Optionally per-test-case configuration (only supported by Markdown format)
 

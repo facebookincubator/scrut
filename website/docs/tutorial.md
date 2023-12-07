@@ -1,3 +1,8 @@
+---
+sidebar_position: 2
+---
+
+
 # Tutorial
 
 A walkthrough of Scrut use from start to end. For in-depth information: follow the ~~white rabbit~~ inline links.
@@ -91,9 +96,9 @@ jq-1.6
 
 While you are looking at it, how about you change that title to `Smoke test` or something like that. **Half of the value of a Scrut test file is the documentation, so it is always worth to put in some time to clarify intentions and describe expectations**.
 
-Don't touch the rest - for now. We'll get to that in a minute. You can read up on the [anatomy of the file](advanced/File_Formats.md#file-anatomy), here a very quick primer:
+Don't touch the rest - for now. We'll get to that in a minute. You can read up on the [anatomy of the file](advanced/file-formats.md#file-anatomy), here a very quick primer:
 
-- Scrut test files are [markdown documents](advanced/File_Formats.md#markdown-format)
+- Scrut test files are [markdown documents](advanced/file-formats.md#markdown-format)
 - Code blocks of language `scrut` contain the tested commands and the expected output
 
 ### Run the first Test
@@ -196,7 +201,7 @@ unexpected exit code
 ## STDERR
 ```
 
-As promised: it fails. The output should be self explanatory. Read more about [exit codes here](advanced/Specifics.md#exit-codes).
+As promised: it fails. The output should be self explanatory. Read more about [exit codes here](advanced/specifics.md#exit-codes).
 
 Going forward remove the `[10]` again, so that the test is in a working state.
 
@@ -281,11 +286,11 @@ $ cat "$TESTDIR/commits.json" | \
 ```
 ````
 
-> **Note**: The second (and any subsequent) line of a command starts with a `>` character - unlike the first, which starts with a `$` ([read more](advanced/File_Formats.md#markdown-format)). The tailing `\\` in the first command line is needed, because `/bin/bash` needs it (both lines, stripped by their starting `$` or `>` character, are ultimately passed to the shell process, hence must comply with it's requirements).
+> **Note**: The second (and any subsequent) line of a command starts with a `>` character - unlike the first, which starts with a `$` ([read more](advanced/file-formats.md#markdown-format)). The tailing `\\` in the first command line is needed, because `/bin/bash` needs it (both lines, stripped by their starting `$` or `>` character, are ultimately passed to the shell process, hence must comply with it's requirements).
 
 ### Tests directory isolation
 
-You may have noted the that the `commits.json` file is referred to as `"$TESTDIR/commits.json"`. The reason for that is that each test is executed from within an empty test directory. The absolute path to the directory, where the actual test file is in is available via the `$TESTDIR` environment variable. Since `commits.json` is located in the same directory as `transform-input.md` the expression `"$TESTDIR/commits.json"` contains the absolute path to the `commits.json` file ([read more](Advanced/Specifics.md#test-isolation)).
+You may have noted the that the `commits.json` file is referred to as `"$TESTDIR/commits.json"`. The reason for that is that each test is executed from within an empty test directory. The absolute path to the directory, where the actual test file is in is available via the `$TESTDIR` environment variable. Since `commits.json` is located in the same directory as `transform-input.md` the expression `"$TESTDIR/commits.json"` contains the absolute path to the `commits.json` file ([read more](advanced/specifics.md#test-isolation)).
 
 ## Pattern: Test Bootstrapping
 
@@ -354,7 +359,7 @@ $ cat "$TESTDIR"/commits.json | \
 
 > **Note**: The order of `who` and `when` changed due to `-S`.
 
-As you can see there are now two code blocks of the type `scrut` in the same file. That means there are two tests in that one file. This is fine, you can have [as many test as make sense to you in a file](advanced/File_Formats.md#file-anatomy). Scrut [executes them in order](advanced/Specifics.md#sequential-or-parallel-execution), within the same shell process, which allows the `alias jq=..` set in `setup.sh` to affect the `jq` execution in the test file.
+As you can see there are now two code blocks of the type `scrut` in the same file. That means there are two tests in that one file. This is fine, you can have [as many test as make sense to you in a file](advanced/file-formats.md#file-anatomy). Scrut [executes them in order](advanced/specifics.md#sequential-or-parallel-execution), within the same shell process, which allows the `alias jq=..` set in `setup.sh` to affect the `jq` execution in the test file.
 
 **Bootstrapping tests is a very common strategy in Scrut** and is considered idiomatic.
 
@@ -475,7 +480,7 @@ Name Name;2022-05-26T20:53:59Z
 
 We already established, that having this specific content in there is brittle and will cause headache down the line. So where is this going?
 
-At this point it becomes necessary to understand that each of the output lines in the test are actually [output expectations](advanced/Expectations.md). The last line of the above output could also be written as:
+At this point it becomes necessary to understand that each of the output lines in the test are actually [output expectations](advanced/expectations.md). The last line of the above output could also be written as:
 
 ```
 Name Name;2022-05-26T20:53:59Z (equal)
@@ -485,7 +490,7 @@ The tailing ` (equal)` is the _type_, telling Scrut that this is, well, an expec
 
 ### Glob
 
-Scrut has two expectation types that would work here. Lets start with simpler one, that is powerful, but not very precise, though easy to write and read. It is the [glob expectation](advanced/Expectations.md#glob-expectation). Consider the following:
+Scrut has two expectation types that would work here. Lets start with simpler one, that is powerful, but not very precise, though easy to write and read. It is the [glob expectation](advanced/expectations.md#glob-expectation). Consider the following:
 
 ````markdown
 ## Transform input from live data
@@ -501,7 +506,7 @@ $ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
 ```
 ````
 
-Without going [into full detail](advanced/Expectations.md#glob-expectation), glob supports two wildcard characters `*` for any amount of any character and `?` for a single arbitrary character. Each of the above expectations translates to:
+Without going [into full detail](advanced/expectations.md#glob-expectation), glob supports two wildcard characters `*` for any amount of any character and `?` for a single arbitrary character. Each of the above expectations translates to:
 
 - Any string that is followed by `;20`
 - Followed by anything
@@ -517,7 +522,7 @@ On that note: As you can see, we repeated the same expectation five times. **Eac
 
 The above headline bestows fear in many and delight in some. So it is up to you to read this paragraph or skip it entirely. If you are not familiar with regular expressions, maybe you take this as an opportunity to learn about them - although this is way beyond the scope of this how-to.
 
-Lets jump right into it then: `scrut` supports [regular expression expectations](advanced/Expectations.md#regex-expectation) with the ` (regex)` type. Rewriting the test from above could look like that (well, one variant):
+Lets jump right into it then: `scrut` supports [regular expression expectations](advanced/expectations.md#regex-expectation) with the ` (regex)` type. Rewriting the test from above could look like that (well, one variant):
 
 ````markdown
 ## Transform input from live data
@@ -553,7 +558,7 @@ $ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
 ```
 ````
 
-Note the `+` symbol after the `glob` word. That is a quantifier. [Read more about them here](advanced/Expectations.md#quantifiers). Suffice to say that there are three (`?` = optional, `*` = 0 or more, `+` = 1 or more). Meaning, this single line covers all the possible output lines that match this form.
+Note the `+` symbol after the `glob` word. That is a quantifier. [Read more about them here](advanced/expectations.md#quantifiers). Suffice to say that there are three (`?` = optional, `*` = 0 or more, `+` = 1 or more). Meaning, this single line covers all the possible output lines that match this form.
 
 ## Pattern: Structure by use-case
 

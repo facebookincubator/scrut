@@ -1,8 +1,16 @@
+---
+sidebar_position: 1
+---
+
+
+import {customFields} from '@site/constants';
+
+
 # Scrut
 
 Scrut is a testing toolkit for CLI applications. A tool to scrutinize terminal programs without fuzz. Heavily inspired by [Cram](https://github.com/brodie/cram).
 
-## Why though?
+# Why though?
 
 Testing CLIs is complicated. Sure, you can (should!) write unit tests, as for any other software application, but they will (should!) only address your business logic and not test dependencies towards or interaction with the environment (command line input, environment variables, external APIs, etc).
 
@@ -19,27 +27,7 @@ Scrut aims to be
 - **Low Maintenance**, so that keeping tests around and up2date is not a painful chore
 - **Readable**, so that tests can provide additional value to the reader as documentation (of the thing that is tested)
 
-## How then?
-
-To install `scrut` either use
-
-```sh
-$ cargo install scrut
-```
-
-or clone this repository and then
-
-```sh
-$ cargo install --path .
-```
-
-Now you should have `scrut` in your `$PATH`:
-
-```sh
-$ scrut --version
-```
-
-### Write tests
+# How then?
 
 The `scrut` command line application executes tests of CLIs that are persisted in Markdown (`.md`) or Cram (`.t`) files.
 
@@ -58,13 +46,34 @@ $ acme --version > /dev/null
 ```
 ````
 
-Head over to [the tutorial](docs/Tutorial.md) to get learn how to write your own tests.
+
+<FbInternalOnly>
+
+## Getting Started
+
+- [Getting Started](fb/)
+
+
+</FbInternalOnly>
+
+<OssOnly>
+
+Head over to [the tutorial](tutorial.md) to get learn how to write your own tests.
 
 ## Contribute
 
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+<ul>
+    <li>
+        <a href={ customFields.ossRepoUrl + "/CONTRIBUTING.md" }>CONTRIBUTING.md</a>
+    </li>
+    <li>
+        <a href={ customFields.ossRepoUrl + "/CODE_OF_CONDUCT.md" }>CODE_OF_CONDUCT.md</a>
+    </li>
+</ul>
 
 ## License
 
 - [LICENSE](LICENSE)
+
+
+</OssOnly>
