@@ -72,8 +72,8 @@ impl Parser for CramParser {
             // starting with indentions, means either collecting testcase
             // shell expression or testcase output expectations:
             if let Some(line) = line.strip_prefix(&indent) {
-                engine.set_testcase_config(TestCaseConfig::default_cram());
                 engine.add_testcase_body(line, index)?;
+                engine.set_testcase_config(TestCaseConfig::default_cram());
                 continue;
             }
 
