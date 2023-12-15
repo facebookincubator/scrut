@@ -15,28 +15,31 @@ const FeatureList = [
     Svg: require('../../static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Scrut was designed to be simple and straightforward.
+        If you know how to execute your CLI on a shell and you know how to write Markdown then
+        you already know how to write tests for your CLI in Scrut.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'Any size fits',
     Svg: require('../../static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Scrut is simple, yet powerful enough to handle any size CLI. From a simple
+        bash script to a complex Java / Rust / C++ / ... binary with many dependencies.
+        Scrut can handle it all.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Maintenance is Life',
     Svg: require('../../static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Do your future self (and any other future maintainer) a big favor and document
+        the intended behavior of your CLI in the form of test-cases in easily readable
+        Markdown test-files.
       </>
     ),
   },

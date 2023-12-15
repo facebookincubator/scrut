@@ -7,6 +7,7 @@
 
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+
 const {customFields} = require('./constants');
 
 // With JSDoc @type annotations, IDEs can provide config autocompletion
