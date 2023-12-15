@@ -125,7 +125,7 @@ impl Executor for StatefulExecutor {
             testcase.config.timeout = timeout;
             trace!("effective testcase configuration: {}", &testcase.config);
             let output = runner_gen(state_directory.path())
-                .run(&name, &testcase, &context)
+                .run(&name, &testcase, context)
                 .map_err(|err| ExecutionError::failed(index, err))?;
             trace!("{output:?}");
 

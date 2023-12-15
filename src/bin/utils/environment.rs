@@ -24,8 +24,11 @@ pub enum EnvironmentDirectory {
     /// A temporary directory, that will be cleaned up after is is not in use anymore
     Ephemeral(TempDir),
 
-    /// A permanent (user provided) directory, that will not be cleaned up
-    Permanent(PathBuf),
+    /// A permanent directory, that will not be cleaned up
+    UserProvided(PathBuf),
+
+    /// A temporary directory that is created by Scrut and not removed / cleaned up
+    Kept(PathBuf),
 }
 
 impl EnvironmentDirectory {
@@ -38,7 +41,8 @@ impl From<&EnvironmentDirectory> for PathBuf {
     fn from(value: &EnvironmentDirectory) -> Self {
         match value {
             EnvironmentDirectory::Ephemeral(temp) => temp.path().into(),
-            EnvironmentDirectory::Permanent(path) => path.clone(),
+            EnvironmentDirectory::UserProvided(path) => path.clone(),
+            EnvironmentDirectory::Kept(path) => path.clone(),
         }
     }
 }
@@ -81,10 +85,25 @@ pub struct TestEnvironment {
 }
 
 impl TestEnvironment {
-    pub fn new(shell: &Path, provided_work_directory: Option<&Path>) -> Result<Self> {
-        let (work_directory, tmp_directory) = if let Some(directory) = provided_work_directory {
+    pub fn new(
+        shell: &Path,
+        provided_work_directory: Option<&Path>,
+        keep_temporary_directories: bool,
+    ) -> Result<Self> {
+        let (work_directory, tmp_directory) = if keep_temporary_directories {
+            let work_path = TempDir::with_prefix("execution.")
+                .context("create temporary working directory")?
+                .into_path();
+            let temp_path = TempDir::with_prefix("temp.")
+                .context("create temporary working directory")?
+                .into_path();
             (
-                EnvironmentDirectory::Permanent(directory.into()),
+                EnvironmentDirectory::Kept(work_path),
+                EnvironmentDirectory::Kept(temp_path),
+            )
+        } else if let Some(directory) = provided_work_directory {
+            (
+                EnvironmentDirectory::UserProvided(directory.into()),
                 EnvironmentDirectory::Ephemeral(
                     TempDir::with_prefix_in("temp.", directory)
                         .context("create temporary tmp directory in given work directory")?,
@@ -98,7 +117,7 @@ impl TestEnvironment {
                 .context("create tmp directory in temporary work directory")?;
             (
                 EnvironmentDirectory::Ephemeral(work),
-                EnvironmentDirectory::Permanent(temp_path),
+                EnvironmentDirectory::UserProvided(temp_path),
             )
         };
         debug!(
@@ -154,9 +173,13 @@ impl Drop for TestEnvironment {
     fn drop(&mut self) {
         if let EnvironmentDirectory::Ephemeral(ref temp) = self.work_directory {
             debug!("cleaning up temporary work directory {:?}", temp.path());
+        } else if let EnvironmentDirectory::Kept(ref temp) = self.work_directory {
+            debug!("keeping temporary work directory {:?}", temp);
         }
         if let EnvironmentDirectory::Ephemeral(ref temp) = self.tmp_directory {
             debug!("cleaning up temporary tmp directory {:?}", temp.path());
+        } else if let EnvironmentDirectory::Kept(ref temp) = self.tmp_directory {
+            debug!("keeping temporary tmp directory {:?}", temp);
         }
     }
 }
@@ -171,18 +194,19 @@ struct TestFileEnvironment<'a> {
 
 impl<'a> TestFileEnvironment<'a> {
     fn build_work_directory(&mut self) -> Result<PathBuf> {
-        let test_work_directory = match &self.test_environment.work_directory {
+        let test_work_directory: PathBuf = match &self.test_environment.work_directory {
             // if within temporary directory: create unique directory in file
-            EnvironmentDirectory::Ephemeral(temp) => {
-                let mut test_work_directory: PathBuf = temp.path().into();
-                test_work_directory
-                    .push(self.test_environment.namer.next_name(self.test_file_name));
-                if !test_work_directory.exists() {
-                    fs::create_dir(&test_work_directory).context("create working directory")?;
-                }
-                test_work_directory
-            }
-            EnvironmentDirectory::Permanent(path) => path.into(),
+            EnvironmentDirectory::Ephemeral(temp) => create_random_sub_directory(
+                temp.path(),
+                self.test_file_name,
+                &mut self.test_environment.namer,
+            )?,
+            EnvironmentDirectory::Kept(temp) => create_random_sub_directory(
+                temp,
+                self.test_file_name,
+                &mut self.test_environment.namer,
+            )?,
+            EnvironmentDirectory::UserProvided(path) => path.into(),
         };
         Ok(test_work_directory)
     }
@@ -221,6 +245,19 @@ impl<'a> TestFileEnvironment<'a> {
         }
         Ok(env_vars)
     }
+}
+
+fn create_random_sub_directory(
+    directory: &Path,
+    file_name: &Path,
+    namer: &mut UniqueNamer,
+) -> Result<PathBuf, anyhow::Error> {
+    let mut directory: PathBuf = directory.into();
+    directory.push(namer.next_name(file_name));
+    if !directory.exists() {
+        fs::create_dir(&directory).context("create working directory")?;
+    }
+    Ok(directory)
 }
 
 /// Returns the canonical path to the given shell
@@ -278,14 +315,17 @@ mod tests {
     #[test]
     fn create_temporary_work_directory_when_none_is_provided() {
         let test_env =
-            TestEnvironment::new(Path::new("bash"), None).expect("setup test environment");
+            TestEnvironment::new(Path::new("bash"), None, false).expect("setup test environment");
         assert!(
             matches!(test_env.work_directory, EnvironmentDirectory::Ephemeral(_)),
             "temporary work directory ephemeral"
         );
         assert!(
-            matches!(test_env.tmp_directory, EnvironmentDirectory::Permanent(_)),
-            "temporary tmp directory is permanent"
+            matches!(
+                test_env.tmp_directory,
+                EnvironmentDirectory::UserProvided(_)
+            ),
+            "temporary tmp directory is user-provided"
         );
         assert!(
             String::try_from(&test_env.tmp_directory)
@@ -298,11 +338,14 @@ mod tests {
     #[test]
     fn use_provided_work_directory_and_created_tmp_within() {
         let sys_temp_dir = env::temp_dir();
-        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir))
+        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir), false)
             .expect("setup test environment");
         assert!(
-            matches!(test_env.work_directory, EnvironmentDirectory::Permanent(_)),
-            "temporary work directory permanent"
+            matches!(
+                test_env.work_directory,
+                EnvironmentDirectory::UserProvided(_)
+            ),
+            "temporary work directory user-provided"
         );
         assert!(
             matches!(test_env.tmp_directory, EnvironmentDirectory::Ephemeral(_)),
@@ -317,9 +360,33 @@ mod tests {
     }
 
     #[test]
+    fn keep_temporary_directories_if_requested_by_user() {
+        let test_env =
+            TestEnvironment::new(Path::new("bash"), None, true).expect("setup test environment");
+        assert!(
+            matches!(test_env.work_directory, EnvironmentDirectory::Kept(_)),
+            "temporary work directory kept"
+        );
+        assert!(
+            matches!(test_env.tmp_directory, EnvironmentDirectory::Kept(_)),
+            "temporary tmp directory is kept"
+        );
+        let tmp_directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
+        let work_directory = String::try_from(&test_env.work_directory).expect("work_directory");
+        assert!(
+            !&tmp_directory.starts_with(&work_directory),
+            "tmp directory is not under work directory"
+        );
+        assert!(
+            !&work_directory.starts_with(&tmp_directory),
+            "work directory is not under tmp directory"
+        );
+    }
+
+    #[test]
     fn temporary_work_directory_is_created_and_cleaned_up() {
         let test_env =
-            TestEnvironment::new(Path::new("bash"), None).expect("setup test environment");
+            TestEnvironment::new(Path::new("bash"), None, false).expect("setup test environment");
         let directory = String::try_from(&test_env.work_directory).expect("work directory");
         assert!(
             Path::new(&directory).exists(),
@@ -335,17 +402,42 @@ mod tests {
     #[test]
     fn temporary_tmp_directory_is_created_and_cleaned_up() {
         let sys_temp_dir = env::temp_dir();
-        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir))
+        let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir), false)
             .expect("setup test environment");
         let directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
         assert!(
             Path::new(&directory).exists(),
-            "temporary work directory is created"
+            "temporary tmp directory is created"
         );
         drop(test_env);
         assert!(
             !Path::new(&directory).exists(),
-            "temporary work directory is removed"
+            "temporary tmp directory is removed"
+        );
+    }
+
+    #[test]
+    fn kept_temporary_directories_are_created_but_not_cleaned_up() {
+        let test_env =
+            TestEnvironment::new(Path::new("bash"), None, true).expect("setup test environment");
+        let tmp_directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
+        let work_directory = String::try_from(&test_env.work_directory).expect("work_directory");
+        assert!(
+            Path::new(&tmp_directory).exists(),
+            "temporary tmp directory is created"
+        );
+        assert!(
+            Path::new(&work_directory).exists(),
+            "temporary work directory is created"
+        );
+        drop(test_env);
+        assert!(
+            Path::new(&tmp_directory).exists(),
+            "temporary tmp directory is not removed"
+        );
+        assert!(
+            Path::new(&work_directory).exists(),
+            "temporary work directory is not removed"
         );
     }
 
@@ -371,23 +463,25 @@ mod tests {
         let tests = &mut [
             (
                 false,
-                TestEnvironment::new(Path::new("bash"), None).expect("setup test environment"),
+                TestEnvironment::new(Path::new("bash"), None, false)
+                    .expect("setup test environment"),
                 true,
             ),
             (
                 false,
-                TestEnvironment::new(Path::new("bash"), None).expect("setup test environment"),
+                TestEnvironment::new(Path::new("bash"), None, false)
+                    .expect("setup test environment"),
                 false,
             ),
             (
                 true,
-                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path))
+                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path), false)
                     .expect("setup test environment"),
                 true,
             ),
             (
                 true,
-                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path))
+                TestEnvironment::new(Path::new("bash"), Some(provided_directory_path), false)
                     .expect("setup test environment"),
                 false,
             ),

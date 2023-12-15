@@ -86,6 +86,10 @@ pub(crate) struct GlobalParameters {
     #[clap(long, short, global = true)]
     pub(crate) work_directory: Option<PathBuf>,
 
+    /// Whether not to clean up temporary directories after test execution
+    #[clap(long, conflicts_with = "work_directory", global = true)]
+    pub(crate) keep_temporary_directories: bool,
+
     /// Timeout in seconds for whole execution. Use 0 for unlimited. Defaults to 900, if not set.
     #[clap(long, global = true)]
     pub(crate) timeout_seconds: Option<u64>,
@@ -111,6 +115,9 @@ pub(crate) struct GlobalSharedParameters {
 
     #[clap(from_global)]
     pub(crate) work_directory: Option<PathBuf>,
+
+    #[clap(from_global)]
+    pub(crate) keep_temporary_directories: bool,
 
     #[clap(from_global)]
     pub(crate) escaping: Option<Escaper>,

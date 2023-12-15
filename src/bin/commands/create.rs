@@ -73,8 +73,11 @@ impl Args {
         let executor = BashScriptExecutor::new(&shell_path);
 
         // initialize test environment
-        let mut test_environment =
-            TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
+        let mut test_environment = TestEnvironment::new(
+            &shell_path,
+            self.global.work_directory.as_deref(),
+            self.global.keep_temporary_directories,
+        )?;
 
         // setup test environment ..
         let test_file_path =

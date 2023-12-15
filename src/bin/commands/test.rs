@@ -159,8 +159,11 @@ impl Args {
 
             // initialize environment in which test will run
             let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
-            let mut test_environment =
-                TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
+            let mut test_environment = TestEnvironment::new(
+                &shell_path,
+                self.global.work_directory.as_deref(),
+                self.global.keep_temporary_directories,
+            )?;
 
             let span = debug_span!("test", path = %&test.path.display(), env = ?&test_environment);
             let _s = span.enter();

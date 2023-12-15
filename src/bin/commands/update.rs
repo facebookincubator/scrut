@@ -139,8 +139,11 @@ impl Args {
             let config = test.config.with_overrides_from(&document_config);
             let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
 
-            let mut test_environment =
-                TestEnvironment::new(&shell_path, self.global.work_directory.as_deref())?;
+            let mut test_environment = TestEnvironment::new(
+                &shell_path,
+                self.global.work_directory.as_deref(),
+                self.global.keep_temporary_directories,
+            )?;
 
             // must have test-cases to continue
             if test.testcases.is_empty() {
