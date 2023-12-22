@@ -208,7 +208,11 @@ fn compile_testcase(testcases: &[&TestCase], context: &ExecutionContext) -> Resu
         config.timeout = Some(timeout);
     }
 
+    // create a bash script that executes all testcases
     let script = compile_script(testcases, &config)?;
+
+    // the environment variables are already exported in the compiled script
+    config.environment.clear();
 
     Ok(TestCase {
         title: "Test Script".into(),
@@ -225,15 +229,6 @@ fn compile_script(testcases: &[&TestCase], config: &TestCaseConfig) -> Result<St
     let mut expressions = vec![];
     let salt = random_string(SUFFIX_RANDOM_SIZE);
     for (index, testcase) in testcases.iter().enumerate() {
-        /* if let Some(ref stream) = testcase.config.output_stream {
-            if stream != &OutputStreamControl::Combined {
-                return Err(ExecutionError::failed(
-                    index,
-                    anyhow!("bash-script execution supports only the combined output streams",),
-                ));
-            }
-        } */
-
         if testcase.config.timeout.is_some() {
             return Err(ExecutionError::failed(
                 index,
@@ -242,21 +237,25 @@ fn compile_script(testcases: &[&TestCase], config: &TestCaseConfig) -> Result<St
         }
 
         // add exported environment variables before expression
-        let mut unset = vec![];
-        for (key, value) in &testcase.config.environment {
-            // variable keys and values are assumed to be escaped in bash-like
-            // environments, that means even when executing in windows within
-            // a `bash.exe` process, the unix escaping is needed
-            let qkey = shell_escape::unix::escape(Cow::from(key)).to_string();
-            if qkey != *key {
-                return Err(ExecutionError::failed(
-                    index,
-                    anyhow!("Environment variable {} contains invalid characters", &qkey),
-                ));
+        // note: this executor is only used for Cram `.t` execution, which does
+        // not suppot inline configuration. This means that all tests in the
+        // same test file share the same, unmodified default Cram environment
+        // variables. Hence they only need to be set once, at the start.
+        if index == 0 {
+            for (key, value) in &testcase.config.environment {
+                // variable keys and values are assumed to be escaped in bash-like
+                // environments, that means even when executing in windows within
+                // a `bash.exe` process, the unix escaping is needed
+                let qkey = shell_escape::unix::escape(Cow::from(key)).to_string();
+                if qkey != *key {
+                    return Err(ExecutionError::failed(
+                        index,
+                        anyhow!("Environment variable {} contains invalid characters", &qkey),
+                    ));
+                }
+                let qval = shell_escape::unix::escape(Cow::from(value)).to_string();
+                expressions.push(format!("export {}={}", &qkey, &qval));
             }
-            let qval = shell_escape::unix::escape(Cow::from(value)).to_string();
-            expressions.push(format!("export {}={}", &qkey, &qval));
-            unset.push(format!("unset {}", &qkey));
         }
 
         // add actual expression
@@ -269,7 +268,6 @@ fn compile_script(testcases: &[&TestCase], config: &TestCaseConfig) -> Result<St
         if config.output_stream != Some(OutputStreamControl::Combined) {
             expressions.push(format!(r#"1>&2 echo "{}""#, &footer));
         }
-        expressions.append(&mut unset);
     }
 
     Ok(expressions.join("\n"))

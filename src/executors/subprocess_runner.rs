@@ -47,7 +47,7 @@ impl Runner for SubprocessRunner {
     fn run(&self, _name: &str, testcase: &TestCase, context: &ExecutionContext) -> Result<Output> {
         let shell = &self.0;
 
-        // apply environment variables (assure SHELL is set)
+        // apply environment variables (ensure SHELL is set)
         let mut envs = testcase.config.environment.clone();
         envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 

@@ -88,6 +88,8 @@ impl Executor for StatefulExecutor {
         for (index, testcase) in testcases.iter().enumerate() {
             let name = format!("exec{}", index + 1);
             let mut testcase = (*testcase).clone();
+
+            // apply document-wide testcase defaults
             testcase.config = testcase.config.with_defaults_from(&context.config.defaults);
 
             // timeout is whatever the lowest provided value of:
@@ -111,6 +113,7 @@ impl Executor for StatefulExecutor {
             let span = trace_span!("execution", expression = &testcase.shell_expression, timeout = ?&timeout);
             let _enter = span.enter();
 
+            // waiting on previous execution
             if let Some(ref wait) = testcase.config.wait {
                 debug!("waiting {}", wait);
                 if let Some(ref path) = wait.path {
@@ -120,7 +123,7 @@ impl Executor for StatefulExecutor {
                 }
             }
 
-            // execute the execution, using the shared state directory
+            // run the execution, using the shared state directory
             let context = context.to_owned();
             testcase.config.timeout = timeout;
             trace!("effective testcase configuration: {}", &testcase.config);
