@@ -33,14 +33,14 @@ pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut"];
 /// A parser for Cram `.t` files, which reads [`crate::testcase::TestCase`]s
 /// that are encoded in the form:
 ///
-/// ````markdown
+/// <pre>
 /// A title
 ///
 /// ```
 /// $ command
 /// expectation
 /// ```
-/// ````
+/// </pre>
 pub struct MarkdownParser {
     expectation_maker: Arc<ExpectationMaker>,
     languages: Vec<String>,

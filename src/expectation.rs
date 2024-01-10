@@ -109,7 +109,9 @@ impl ExpectationMaker {
     ///
     /// let maker = ExpectationMaker::new(RuleRegistry::default());
     /// maker.parse("foo bar").expect("parses expectation");
-    /// maker.parse("^foo bar$ (regex)").expect("parses expectation");
+    /// maker
+    ///     .parse("^foo bar$ (regex)")
+    ///     .expect("parses expectation");
     /// ```
     pub fn parse(&self, line: &str) -> Result<Expectation> {
         let (expression, kind, quantifier) = self.extract(line)?;

@@ -14,7 +14,6 @@
 //!   when comparing against arbitrary text (eg `foo / bar / baz` is not
 //!   matching `*bar*`)
 //! - [``]
-//!
 use std::fmt::Display;
 
 use anyhow::Result;

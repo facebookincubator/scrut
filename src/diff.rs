@@ -28,14 +28,13 @@ use crate::newline::SplitLinesByNewline;
 /// are instances of [`DiffLine::MatchedExpectation`]
 ///
 /// ```
-/// use scrut::{
-///     diff::{DiffLine, DiffTool},
-///     expectation::{Expectation, ExpectationMaker},
-///     rules::registry::RuleRegistry,
-///     bformatln,
-///     blines,
-/// };
-///
+/// use scrut::bformatln;
+/// use scrut::blines;
+/// use scrut::diff::DiffLine;
+/// use scrut::diff::DiffTool;
+/// use scrut::expectation::Expectation;
+/// use scrut::expectation::ExpectationMaker;
+/// use scrut::rules::registry::RuleRegistry;
 ///
 /// let maker = ExpectationMaker::new(RuleRegistry::default());
 /// let expectations = vec![
@@ -44,40 +43,35 @@ use crate::newline::SplitLinesByNewline;
 ///     maker.parse("baz").unwrap(),
 /// ];
 /// let diff_tool = DiffTool::new(expectations.clone());
-/// let diff = diff_tool.diff(&blines!(
-///     "bla",
-///     "foo1",
-///     "foo2",
-///     "foo3",
-///     "bar"
-/// )).expect("no error");
+/// let diff = diff_tool
+///     .diff(&blines!("bla", "foo1", "foo2", "foo3", "bar"))
+///     .expect("no error");
 ///
-///
-/// assert_eq!(vec![
-///     DiffLine::UnexpectedLines {
-///         lines: vec![(0, bformatln!("bla"))]
-///     },
-///     DiffLine::MatchedExpectation {
-///         index: 0,
-///         expectation: expectations[0].clone(),
-///         lines: vec![(1, bformatln!("foo1"))]
-///     },
-///     DiffLine::UnexpectedLines {
-///         lines: vec![
-///             (2, bformatln!("foo2")),
-///             (3, bformatln!("foo3")),
-///         ]
-///     },
-///     DiffLine::MatchedExpectation {
-///         index: 1,
-///         expectation: expectations[1].clone(),
-///         lines: vec![(4, bformatln!("bar"))]
-///     },
-///     DiffLine::UnmatchedExpectation {
-///         index: 2,
-///         expectation: expectations[2].clone(),
-///     },
-/// ], diff.lines);
+/// assert_eq!(
+///     vec![
+///         DiffLine::UnexpectedLines {
+///             lines: vec![(0, bformatln!("bla"))]
+///         },
+///         DiffLine::MatchedExpectation {
+///             index: 0,
+///             expectation: expectations[0].clone(),
+///             lines: vec![(1, bformatln!("foo1"))]
+///         },
+///         DiffLine::UnexpectedLines {
+///             lines: vec![(2, bformatln!("foo2")), (3, bformatln!("foo3")),]
+///         },
+///         DiffLine::MatchedExpectation {
+///             index: 1,
+///             expectation: expectations[1].clone(),
+///             lines: vec![(4, bformatln!("bar"))]
+///         },
+///         DiffLine::UnmatchedExpectation {
+///             index: 2,
+///             expectation: expectations[2].clone(),
+///         },
+///     ],
+///     diff.lines
+/// );
 /// ```
 pub struct DiffTool {
     expectations: Vec<Expectation>,
