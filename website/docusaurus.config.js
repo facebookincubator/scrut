@@ -10,18 +10,26 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 const {customFields} = require('./constants');
 
+const { organizationName, baseUrl } =
+  "GITHUB_REPOSITORY" in process.env
+    ? (() => {
+        const parts = process.env.GITHUB_REPOSITORY.split("/");
+        return { organizationName: parts[0], baseUrl: `/${parts[1]}/` };
+      })()
+    : { organizationName: "facebook", baseUrl: "/" };
+
 // With JSDoc @type annotations, IDEs can provide config autocompletion
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 (module.exports = {
   title: 'Scrut',
   tagline: 'A CLI Testing Framework',
   url: 'https://internalfb.com',
-  baseUrl: '/',
+  baseUrl,
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
   trailingSlash: true,
   favicon: 'img/favicon.ico',
-  organizationName: 'facebook',
+  organizationName,
   projectName: 'scrut', // TODO
   customFields,
 
