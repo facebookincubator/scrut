@@ -42,3 +42,7 @@ $ acme --version > /dev/null
 
 - [Contributing](CONTRIBUTING.md)
 - [Code of Conducat](CODE_OF_CONDUCT.md)
+
+## License
+
+- [LICENSE](LICENSE)

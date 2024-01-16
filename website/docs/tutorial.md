@@ -290,7 +290,7 @@ $ cat "$TESTDIR/commits.json" | \
 
 ### Tests directory isolation
 
-You may have noted the that the `commits.json` file is referred to as `"$TESTDIR/commits.json"`. The reason for that is that each test is executed from within an empty test directory. The absolute path to the directory, where the actual test file is in is available via the `$TESTDIR` environment variable. Since `commits.json` is located in the same directory as `transform-input.md` the expression `"$TESTDIR/commits.json"` contains the absolute path to the `commits.json` file ([read more](advanced/specifics.md#test-isolation)).
+You may have noted the that the `commits.json` file is referred to as `"$TESTDIR/commits.json"`. The reason for that is that each test is executed from within an empty test directory. The absolute path to the directory, where the actual test file is in is available via the `$TESTDIR` environment variable. Since `commits.json` is located in the same directory as `transform-input.md` the expression `"$TESTDIR/commits.json"` contains the absolute path to the `commits.json` file ([read more](advanced/specifics.md#test-environment-variables)).
 
 ## Pattern: Test Bootstrapping
 
@@ -359,7 +359,7 @@ $ cat "$TESTDIR"/commits.json | \
 
 > **Note**: The order of `who` and `when` changed due to `-S`.
 
-As you can see there are now two code blocks of the type `scrut` in the same file. That means there are two tests in that one file. This is fine, you can have [as many test as make sense to you in a file](advanced/file-formats.md#file-anatomy). Scrut [executes them in order](advanced/specifics.md#sequential-or-parallel-execution), within the same shell process, which allows the `alias jq=..` set in `setup.sh` to affect the `jq` execution in the test file.
+As you can see there are now two code blocks of the type `scrut` in the same file. That means there are two tests in that one file. This is fine, you can have [as many test as make sense to you in a file](advanced/file-formats.md#file-anatomy). Scrut [executes them in order](advanced/specifics.md#test-execution), which allows the `alias jq=..` set in `setup.sh` to affect the `jq` execution in the test file.
 
 **Bootstrapping tests is a very common strategy in Scrut** and is considered idiomatic.
 
@@ -572,4 +572,4 @@ For `jq` that could mean to write a single [file per function](https://stedolan.
 
 ## Next steps
 
-You did it. You are a _scrutacean_ now ([rust](https://www.rust-lang.org/) developers are called _rustaceans_, scrut is build in rust, there you go). If you want, go ahead and write some additional tests for `jq`, or dig deeper into the rest of [documentation](advanced/).
+You did it. You are a _scrutacean_ now ([rust](https://www.rust-lang.org/) developers are called _rustaceans_, scrut is build in rust, there you go). If you want, go ahead and write some additional tests for `jq`, or dig deeper into the rest of [file formats](advanced/file-formats.md), [expectations](advanced/expectations.md) or  [behavioral specifics](advanced/specifics.md).

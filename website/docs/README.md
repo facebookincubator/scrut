@@ -64,16 +64,19 @@ Head over to [the tutorial](tutorial.md) to get learn how to write your own test
 
 <ul>
     <li>
-        <a href={ customFields.ossRepoUrl + "/CONTRIBUTING.md" }>CONTRIBUTING.md</a>
+        <a href={ customFields.ossRepoUrl + "/blob/main/CONTRIBUTING.md" }>CONTRIBUTING.md</a>
     </li>
     <li>
-        <a href={ customFields.ossRepoUrl + "/CODE_OF_CONDUCT.md" }>CODE_OF_CONDUCT.md</a>
+        <a href={ customFields.ossRepoUrl + "/blob/main/CODE_OF_CONDUCT.md" }>CODE_OF_CONDUCT.md</a>
     </li>
 </ul>
 
 ## License
 
-- [LICENSE](LICENSE)
-
+<ul>
+    <li>
+        <a href={ customFields.ossRepoUrl + "/blob/main/LICENSE" }>LICENSE</a>
+    </li>
+</ul>
 
 </OssOnly>
