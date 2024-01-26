@@ -81,8 +81,22 @@ const { organizationName, baseUrl } =
       },
       footer: {
         style: 'dark',
-        links: [],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        links: [
+          {
+            title: 'Legal',
+            items: [
+              {
+                label: 'Terms of Use',
+                to: 'https://opensource.fb.com/legal/terms',
+              },
+              {
+                label: 'Privacy Policy',
+                to: 'https://opensource.fb.com/legal/privacy',
+              },
+            ],
+          },
+        ],
+        copyright: `Copyright © ${new Date().getFullYear()} Meta Platforms, Inc`,
       },
       prism: {
         theme: lightCodeTheme,
