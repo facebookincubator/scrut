@@ -18,6 +18,16 @@ function __scrut_persist_state {
     # ensure the state directory exists
     mkdir -p "$__SCRUT_TEMP_STATE_PATH"
 
+    # for bash (<4): "declare -p" returns expressions of the form "VARNAME=VARVALUE" as opposed to
+    # the longer form "declare -x VARNAME=VARVALUE". Re-importing these statements works, but the
+    # variables are not exported to the environment, which changes the behavior of Scrut. The
+    # following ensures the "declare -x"-form export of variables and aligns the behavior accross
+    # bash versions.
+    __SCRUT_DECLARE_VARS_CMD="declare -p"
+    if ! declare -p | grep -q "^declare "; then
+        __SCRUT_DECLARE_VARS_CMD="declare -p | sed -re 's/^([A-Za-z0-9_]+)=/declare -x \1=/'"
+    fi
+
     (
         # store all settings (sh)
         set +o
@@ -32,10 +42,9 @@ function __scrut_persist_state {
         declare -f
 
         # store all shell and environment variables
-        declare -p | \
+        eval "$__SCRUT_DECLARE_VARS_CMD" | \
             grep -Ev "^declare -.?r" | \
-            grep -Ev "^declare -[a-zA-Z-]* ({excluded_variables}|[^=]*[^a-zA-Z0-9_=][^=]*)(=|\$)" | \
-            grep -Ev "^({excluded_variables})="
+            grep -Ev "^declare -[a-zA-Z-]* ({excluded_variables}|[^=]*[^a-zA-Z0-9_=][^=]*)(=|\$)"
 
         # ensure directory stack starts at same position
         printf "cd %q 2>/dev/null\n" "${DIRSTACK[${#DIRSTACK[@]} - 1]}"

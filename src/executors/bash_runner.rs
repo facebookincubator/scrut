@@ -21,6 +21,7 @@ use crate::testcase::TestCase;
 #[doc = include_str!("./bash_runner.excluded_variables.md")]
 pub const BASH_EXCLUDED_VARIABLES: &[&str] = &[
     // variables from Scrut internals
+    "__SCRUT_DECLARE_VARS_CMD",
     "__SCRUT_TEMP_STATE_PATH",
     // variables from `man bash`
     "BASHOPTS",
