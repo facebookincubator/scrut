@@ -14,16 +14,13 @@ from clifoundation.scrut.py.pyscrut import Output, TestCase
 class ParserTestCase:
     @abstractmethod
     # pyre-fixme[2]: Parameter annotation cannot be `Any`.
-    def assertEqual(self, first: Any, second: Any, msg: Any = ...) -> None:
-        ...
+    def assertEqual(self, first: Any, second: Any, msg: Any = ...) -> None: ...
 
     @abstractmethod
-    def _testcases(self) -> List[TestCase]:
-        ...
+    def _testcases(self) -> List[TestCase]: ...
 
     @abstractmethod
-    def _expect_line(self) -> int:
-        ...
+    def _expect_line(self) -> int: ...
 
     def test_validate_valid_input(self) -> None:
         output = Output(b"Hello\n", b"", 0)
