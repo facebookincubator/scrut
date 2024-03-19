@@ -177,6 +177,7 @@ With that in mind:
 - Tests within the same file are executed in sequential order.
 - Executions happen in a [temporary work directory](#test-work-directory), that is initially empty and will be cleaned up after the last executions of the test file has run (or when executions are [skipped](#skip-tests-with-exit-cod)).
 - Executions may be detached, but Scrut will not clean up (kill) or wait for detached child processes
+  - If you want to run your process in the background or detach, see the `detached` setting in the [testcase configuration](file-formats.md#testcase-configuration) page.
 
 ### Execution within a custom shell
 

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.1.0">
 <title data-rh="true">Specifics | Scrut</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://internalfb.com/scrut/docs/advanced/specifics/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Specifics | Scrut"><meta data-rh="true" name="description" content="This chapter describes behaviors of Scrut that should be known by the user to prevent surprises in the wrong moment."><meta data-rh="true" property="og:description" content="This chapter describes behaviors of Scrut that should be known by the user to prevent surprises in the wrong moment."><link data-rh="true" rel="icon" href="/scrut/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://internalfb.com/scrut/docs/advanced/specifics/"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/specifics/" hreflang="en"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/specifics/" hreflang="x-default"><link rel="stylesheet" href="/scrut/assets/css/styles.c8f34039.css">
-<script src="/scrut/assets/js/runtime~main.f4d63407.js" defer="defer"></script>
-<script src="/scrut/assets/js/main.676afe79.js" defer="defer"></script>
+<script src="/scrut/assets/js/runtime~main.4ffdfe09.js" defer="defer"></script>
+<script src="/scrut/assets/js/main.289a4909.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script>
@@ -112,7 +112,11 @@ Each of those executions is then run within an actual shell (bash) process, as t
 </li>
 <li>Tests within the same file are executed in sequential order.</li>
 <li>Executions happen in a <a href="#test-work-directory">temporary work directory</a>, that is initially empty and will be cleaned up after the last executions of the test file has run (or when executions are <a href="#skip-tests-with-exit-cod">skipped</a>).</li>
-<li>Executions may be detached, but Scrut will not clean up (kill) or wait for detached child processes</li>
+<li>Executions may be detached, but Scrut will not clean up (kill) or wait for detached child processes<!-- -->
+<ul>
+<li>If you want to run your process in the background or detach, see the <code>detached</code> setting in the <a href="/scrut/docs/advanced/file-formats/#testcase-configuration">testcase configuration</a> page.</li>
+</ul>
+</li>
 </ul>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="execution-within-a-custom-shell">Execution within a custom shell<a href="#execution-within-a-custom-shell" class="hash-link" aria-label="Direct link to Execution within a custom shell" title="Direct link to Execution within a custom shell">​</a></h3>
 <p>While Scrut currently only supports <code>bash</code> (&gt;= 3.2) a custom shell can be provided with the <code>--shell</code> command line parameter.
