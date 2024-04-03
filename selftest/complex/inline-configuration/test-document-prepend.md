@@ -22,7 +22,7 @@ $ scrut_test "$TESTDIR"/test-document-prepend.mdtest
 1     | + FooInPrepended1
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```
 
@@ -54,7 +54,7 @@ $ scrut_test "$TESTDIR"/test-document-prepend.mdtest --prepend-test-file-paths "
 1     | + FooInPrepended1
 
 
-Summary: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped
+Result: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped
 [50]
 ```
 

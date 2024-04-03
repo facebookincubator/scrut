@@ -22,7 +22,7 @@ Hello World
 
 ```scrut
 $ "${SCRUT_BIN}" update --convert cram test.md
-Summary: 1 file(s) of which 1 updated, 0 skipped and 0 unchanged
+Result: 1 file(s) of which 1 updated, 0 skipped and 0 unchanged
 ```
 
 A new Cram file should have been created and the tests should look fine:

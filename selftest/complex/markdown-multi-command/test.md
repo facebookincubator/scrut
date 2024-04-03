@@ -20,6 +20,6 @@ $ "${SCRUT_BIN}" test --match-markdown "*.mdtest" "$TESTDIR"/no-multiple-command
    3  | - Bar
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```

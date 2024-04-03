@@ -6,7 +6,7 @@ Assure the glob rule is only as greed as it should be
 
 ```scrut
 $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-good.mdtest"
-Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Fail with invalid concrete match sandwiched between greedy multiline
@@ -25,6 +25,6 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-bad.mdtest"
    2  | - bla
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```

@@ -13,5 +13,4 @@ expression: rendered
 error: something failed
 
 
-Summary: 0 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
-
+Result: 0 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

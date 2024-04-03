@@ -53,7 +53,7 @@ pub struct PrettyColorRenderer {
 
 impl PrettyColorRenderer {
     fn render_summary(&self, files: usize, ok: usize, errors: usize, ignored: usize) -> String {
-        let summary = "Summary".underline();
+        let summary = "Result".underline();
         let total = ok + errors + ignored;
         let tests = format!("{} test(s)", total).bold();
         let mut succeeded = format!("{} succeeded", ok).green();
@@ -406,7 +406,7 @@ mod tests {
             }])
             .expect("render succeeds");
         assert_eq!(
-            "Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped\n", &rendered,
+            "Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped\n", &rendered,
             "success results are not rendered",
         );
     }

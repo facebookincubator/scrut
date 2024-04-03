@@ -354,7 +354,7 @@ impl Args {
     }
 
     fn render_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> String {
-        let summary = "Summary".underline();
+        let summary = "Result".underline();
         let total = updated + skipped + unchanged;
         let files = format!("{} file(s)", total).bold();
         let mut updated_fmt = format!("{} updated", updated).green();

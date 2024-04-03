@@ -27,7 +27,7 @@ class ParserTestCase:
         ok, error = self._testcases()[0].validate(output, "the-location")
         self.assertEqual(True, ok)
         self.assertEqual(
-            "Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped\n",
+            "Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped\n",
             error,
         )
 
@@ -53,7 +53,7 @@ unexpected exit code
 ## STDERR
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 """.format(
                 expected_line=self._expect_line()
             ),
@@ -78,7 +78,7 @@ Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 1     | + Wrong
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 """.format(
                 expected_line=self._expect_line()
             ),

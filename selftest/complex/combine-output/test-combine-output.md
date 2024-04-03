@@ -18,7 +18,7 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
    2  | - standard error
 
 
-Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```
 
@@ -26,19 +26,19 @@ Summary: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 
 ```scrut
 $ "$SCRUT_BIN" test --combine-output --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Run test with combined output (global)
 
 ```scrut
 $ "$SCRUT_BIN" --combine-output test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Run test with cram compat enabling combined output
 
 ```scrut
 $ "$SCRUT_BIN" --cram-compat test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Summary: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 ```
