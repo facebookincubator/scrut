@@ -109,7 +109,9 @@ impl Parser for MarkdownParser {
                             .context("parse testcase config")?
                     };
                     line_parser.set_testcase_config(
-                        parsed_config.with_defaults_from(&self.base_testcase_config),
+                        parsed_config
+                            .with_defaults_from(&config.defaults)
+                            .with_defaults_from(&self.base_testcase_config),
                     );
                     for (index, line) in &code_lines {
                         line_parser.add_testcase_body(line, *index)?;
