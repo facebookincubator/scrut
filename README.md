@@ -38,6 +38,8 @@ $ acme --version > /dev/null
 ```
 ````
 
+To start using Scrut, see the [Tutorial](https://facebookincubator.github.io/scrut/docs/tutorial/) page for a walkthrough of Scrut use from start to end.
+
 ## Contribute
 
 - [Contributing](CONTRIBUTING.md)
