@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.1.0">
-<title data-rh="true">Development | Scrut</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://internalfb.com/scrut/docs/advanced/development/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Development | Scrut"><meta data-rh="true" name="description" content="!! Scrut is still actively developed. Major breaking changes are likely !!"><meta data-rh="true" property="og:description" content="!! Scrut is still actively developed. Major breaking changes are likely !!"><link data-rh="true" rel="icon" href="/scrut/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://internalfb.com/scrut/docs/advanced/development/"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/development/" hreflang="en"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/development/" hreflang="x-default"><link rel="stylesheet" href="/scrut/assets/css/styles.731dcb5d.css">
-<script src="/scrut/assets/js/runtime~main.fcce733c.js" defer="defer"></script>
-<script src="/scrut/assets/js/main.8b8489b6.js" defer="defer"></script>
+<title data-rh="true">Development | Scrut</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://internalfb.com/scrut/docs/advanced/development/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Development | Scrut"><meta data-rh="true" name="description" content="!! Scrut is still actively developed. Major breaking changes are likely !!"><meta data-rh="true" property="og:description" content="!! Scrut is still actively developed. Major breaking changes are likely !!"><link data-rh="true" rel="icon" href="/scrut/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://internalfb.com/scrut/docs/advanced/development/"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/development/" hreflang="en"><link data-rh="true" rel="alternate" href="https://internalfb.com/scrut/docs/advanced/development/" hreflang="x-default"><link rel="stylesheet" href="/scrut/assets/css/styles.f6844296.css">
+<script src="/scrut/assets/js/runtime~main.e35ce938.js" defer="defer"></script>
+<script src="/scrut/assets/js/main.490b5ad4.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script>
@@ -13,21 +13,7 @@
 <p><strong>!! Scrut is still actively developed. Major breaking changes are likely !!</strong></p>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="use-cases">Use Cases<a href="#use-cases" class="hash-link" aria-label="Direct link to Use Cases" title="Direct link to Use Cases">​</a></h2>
 <p>Scrut is a command line program that solves the following use-cases for developers / owners of command line programs:</p>
-<!-- -->&lt;Mermaid chart={`
-graph TD
-
-    user(CLI Owner)
-    create[Create Tests]
-    update[Update Tests]
-    run[Run Tests]
-    cicd(CI/CD)
-
-    user -- manual --&gt; create
-    user -- manual --&gt; update
-    user -- manual --&gt; run
-    user -- automated --&gt; run
-    cicd -- automated ---&gt; run
-`} /&gt;<!-- -->
+<!-- -->
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="create-tests">Create Tests<a href="#create-tests" class="hash-link" aria-label="Direct link to Create Tests" title="Direct link to Create Tests">​</a></h3>
 <p>Make it easy for owners to create tests for their CLIs. Accept arbitrary commands (or more complex shell expressions), execute them and create formatted tests from the resulting output.</p>
 <p>Test Case generation is described by the <a href="https://github.com/facebookincubator/scrut/blob/main/src/generators/generator.rs"><code>TestCaseGenerator</code></a> trait and implemented in the respective format in the same <a href="https://github.com/facebookincubator/scrut/blob/main/src/generators">folder</a>.</p>
@@ -38,64 +24,7 @@ graph TD
 <p>Run previously persisted tests, so to prove that a CLI works within expectations. Owners can do this either manually, or automated from integration with their development tooling. The same tests should be run by automated continuous integration systems.</p>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="architecture">Architecture<a href="#architecture" class="hash-link" aria-label="Direct link to Architecture" title="Direct link to Architecture">​</a></h2>
 <p>The architecture of Scrut is best explained by following the process flow of the primary use case: executing tests.</p>
-<!-- -->&lt;Mermaid chart={`
-flowchart TB
-  TestCase[&quot;Test Case&quot;]
-  TestCases[&quot;Test Case(s)&quot;]
-  Expectations[&quot;Expectation(s)&quot;]
-  DiffTool[&quot;Diff Tool&quot;]
-  DocumentConfiguration[&quot;Document Config&quot;]
-  TestCaseConfiguration[&quot;TestCase Config&quot;]
-
-  subgraph Parsing[&quot;Phase: Parsing&quot;]
-  Run ---&gt; Parser
-  Parser ---&gt; TestCases
-  Parser ---&gt; DocumentConfiguration
-  end
-
-  subgraph Anatomy[&quot;Test Case in Detail&quot;]
-  TestCase ---&gt; ShellExpression
-  TestCase ---&gt; TestCaseConfiguration
-  TestCase ---&gt; Expectations
-  TestCase .-&gt; Title
-  end
-
-  TestCases .-&gt; TestCase
-
-  subgraph Execution[&quot;Phase: Execution&quot;]
-  Executor ---&gt; Output
-  end
-
-  DocumentConfiguration ---&gt; Executor
-  TestCaseConfiguration ---&gt; Executor
-  ShellExpression ---&gt; Executor
-
-  subgraph Validation[&quot;Phase: Validation&quot;]
-  DiffTool -- expected output ---&gt; OK
-  DiffTool -- unexpected output ---&gt; Error
-  end
-
-  subgraph Presentation[&quot;Phase: Presentation&quot;]
-  OK ---&gt; Renderer
-  Error ---&gt; Renderer
-  Renderer ---&gt; Diff[&quot;Pretty, human\nreadable differences&quot;]
-  Renderer ---&gt; Patch[&quot;Universal Diff Format&quot;]
-  Renderer ---&gt; YAML
-  Renderer ---&gt; JSON
-  end
-
-  Output ---&gt; DiffTool
-  Expectations ---&gt; DiffTool
-
-  style Anatomy fill:#eee,stroke:#aaa;
-  style TestCase fill:#ddd,stroke:#aaa;
-  style TestCaseConfiguration fill:#ddd,stroke:#aaa;
-  style ShellExpression fill:#ddd,stroke:#aaa;
-  style Expectations fill:#ddd,stroke:#aaa;
-  style Title fill:#ddd,stroke:#aaa;
-  style OK fill:#8f8;
-  style Error fill:#f88;
-`} /&gt;<!-- -->
+<!-- -->
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="phase-parsing">Phase: Parsing<a href="#phase-parsing" class="hash-link" aria-label="Direct link to Phase: Parsing" title="Direct link to Phase: Parsing">​</a></h3>
 <p>Scrut tests are stored either in <a href="https://github.com/facebookincubator/scrut/blob/main/src/parsers/markdown.rs"><code>Markdown</code></a> or <a href="https://github.com/facebookincubator/scrut/blob/main/src/parsers/cram.rs"><code>Cram</code></a> files. Each file can contain multiple tests, which are called <a href="https://github.com/facebookincubator/scrut/blob/main/src/testcase.rs"><strong>Test Cases</strong></a> and which consist of:</p>
 <ul>
