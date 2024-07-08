@@ -30,7 +30,11 @@ const { organizationName, baseUrl } =
   trailingSlash: true,
   favicon: 'img/favicon.ico',
   organizationName,
-  projectName: 'scrut', // TODO
+  projectName: 'scrut',
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
   customFields,
 
 
