@@ -14,8 +14,8 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // $ ls
 // =============================================================================
 
-   1  | - temp.* (glob)
-   2  | - test-me.fixture
+1     | - temp.* (glob)
+2     | - test-me.fixture
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

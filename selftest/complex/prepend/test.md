@@ -14,8 +14,8 @@ $ "${SCRUT_BIN}" test --match-markdown "*.mdtest" "$TESTDIR/actual.mdtest"
 // $ echo "Good things are ${SOME_VARIABLE:-undefined}"
 // =============================================================================
 
-   1  | - Good things are prepended, not shaken
-1     | + Good things are undefined
+1     | - Good things are prepended, not shaken
+   1  | + Good things are undefined
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

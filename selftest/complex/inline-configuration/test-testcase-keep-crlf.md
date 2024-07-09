@@ -39,8 +39,8 @@ $ scrut_test "$TESTDIR"/test-testcase-keep-crlf-disabled.mdtest --keep-output-cr
 // $ echo -e "word\r"
 // =============================================================================
 
-   1  | - word
-1     | + word\r (escaped) (equal)
+1     | - word
+   1  | + word\r (escaped) (equal)
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

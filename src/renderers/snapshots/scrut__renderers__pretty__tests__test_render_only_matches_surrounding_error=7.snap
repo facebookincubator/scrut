@@ -17,15 +17,15 @@ expression: rendered
  8   8  |   line match 8
  9   9  |   line match 9
 10  10  |   line match 10
-    11  | - line NOT match
-11      | + actual line
+11      | - line NOT match
+    11  | + actual line
 12  12  |   line match 12
 13  13  |   line match 13
 14  14  |   line match 14
 15  15  |   line match 15
 16  16  |   line match 16
-    17  | - line NOT match
-17      | + actual line
+17      | - line NOT match
+    17  | + actual line
 18  18  |   line match 18
 19  19  |   line match 19
 20  20  |   line match 20

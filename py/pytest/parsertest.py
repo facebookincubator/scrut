@@ -74,8 +74,8 @@ Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 // $ echo Hello
 // =============================================================================
 
-   1  | - Hello
-1     | + Wrong
+1     | - Hello
+   1  | + Wrong
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

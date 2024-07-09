@@ -18,8 +18,8 @@ $ scrut_test "$TESTDIR"/test-document-append.mdtest
 // $ echo FooInAppended1
 // =============================================================================
 
-   1  | - BarInAppended1
-1     | + FooInAppended1
+1     | - BarInAppended1
+   1  | + FooInAppended1
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
@@ -38,8 +38,8 @@ $ scrut_test "$TESTDIR"/test-document-append.mdtest --append-test-file-paths "$T
 // $ echo FooInAppended1
 // =============================================================================
 
-   1  | - BarInAppended1
-1     | + FooInAppended1
+1     | - BarInAppended1
+   1  | + FooInAppended1
 
 
 // =============================================================================
@@ -50,8 +50,8 @@ $ scrut_test "$TESTDIR"/test-document-append.mdtest --append-test-file-paths "$T
 // $ echo FooInAppended2
 // =============================================================================
 
-   1  | - BarInAppended2
-1     | + FooInAppended2
+1     | - BarInAppended2
+   1  | + FooInAppended2
 
 
 Result: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped

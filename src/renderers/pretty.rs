@@ -348,9 +348,9 @@ impl Decorator {
             _ => |s: &str| s.to_string(),
         };
         format!(
-            "{}  {} | {} {}",
-            line_color(&self.output_line_number(line_number)),
+            "{} {}  | {} {}",
             line_color(&self.expectation_line_number(expectation_number, multiline)),
+            line_color(&self.output_line_number(line_number)),
             color(symbol),
             color(content)
         )

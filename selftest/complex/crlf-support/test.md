@@ -14,10 +14,10 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // $ echo -en "With\r\nNewlines\r\n"
 // =============================================================================
 
-   1  | - With\r (escaped) (equal)
-   2  | - Newlines\r (escaped) (equal)
-1     | + With
-2     | + Newlines
+1     | - With\r (escaped) (equal)
+2     | - Newlines\r (escaped) (equal)
+   1  | + With
+   2  | + Newlines
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

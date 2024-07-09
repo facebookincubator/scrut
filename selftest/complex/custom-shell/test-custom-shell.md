@@ -20,8 +20,8 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // $ echo "This is from a custom shell: ${FROM_A_CUSTOM_SHELL:-no}"
 // =============================================================================
 
-   1  | - This is from a custom shell: yes
-1     | + This is from a custom shell: no
+1     | - This is from a custom shell: yes
+   1  | + This is from a custom shell: no
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

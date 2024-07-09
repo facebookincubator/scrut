@@ -15,7 +15,7 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // =============================================================================
 
 1  1  |   standard output
-   2  | - standard error
+2     | - standard error
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped

@@ -18,8 +18,8 @@ $ scrut_test "$TESTDIR"/test-document-prepend.mdtest
 // $ echo FooInPrepended1
 // =============================================================================
 
-   1  | - BarInPrepended1
-1     | + FooInPrepended1
+1     | - BarInPrepended1
+   1  | + FooInPrepended1
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
@@ -38,8 +38,8 @@ $ scrut_test "$TESTDIR"/test-document-prepend.mdtest --prepend-test-file-paths "
 // $ echo FooInPrepended2
 // =============================================================================
 
-   1  | - BarInPrepended2
-1     | + FooInPrepended2
+1     | - BarInPrepended2
+   1  | + FooInPrepended2
 
 
 // =============================================================================
@@ -50,8 +50,8 @@ $ scrut_test "$TESTDIR"/test-document-prepend.mdtest --prepend-test-file-paths "
 // $ echo FooInPrepended1
 // =============================================================================
 
-   1  | - BarInPrepended1
-1     | + FooInPrepended1
+1     | - BarInPrepended1
+   1  | + FooInPrepended1
 
 
 Result: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped

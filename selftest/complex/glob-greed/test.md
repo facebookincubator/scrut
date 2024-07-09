@@ -21,8 +21,8 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-bad.mdtest"
 // $ echo -e "foo\nbar\nbaz"
 // =============================================================================
 
-+  1+ |   * (glob*)
-   2  | - bla
+1+ +  |   * (glob*)
+2     | - bla
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
