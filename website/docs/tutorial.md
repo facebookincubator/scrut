@@ -20,7 +20,7 @@ This guide is written with the following target audiences in mind:
 
 ## Prerequisites
 
-To make it very simple to follow along, this guide uses the modern, but well established [`jq`](https://github.com/stedolan/jq) command line tool as the CLI that is tested in all provided code examples. Deep understanding of `jq` is not required, but it would help if you have at least some grasp what it does and how to use it. If that is not the case, yet: it is a truly, amazingly useful tool; now is a great time to learn about!
+To make it very simple to follow along, this guide uses the modern, but well established [`jq`](https://github.com/jqlang/jq) command line tool as the CLI that is tested in all provided code examples. Deep understanding of `jq` is not required, but it would help if you have at least some grasp what it does and how to use it. If that is not the case, yet: it is a truly, amazingly useful tool; now is a great time to learn about!
 
 The following should work on your terminal:
 
@@ -209,17 +209,17 @@ Going forward remove the `[10]` again, so that the test is in a working state.
 
 Ok, let's start with testing actual functionality. No worries, we won't attempt to cover all that `jq` can do with tests in this tutorial. Just enough to show some good to know patterns. Here is one, if a bit obvious: a good idea to start with any test is executing it on the shell.
 
-Since `jq` is a neat tool to manipulate JSON, we need some JSON to manipulate. Let's use the [same as the `jq` tutorial itself](https://stedolan.github.io/jq/tutorial/), that is the Github history of [the `jq` repository](https://github.com/stedolan/jq):
+Since `jq` is a neat tool to manipulate JSON, we need some JSON to manipulate. Let's use the [same as the `jq` tutorial itself](https://jqlang.github.io/jq/tutorial/), that is the Github history of [the `jq` repository](https://github.com/jqlang/jq):
 
 ```sh
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5'
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5'
 # not gonna show the output, it is a lot
 ```
 
 Let's say we want to write a test that proves and documents the (imho) core functionality of `jq`: mutating JSON. As an example we are going to reduce those huge JSON dumps into something more manageable: _who's commit was committed when_. Each result item should have the following form: `{"who": "<name>", "when": "<date>"} `. This is how you can achieve that on the the command line (names changed):
 
 ```sh
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
   jq '[.[] | {who: .commit.author.name, when: .commit.committer.date}]'
 [
   {
@@ -250,7 +250,7 @@ Ok, that shows that the transformation of the output works as we assumed it woul
 Since we are not really interested in the functionality of `curl` or Github (and quite frankly could without network dependencies), let's instead store the current output of the `curl` execution into a _test fixture file_ in our `integration-tests` folder. This way we have a consistent input to run our test on:
 
 ```sh
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' > integration-tests/commits.json
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' > integration-tests/commits.json
 ```
 
 Now we can start with writing the actual test file. Instead of using `scrut create`, start with the following template in `integration-tests/transform-input.md`:
@@ -375,7 +375,7 @@ In those scenarios it is not uncommon that each test-suite run executes specific
 
 In the previous section quite a lot of copying from the terminal into text files happened. A tad bothersome and smells like a bad tedious process. Indeed. There is a better way.
 
-Let's start with a new test. `jq` has [a lot of built-in functions](https://stedolan.github.io/jq/manual/#Builtinoperatorsandfunctions), so there is plenty to pick from. Since we were already interested in that committer date earlier, lets write a test for the `fromdate` function. Start with the following template, which is basically a copy of the previous test, but with the new command we want and with all outputs striped:
+Let's start with a new test. `jq` has [a lot of built-in functions](https://jqlang.github.io/jq/manual/#Builtinoperatorsandfunctions), so there is plenty to pick from. Since we were already interested in that committer date earlier, lets write a test for the `fromdate` function. Start with the following template, which is basically a copy of the previous test, but with the new command we want and with all outputs striped:
 
 ````markdown
 # Test built-in `fromdate`
@@ -447,7 +447,7 @@ Let's revisit our `transform-input.md` test file from before. Copy it into `tran
 
 ````markdown
 ```scrut
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 > jq '.[] | .commit.author.name + ";" + .commit.committer.date'
 ```
 ````
@@ -468,7 +468,7 @@ $ source "$TESTDIR/setup.sh"
 ## Transform input from live data
 
 ```scrut
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 > jq '.[] | .commit.author.name + ";" + .commit.committer.date'
 Person Name;2022-05-26T21:04:32Z
 Another Person;2022-05-26T21:02:50Z
@@ -496,7 +496,7 @@ Scrut has two expectation types that would work here. Lets start with simpler on
 ## Transform input from live data
 
 ```scrut
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 > jq '.[] | .commit.author.name + ";" + .commit.committer.date'
 *;20*Z (glob)
 *;20*Z (glob)
@@ -528,7 +528,7 @@ Lets jump right into it then: `scrut` supports [regular expression expectations]
 ## Transform input from live data
 
 ```scrut
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 > jq '.[] | .commit.author.name + ";" + .commit.committer.date'
 \w+(?:\s\w+)*;\d{4}\-\d{2}\-\d{2}T\d{2}:\d{2}:\d{2}Z (regex)
 \w+(?:\s\w+)*;\d{4}\-\d{2}\-\d{2}T\d{2}:\d{2}:\d{2}Z (regex)
@@ -552,7 +552,7 @@ So how would a test look that addresses those issues? Especially when knowing th
 ## Transform input from live data
 
 ```scrut
-$ curl 'https://api.github.com/repos/stedolan/jq/commits?per_page=5' | \
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 > jq '.[] | .commit.author.name + ";" + .commit.committer.date'
 *;20*Z (glob+)
 ```
@@ -568,7 +568,7 @@ As noted at the start of this document, Scrut can be very useful for CLI owners 
 
 Either way **it is good practice to isolate every use-case into a single file**. That could be one test file per sub-command of the CLI that is tested or one test file per runbook that is tested. Whatever makes most sense. The purpose should be to gain the most information possible out of a failing test: _Test `A.md` is failing, but test `B.md` is not, that indicates that `feature X` is broken_.
 
-For `jq` that could mean to write a single [file per function](https://stedolan.github.io/jq/manual/#Builtinoperatorsandfunctions) `jq` exposes. However, if `jq` already has a unittest suite that covers each function, maybe it makes more sense to concentrate on testing [I/O](https://stedolan.github.io/jq/manual/#IO) and also maybe whether [modules](https://stedolan.github.io/jq/manual/#Modules) work as expected.
+For `jq` that could mean to write a single [file per function](https://jqlang.github.io/jq/manual/#Builtinoperatorsandfunctions) `jq` exposes. However, if `jq` already has a unittest suite that covers each function, maybe it makes more sense to concentrate on testing [I/O](https://jqlang.github.io/jq/manual/#IO) and also maybe whether [modules](https://jqlang.github.io/jq/manual/#Modules) work as expected.
 
 ## Next steps
 
