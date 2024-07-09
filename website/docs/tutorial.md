@@ -133,8 +133,8 @@ $ scrut test integration-tests/smoke.md
 // $ jq --version
 // =============================================================================
 
-   1  | - foo
-1     | + jq-1.6
+1     | - foo
+   1  | + jq-1.6
 ```
 
 Ok, it is getting interesting. What you are seeing here (likely in color) is an output validation error. The output expectations in the test file do not match with the output the command actually spits out. This is how you read it:
@@ -143,8 +143,8 @@ Ok, it is getting interesting. What you are seeing here (likely in color) is an 
 - `# Smoke test`: Title of the test in the file
 - `$ task --version`: Shell expression that resulted in invalid output
 - ```
-     1  | - foo
-  1     | + jq-1.6
+  1     | - foo
+     1  | + jq-1.6
   ```
   The first line `1 | - foo` denotes that `foo` was expected from the test, but is missing in the output. The next line `1 | + jq-1.6` denotes that `jq-1.6` was printed out as 1st line from the command, but is missing in the test.
 
@@ -409,11 +409,11 @@ $ scrut test integration-tests/builtin-fromdate.md
 //   jq '.[] | .commit.committer.date | fromdate'
 // =============================================================================
 
-1     | + 1653599072
-2     | + 1653598970
-3     | + 1653598930
-4     | + 1653598885
-5     | + 1653598439
+   1  | + 1653599072
+   2  | + 1653598970
+   3  | + 1653598930
+   4  | + 1653598885
+   5  | + 1653598439
 ```
 
 This output tells us two things:
