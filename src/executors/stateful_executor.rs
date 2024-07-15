@@ -166,17 +166,17 @@ impl Executor for StatefulExecutor {
                 }
 
                 // user says the process is running detached and we should ignore it
-                ExitStatus::Detached => {
-                    // nothing to do, we just ignore it
-                }
+                ExitStatus::Detached => outputs.push(Output {
+                    exit_code: ExitStatus::Detached,
+                    ..Default::default()
+                }),
 
                 // undefined: things are hairy, better end
                 ExitStatus::Unknown => {
                     outputs.push(output);
                     outputs.extend((0..(testcases.len() - outputs.len())).map(|_| Output {
-                        stderr: vec![].into(),
-                        stdout: vec![].into(),
                         exit_code: ExitStatus::Unknown,
+                        ..Default::default()
                     }));
                     break;
                 }

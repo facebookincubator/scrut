@@ -22,6 +22,7 @@ use scrut::config::TestCaseConfig;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::outcome::Outcome;
+use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
 use scrut::renderers::diff::DiffRenderer;
@@ -272,27 +273,14 @@ impl Args {
                         debug_testcases(&test.testcases, &test.path, &outputs);
                     }
 
-                    let testcase_count = testcases.len();
-                    let expected_testcases = testcases
-                        .into_iter()
-                        .filter(|t| !t.config.detached.unwrap_or(false))
-                        .collect::<Vec<_>>();
-                    count_detached += testcase_count - expected_testcases.len();
-
-                    // this should not happen: different amount of outputs than executed testcases
-                    if outputs.len() != expected_testcases.len() {
-                        bail!(
-                            "expected {} outputs from execution, but got {}",
-                            expected_testcases.len(),
-                            outputs.len()
-                        )
-                    }
-
                     // .. to compare the outputs with testcases and gather that
                     //    outcome for later rendering
-                    for (testcase, output) in
-                        expected_testcases.into_iter().zip(outputs.into_iter())
-                    {
+                    for (testcase, output) in testcases.into_iter().zip(outputs.into_iter()) {
+                        if output.exit_code == ExitStatus::Detached {
+                            count_detached += 1;
+                            continue;
+                        }
+
                         let result = testcase.validate(&output);
                         if result.is_err() {
                             count_failed += 1;

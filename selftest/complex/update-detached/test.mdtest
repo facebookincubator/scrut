@@ -1,0 +1,27 @@
+# This is an outdated test
+
+## A detached test
+
+```scrut {detached: true}
+$ echo foo1
+```
+
+## A normal test
+
+```scrut
+$ echo foo2
+foo2
+```
+
+## Another detached test
+
+```scrut {detached: true}
+$ echo foo3
+```
+
+## Another normal test
+
+```scrut
+$ echo foo4
+foo4
+```
