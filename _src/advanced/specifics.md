@@ -119,6 +119,7 @@ Scrut sets a list of environment variables for the execution. These are set _in 
 - `TESTFILE`: contains the name of the file that contains the test that is currently being executed
 - `TESTSHELL`: contains the shell that in which the test is being executed in (default `/bin/bash`, see `--shell` flag on commands)
 - `TMPDIR`: contains the absolute path to a temporary directory that will be cleaned up after the test is executed. This directory is shared in between all executed tests across all test files.
+- `SCRUT_TEST`: contains the path to the test and the title, separated by double colons (e.g. `some/test.md::Some Title`). *This variable is recommend to use when deciding whether an execution is within Scrut.* Note: **the title is provided as given and therefore can contain spaces**!
 
 ### Common (linux) environment variables
 
