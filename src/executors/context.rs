@@ -14,11 +14,14 @@ use crate::config::DocumentConfig;
 /// Context that describes the environment in which one or multiple [`crate::testcase::TestCase`]s are executed in
 #[derive(Debug, PartialEq, Eq, Builder)]
 pub struct Context {
-    /// Optional cwd path for the execution
+    /// Cwd path for the execution
     pub work_directory: PathBuf,
 
-    /// Optional path for that holds temporary files
+    /// Path for that holds temporary files
     pub temp_directory: PathBuf,
+
+    /// Path of the test file
+    pub file: PathBuf,
 
     /// The configuration on per-document level
     #[builder(default)]
@@ -38,6 +41,7 @@ impl Context {
         Self {
             work_directory: test::create_testing_directory(),
             temp_directory: test::create_testing_directory(),
+            file: PathBuf::from("test.md"),
             config,
         }
     }
@@ -134,6 +138,7 @@ mod test {
         let context = Context {
             temp_directory: temp_directory.path().to_path_buf(),
             work_directory: work_directory.path().to_path_buf(),
+            file: PathBuf::from("test.md"),
             config: Default::default(),
         };
 

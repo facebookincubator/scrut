@@ -123,9 +123,16 @@ impl Executor for StatefulExecutor {
                 }
             }
 
+            // set timeout and identifying environment variable
+            testcase.config.timeout = timeout;
+            testcase.config.environment.insert(
+                "SCRUT_TEST".into(),
+                format!("{}::{}", context.file.to_string_lossy(), testcase.title),
+            );
+
             // run the execution, using the shared state directory
             let context = context.to_owned();
-            testcase.config.timeout = timeout;
+
             trace!("effective testcase configuration: {}", &testcase.config);
             let output = runner_gen(state_directory.path())
                 .run(&name, &testcase, context)

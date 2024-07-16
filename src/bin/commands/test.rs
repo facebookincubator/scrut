@@ -239,6 +239,7 @@ impl Args {
                 &ContextBuilder::default()
                     .work_directory(PathBuf::from(&test_work_directory))
                     .temp_directory(test_environment.tmp_directory.as_path_buf())
+                    .file(test.path.clone())
                     .config(config)
                     .build()
                     .context("failed to build execution context")?,

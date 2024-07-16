@@ -23,6 +23,8 @@ pub const BASH_EXCLUDED_VARIABLES: &[&str] = &[
     // variables from Scrut internals
     "__SCRUT_DECLARE_VARS_CMD",
     "__SCRUT_TEMP_STATE_PATH",
+    // variables set by scrut in every execution
+    "SCRUT_TEST",
     // variables from `man bash`
     "BASHOPTS",
     "BASH_ALIASES",

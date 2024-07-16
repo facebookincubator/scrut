@@ -69,3 +69,10 @@ GREP_OPTIONS: ''
 $ echo "GREP_OPTIONS: '$GREP_OPTIONS'"
 GREP_OPTIONS: ''
 ```
+
+## Haz SCRUT_TEST
+
+```scrut
+$ echo "SCRUT_TEST: $SCRUT_TEST"
+SCRUT_TEST: .*[/\\]selftest[/\\]cases[/\\]environment\.md::Haz SCRUT_TEST (regex)
+```

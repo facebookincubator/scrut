@@ -113,6 +113,7 @@ impl Args {
                 &ContextBuilder::default()
                     .work_directory(PathBuf::from(&test_work_directory))
                     .temp_directory(test_environment.tmp_directory.as_path_buf())
+                    .file("testfile.tmp".into())
                     .config(document_config.with_overrides_from(&self.to_document_config()))
                     .build()
                     .context("construct build execution context")?,
