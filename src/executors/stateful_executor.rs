@@ -127,7 +127,11 @@ impl Executor for StatefulExecutor {
             testcase.config.timeout = timeout;
             testcase.config.environment.insert(
                 "SCRUT_TEST".into(),
-                format!("{}::{}", context.file.to_string_lossy(), testcase.title),
+                format!(
+                    "{}:{}",
+                    context.file.to_string_lossy(),
+                    testcase.line_number
+                ),
             );
 
             // run the execution, using the shared state directory

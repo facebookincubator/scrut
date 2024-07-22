@@ -74,5 +74,5 @@ GREP_OPTIONS: ''
 
 ```scrut
 $ echo "SCRUT_TEST: $SCRUT_TEST"
-SCRUT_TEST: .*[/\\]selftest[/\\]cases[/\\]environment\.md::Haz SCRUT_TEST (regex)
+SCRUT_TEST: .*[/\\]selftest[/\\]cases[/\\]environment\.md:76 (regex)
 ```
