@@ -142,7 +142,7 @@ impl LineParser {
         if !has_commands {
             if has_expectations {
                 bail!(
-                    "line {}: testcase output expectation(s) given, but no shell expression specified",
+                    "line {}: testcase output expectation(s) given, but no shell expression specified. Did you forget to prefix the command with '$'?",
                     line_index + 1
                 )
             }
