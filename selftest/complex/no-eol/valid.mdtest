@@ -1,0 +1,13 @@
+# A test where output does NOT end in new-line
+
+```scrut
+$ echo -n There is no new line
+There is no new line (no-eol)
+```
+
+# A test where output DOES end in new-line
+
+```scrut
+$ echo There is a new line
+There is a new line
+```

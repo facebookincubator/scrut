@@ -17,6 +17,7 @@ use crate::diff::Diff;
 use crate::diff::DiffLine;
 use crate::escaping::strip_colors;
 use crate::formatln;
+use crate::newline::BytesNewline;
 use crate::newline::StringNewline;
 use crate::outcome::Outcome;
 use crate::testcase::TestCaseError;
@@ -240,9 +241,17 @@ impl ErrorRenderer for PrettyColorRenderer {
                 }
                 DiffLine::UnexpectedLines { lines } => {
                     lines.iter().for_each(|(line_index, line)| {
+                        let eol = (line.as_ref() as &[u8]).ends_in_newline();
+                        let line = if !eol {
+                            let mut line = line.clone();
+                            line.extend(b" (no-eol)");
+                            line
+                        } else {
+                            line.to_owned()
+                        };
                         let line = outcome
                             .escaping
-                            .escaped_expectation(line)
+                            .escaped_expectation(&line)
                             .higlight_tailing_spaces();
                         last_error_index = Some(diff_index);
                         output.push_str(

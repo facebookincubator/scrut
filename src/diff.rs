@@ -13,6 +13,7 @@ use serde::Serialize;
 
 use crate::expectation::Expectation;
 use crate::lossy_string;
+use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
 
 /// Compares [`crate::output::Output`]s of [`crate::executors::executor::Executor`]
@@ -455,7 +456,14 @@ impl Debug for DiffLine {
             }
             Self::UnexpectedLines { lines } => {
                 for (index, line) in lines {
-                    write!(f, "     {:04} | + {}", index + 1, lossy_string!(line))?;
+                    let eol = (line.as_ref() as &[u8]).ends_in_newline();
+                    write!(
+                        f,
+                        "     {:04} | + {}{}",
+                        index + 1,
+                        lossy_string!(line),
+                        if eol { "" } else { " (no-eol)" }
+                    )?;
                 }
                 Ok(())
             }

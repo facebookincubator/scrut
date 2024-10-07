@@ -27,6 +27,9 @@ pub(crate) trait BytesNewline {
 
     /// Returns byte slice that ends in newline character(s)
     fn assure_newline(&self) -> Cow<'_, [u8]>;
+
+    /// Return bool whether ends in new line
+    fn ends_in_newline(&self) -> bool;
 }
 
 impl BytesNewline for &[u8] {
@@ -45,6 +48,10 @@ impl BytesNewline for &[u8] {
         let mut updated = self.to_vec();
         updated.push(b'\n');
         updated.into()
+    }
+
+    fn ends_in_newline(&self) -> bool {
+        ends_in_newline(self)
     }
 }
 

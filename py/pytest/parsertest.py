@@ -61,7 +61,7 @@ Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
         )
 
     def test_validation_invalid_input(self) -> None:
-        result = Output(b"Wrong", b"", 0)
+        result = Output(b"Wrong\n", b"", 0)
         ok, error = self._testcases()[0].validate(result, "the-location")
         self.assertEqual(False, ok)
         print(ok)
