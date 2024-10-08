@@ -51,7 +51,7 @@ $ acme --version > /dev/null
 
 ## Getting Started
 
-- [Getting Started](fb/)
+- [Getting Started](docs/fb/)
 
 
 </FbInternalOnly>
