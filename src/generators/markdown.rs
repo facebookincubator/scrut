@@ -64,7 +64,16 @@ impl UpdateGenerator for MarkdownUpdateGenerator {
                     updated.push_str(&config);
                     updated.push_str("\n---\n");
                 }
-                MarkdownToken::CodeBlock {
+                MarkdownToken::VerbatimCodeBlock {
+                    starting_line_number: _,
+                    language: _,
+                    lines,
+                } => {
+                    for line in lines {
+                        updated.push_str(&line.assure_newline());
+                    }
+                }
+                MarkdownToken::TestCodeBlock {
                     language,
                     config_lines,
                     comment_lines,

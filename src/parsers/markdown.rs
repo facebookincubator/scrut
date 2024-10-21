@@ -96,7 +96,19 @@ impl Parser for MarkdownParser {
                         title_paragraph.clear();
                     }
                 }
-                MarkdownToken::CodeBlock {
+                MarkdownToken::VerbatimCodeBlock {
+                    starting_line_number,
+                    language,
+                    lines: _,
+                } => {
+                    if language.is_empty() {
+                        anyhow::bail!(
+                            "Code block starting at line {} is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block.",
+                            starting_line_number
+                        );
+                    }
+                }
+                MarkdownToken::TestCodeBlock {
                     language: _,
                     config_lines,
                     comment_lines: _,
@@ -140,14 +152,14 @@ pub(crate) enum MarkdownToken {
     /// Raw configuration that is prepending the document
     DocumentConfig(Vec<(usize, String)>),
 
-    /// The parsed contents of a code block within backticks:
+    /// The parsed contents of a code block within backticks, representing a Scrut test:
     ///
     /// ```scrut { ... config ..}
     /// # comment
     /// $ shell expression
     /// output expectations
     /// ```
-    CodeBlock {
+    TestCodeBlock {
         /// The used language token of the test (i.e. `scrut`)
         language: String,
 
@@ -159,6 +171,18 @@ pub(crate) enum MarkdownToken {
 
         /// The code that makes up the test (shell expression & output expectations)
         code_lines: Vec<(usize, String)>,
+    },
+
+    /// A code block that is not a test
+    VerbatimCodeBlock {
+        /// Index of the line containing opening backticks
+        starting_line_number: usize,
+
+        /// Language specifier (e.g. `scrut`), possibly an empty string
+        language: String,
+
+        /// All the lines of the code block, including opening and closing backtick lines
+        lines: Vec<String>,
     },
 }
 
@@ -202,11 +226,34 @@ impl<'a> Iterator for MarkdownIterator<'a> {
                 }
                 Some(MarkdownToken::DocumentConfig(config_content))
 
-            // found the start of a code block (=testcase)?
+            // found the start of a code block (possibly a testcase)?
             } else if let Some((backticks, language, config)) = extract_code_block_start(line) {
                 self.content_start = true;
-                if language.is_empty() || !self.languages.contains(&language) {
-                    return Some(MarkdownToken::Line(self.line_index - 1, line.into()));
+
+                // report verbatim code block if this is not a test block
+                if !self.languages.contains(&language) {
+                    // Record the opening line (i.e. the opening backticks)
+                    let starting_line_number = self.line_index - 1;
+                    let mut lines = vec![line.to_string()];
+                    let mut line = self.document_lines.next()?;
+                    self.line_index += 1;
+
+                    // Record all lines until the closing backticks
+                    while !line.starts_with(backticks) {
+                        lines.push(line.to_string());
+                        line = self.document_lines.next()?;
+                        self.line_index += 1;
+                    }
+
+                    // Record the closing backticks
+                    lines.push(line.to_string());
+
+                    // Return the verbatim code block
+                    return Some(MarkdownToken::VerbatimCodeBlock {
+                        starting_line_number,
+                        language: language.into(),
+                        lines,
+                    });
                 }
 
                 // gather optional per-test config
@@ -220,7 +267,6 @@ impl<'a> Iterator for MarkdownIterator<'a> {
                     vec![]
                 };
 
-                // gather optional comments
                 let mut line = self.document_lines.next()?;
                 self.line_index += 1;
                 let mut comment_lines = vec![];
@@ -238,7 +284,7 @@ impl<'a> Iterator for MarkdownIterator<'a> {
                     self.line_index += 1;
                 }
 
-                Some(MarkdownToken::CodeBlock {
+                Some(MarkdownToken::TestCodeBlock {
                     language: language.into(),
                     config_lines,
                     comment_lines,
@@ -294,6 +340,10 @@ pub(crate) fn extract_title(line: &str) -> Option<(String, String)> {
 /// On the first line ending in foo, this function returns the backticks and
 /// the language. On all other lines it returns None.
 pub(crate) fn extract_code_block_start(line: &str) -> Option<(&str, &str, &str)> {
+    if line == "```" {
+        return Some((line, "", ""));
+    }
+
     let mut language_start = None;
     for (index, ch) in line.chars().enumerate() {
         if let Some(language_start) = language_start {
@@ -339,6 +389,7 @@ mod tests {
     use crate::config::TestCaseConfig;
     use crate::config::TestCaseWait;
     use crate::expectation::tests::expectation_maker;
+    use crate::parsers::markdown::extract_code_block_start;
     use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
     use crate::parsers::parser::Parser;
     use crate::test_expectation;
@@ -760,5 +811,30 @@ world
             },],
             testcases
         );
+    }
+
+    #[test]
+    fn test_extract_code_block_start() {
+        assert_eq!(
+            Some(("```", "scrut", "")),
+            extract_code_block_start("```scrut")
+        );
+        assert_eq!(
+            Some(("```", "bash", "")),
+            extract_code_block_start("```bash")
+        );
+    }
+
+    #[test]
+    fn test_extract_code_block_start_with_config() {
+        assert_eq!(
+            Some(("```", "scrut", "{timeout: 3m 3s, wait: 4m 4s}")),
+            extract_code_block_start("```scrut {timeout: 3m 3s, wait: 4m 4s}")
+        );
+    }
+
+    #[test]
+    fn test_extract_code_block_start_without_language() {
+        assert_eq!(Some(("```", "", "")), extract_code_block_start("```"));
     }
 }

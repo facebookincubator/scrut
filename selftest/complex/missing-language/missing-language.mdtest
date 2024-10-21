@@ -1,0 +1,6 @@
+# Example code block without a language specified
+
+```
+$ echo foo
+foo
+```
