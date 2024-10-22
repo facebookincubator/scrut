@@ -30,6 +30,14 @@ lazy_static! {
 
 pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut"];
 
+#[derive(Debug, thiserror::Error)]
+pub enum MarkdownParserError {
+    #[error(
+        "Code block starting at line {line} is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block."
+    )]
+    MissingLanguageSpecifier { line: usize },
+}
+
 /// A parser for Cram `.t` files, which reads [`crate::testcase::TestCase`]s
 /// that are encoded in the form:
 ///
@@ -102,10 +110,9 @@ impl Parser for MarkdownParser {
                     lines: _,
                 } => {
                     if language.is_empty() {
-                        anyhow::bail!(
-                            "Code block starting at line {} is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block.",
-                            starting_line_number
-                        );
+                        anyhow::bail!(MarkdownParserError::MissingLanguageSpecifier {
+                            line: starting_line_number,
+                        });
                     }
                 }
                 MarkdownToken::TestCodeBlock {

@@ -6,7 +6,6 @@
  */
 
 use std::collections::BTreeMap;
-use std::fmt::Display;
 use std::io::stdout;
 use std::io::IsTerminal;
 use std::path::Path;
@@ -47,14 +46,9 @@ use crate::utils::make_executor;
 use crate::utils::FileParser;
 use crate::utils::TestEnvironment;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, thiserror::Error)]
+#[error("validation failed")]
 pub struct ValidationFailedError;
-
-impl Display for ValidationFailedError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "validation failed")
-    }
-}
 
 /// Run tests from files or directories
 #[derive(Debug, ClapParser)]

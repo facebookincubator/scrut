@@ -66,6 +66,7 @@ shell-escape = "0.1"
 strip-ansi-escapes = "0.1"
 subprocess = "0.2.7"
 tempfile = "3.8"
+thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unicode_categories = "0.1"

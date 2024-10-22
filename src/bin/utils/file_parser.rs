@@ -72,7 +72,7 @@ impl<'a> FileParser<'a> {
             let (parser_type, parser) = self.parser(&test_file_path, cram_compat)?;
             let (config, testcases) = parser.parse(&test_file_content).with_context(|| {
                 format!(
-                    "parse {} from {:?} with {} parser",
+                    "Failed to parse {} from {:?} with {} parser",
                     name, &test_file_path, parser_type
                 )
             })?;
