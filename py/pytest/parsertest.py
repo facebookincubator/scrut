@@ -54,9 +54,7 @@ unexpected exit code
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
-""".format(
-                expected_line=self._expect_line()
-            ),
+""".format(expected_line=self._expect_line()),
             error,
         )
 
@@ -79,8 +77,6 @@ Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 
 
 Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
-""".format(
-                expected_line=self._expect_line()
-            ),
+""".format(expected_line=self._expect_line()),
             error,
         )
