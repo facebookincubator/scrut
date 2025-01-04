@@ -1,0 +1,102 @@
+#!/usr/bin/env dotslash
+
+// @generated SignedSource<<e4f239d826a221637911423e8f66c842>>
+
+
+{
+    "name": "scrut",
+    "oncall": "oncall+srconveyor@xmail.facebook.com",
+    "build_info": {
+        "config_script": "devxf/srconveyor/schedules/schedule/scrut.materialized_JSON",
+        "commit_repo": "fbsource",
+        "commit_hash": "5345a1d0fbfaffdc73d93f4a607a7a9eec12ff34",
+        "commit_date": "2025-01-04 02:59:55 PST",
+        "commit_timestamp": 1735988395
+    },
+    "platforms": {
+        "linux/aarch64": {
+            "scheme": "cas",
+            "use_case_id": "srconveyor",
+            "digest": "234282a88c1a8cd2648b2a7871f02ef882f521b539902b83b0079a793abf32b4:3006728",
+            "extract": {
+                "path": "scrut",
+                "decompress": "tar.gz"
+            },
+            "metadata": {
+                "strip_binary": true,
+                "fully_qualified_target": "fbcode//clifoundation/scrut:scrut",
+                "flags": [
+                    "@fbcode//mode/opt-clang-size-thinlto",
+                    "-c=fbcode.arch=aarch64"
+                ]
+            }
+        },
+        "linux/x86_64": {
+            "scheme": "cas",
+            "use_case_id": "srconveyor",
+            "digest": "bf2d23b3038117855ce757ea3b0838ccd15401f68055d84b3c5718c8e7f05713:3128327",
+            "extract": {
+                "path": "scrut",
+                "decompress": "tar.gz"
+            },
+            "metadata": {
+                "strip_binary": true,
+                "fully_qualified_target": "fbcode//clifoundation/scrut:scrut",
+                "flags": [
+                    "@fbcode//mode/opt-clang-size-thinlto",
+                    "-c=fbcode.arch=x86_64"
+                ]
+            }
+        },
+        "macos/aarch64": {
+            "scheme": "cas",
+            "use_case_id": "srconveyor",
+            "digest": "45f433fe083b3966d0f39658b1be7abb8bbaf723e7b7c7934a55882333bfbb8f:2769383",
+            "extract": {
+                "path": "scrut",
+                "decompress": "tar.gz"
+            },
+            "metadata": {
+                "strip_binary": true,
+                "fully_qualified_target": "fbcode//clifoundation/scrut:scrut",
+                "flags": [
+                    "@fbcode//mode/opt-mac-arm64",
+                    "-c=fbcode.arch=aarch64"
+                ]
+            }
+        },
+        "macos/x86_64": {
+            "scheme": "cas",
+            "use_case_id": "srconveyor",
+            "digest": "c6dc6a3036b7a799791f2bc18f011ab2cbaf4e2438c359d9cb141339e6638c1a:2937987",
+            "extract": {
+                "path": "scrut",
+                "decompress": "tar.gz"
+            },
+            "metadata": {
+                "strip_binary": true,
+                "fully_qualified_target": "fbcode//clifoundation/scrut:scrut",
+                "flags": [
+                    "@fbcode//mode/opt-mac",
+                    "-c=fbcode.arch=x86_64"
+                ]
+            }
+        },
+        "windows": {
+            "scheme": "cas",
+            "use_case_id": "srconveyor",
+            "digest": "95c012ea362397ee6602ead47296b74e80434b6fbede035a8b11f8de0faee59b:3159849",
+            "extract": {
+                "path": "scrut.exe",
+                "decompress": "tar.gz"
+            },
+            "metadata": {
+                "strip_binary": true,
+                "fully_qualified_target": "fbcode//clifoundation/scrut:scrut",
+                "flags": [
+                    "@fbcode//mode/opt-win"
+                ]
+            }
+        }
+    }
+}
