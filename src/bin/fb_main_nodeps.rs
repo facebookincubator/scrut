@@ -17,7 +17,7 @@ use fb_main_common::main_impl;
 use fb_main_common::Args;
 use fbinit::FacebookInit;
 
-#[cli::main("scrut", usage_logging = false)]
+#[cli::main("scrut", usage_logging(enabled = false))]
 pub fn main(fb: FacebookInit, args: Args) -> Result<ExitCode> {
     main_impl(fb, args)
 }
