@@ -1,6 +1,6 @@
 #!/usr/bin/env dotslash
 
-// @generated SignedSource<<fa9c39c0f5b646b6b858d5d585b585f2>>
+// @generated SignedSource<<e290b43d3cb26302480c35ec9f8a8014>>
 
 
 {
@@ -9,15 +9,15 @@
     "build_info": {
         "config_script": "devxf/srconveyor/schedules/schedule/scrut.materialized_JSON",
         "commit_repo": "fbsource",
-        "commit_hash": "4c1a701607c92143d36b0752dea755ccfc1d0124",
-        "commit_date": "2025-01-11 02:59:26 PST",
-        "commit_timestamp": 1736593166
+        "commit_hash": "4a2e9a5acdc7a5a97bdf0e6dc4266403075969f7",
+        "commit_date": "2025-01-13 03:00:09 PST",
+        "commit_timestamp": 1736766009
     },
     "platforms": {
         "linux/aarch64": {
             "scheme": "cas",
             "use_case_id": "srconveyor",
-            "digest": "c29f8a7fc5b630d6a1dc65edd951ab5dae621905e6b32ff1346e113c9d83b6ee:3027944",
+            "digest": "99b8fec50ff951cf6ae69b5cf8131060c6c3d5232f704be13166f930cb709420:3028015",
             "extract": {
                 "path": "scrut",
                 "decompress": "tar.gz"
@@ -34,7 +34,7 @@
         "linux/x86_64": {
             "scheme": "cas",
             "use_case_id": "srconveyor",
-            "digest": "dc4001a1752c480ab7495b29ce82e5a2d872b42a9f76a7386d4633a1e183f45a:3156738",
+            "digest": "13320464ee7444ade880eea35331c3642a35564f524904cb90e8d35e4c1da5d8:3156678",
             "extract": {
                 "path": "scrut",
                 "decompress": "tar.gz"
@@ -51,7 +51,7 @@
         "macos/aarch64": {
             "scheme": "cas",
             "use_case_id": "srconveyor",
-            "digest": "a76101287b8d05dfec27c5502a0d57ffdbe8ab9f7bb88aa9060f4d2464c94f37:2794033",
+            "digest": "cab3b166a2ed6104d378c3f55af3fc52d5e6e533181ea2d9ff84bab7c269464d:2794031",
             "extract": {
                 "path": "scrut",
                 "decompress": "tar.gz"
@@ -68,7 +68,7 @@
         "macos/x86_64": {
             "scheme": "cas",
             "use_case_id": "srconveyor",
-            "digest": "ad3627695e03fab41e6034c85bbf5b49bbf9cfb4ed49795623227090ae243943:2962147",
+            "digest": "776a853b4012bb3a2ad9ea0849aefb399c77c64242389b057b9d4939477b5b39:2962099",
             "extract": {
                 "path": "scrut",
                 "decompress": "tar.gz"
@@ -85,7 +85,7 @@
         "windows": {
             "scheme": "cas",
             "use_case_id": "srconveyor",
-            "digest": "cb5e1b3ea0880aaa57ab2d79a4f4a72f32e668d90a63bb061ca18a9ca560b511:3179099",
+            "digest": "37feccdf831f4673ac4f150dbe53111e856df0b7c9fc8b77fa425e052bf82006:3179112",
             "extract": {
                 "path": "scrut.exe",
                 "decompress": "tar.gz"
