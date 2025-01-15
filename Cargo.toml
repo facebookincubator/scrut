@@ -80,3 +80,6 @@ vergen = { version = "7", features = ["git"] }
 assert_cmd = "2.0"
 insta = {version = "1.21.1", features = ["json"] }
 predicates = "2.1"
+
+[profile.release]
+strip = true

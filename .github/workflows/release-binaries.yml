@@ -1,0 +1,86 @@
+# Build and release binaries for Linux, MacOS and Windows for common architectures via Github Actions
+name: Build and Release Binaries
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # linux
+          - build: linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - build: linux-aarch64
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-musl
+
+          # macos
+          - build: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+          - build: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+
+          # windows
+          - build: windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-gnu
+
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get Version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build Binary
+        run: cargo build --release
+
+      - name: Build Archive
+        shell: bash
+        run: |
+          binary_name="scrut"
+
+          dirname="$binary_name-${{ env.VERSION }}-${{ matrix.target }}"
+          mkdir -p "$dirname"
+          if [ "${{ matrix.os }}" = "windows-2022" ]; then
+            mv "target/release/$binary_name.exe" "$dirname"
+          else
+            mv "target/release/$binary_name" "$dirname"
+          fi
+
+          if [ "${{ matrix.os }}" = "windows-2022" ]; then
+            7z a "$dirname.zip" "$dirname"
+            echo "ASSET=$dirname.zip" >> $GITHUB_ENV
+          else
+            tar --use-compress-program zstdmt -cf "$dirname.tar.zst" "$dirname"
+            echo "ASSET=$dirname.tar.zst" >> $GITHUB_ENV
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET }}
