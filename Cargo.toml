@@ -1,6 +1,6 @@
 [package]
 name = "scrut"
-version = "0.2.0"
+version = "0.1.0"
 edition = "2021"
 autobins = false
 description = "A simple and powerful test framework for CLI applications"
