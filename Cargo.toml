@@ -1,10 +1,10 @@
 [package]
 name = "scrut"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 autobins = false
 description = "A simple and powerful test framework for CLI applications"
-license-file = "LICENSE"
+license = "MIT"
 repository = "https://github.com/facebookincubator/scrut"
 readme = "README.md"
 categories = [
