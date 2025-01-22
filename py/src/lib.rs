@@ -46,7 +46,7 @@ lazy_static! {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn pyscrut(_py: Python, m: &PyModule) -> PyResult<()> {
+fn pyscrut(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyOutput>()?;
     m.add_class::<PyTestCase>()?;
     m.add_class::<PyTestCaseWait>()?;
