@@ -478,8 +478,7 @@ mod tests {
             absolute_line_numbers: bool,
             location: Option<String>,
         }
-        let tests = vec![
-            Test {
+        let tests = [Test {
                 absolute_line_numbers: false,
                 location: None,
             },
@@ -494,8 +493,7 @@ mod tests {
             Test {
                 absolute_line_numbers: true,
                 location: Some("path/location.md".into()),
-            },
-        ];
+            }];
         tests.iter().for_each(|test| {
             let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
                 max_surrounding_lines: 0,

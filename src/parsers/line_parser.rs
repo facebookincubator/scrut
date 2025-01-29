@@ -187,7 +187,7 @@ pub(super) fn extract_exit_code(line: &str) -> Option<i32> {
                 .nth(1)
                 .and_then(|matching| matching.map(|matching| matching.as_str()))
         })
-        .and_then(|s| s.parse::<i32>().map_or_else(|_| None, Some))
+        .and_then(|s| s.parse::<i32>().ok())
 }
 
 /// Lines starting with "#" are considered comments

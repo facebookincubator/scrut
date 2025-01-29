@@ -192,7 +192,7 @@ struct TestFileEnvironment<'a> {
     cram_compat: bool,
 }
 
-impl<'a> TestFileEnvironment<'a> {
+impl TestFileEnvironment<'_> {
     fn build_work_directory(&mut self) -> Result<PathBuf> {
         let test_work_directory: PathBuf = match &self.test_environment.work_directory {
             // if within temporary directory: create unique directory in file
@@ -212,7 +212,7 @@ impl<'a> TestFileEnvironment<'a> {
     }
 
     fn build_env_vars(&self) -> Result<Vec<(String, String)>> {
-        let tmp = String::try_from(&self.test_environment.tmp_directory)?;
+        let tmp = String::from(&self.test_environment.tmp_directory);
         let mut env_vars = vec![
             (
                 "TESTDIR".to_string(),
@@ -238,7 +238,7 @@ impl<'a> TestFileEnvironment<'a> {
         if self.cram_compat {
             env_vars.push((
                 "CRAMTMP".to_string(),
-                String::try_from(&self.test_environment.work_directory)?,
+                String::from(&self.test_environment.work_directory),
             ));
             env_vars.push(("TMP".to_string(), tmp.clone()));
             env_vars.push(("TEMP".to_string(), tmp));
@@ -328,9 +328,8 @@ mod tests {
             "temporary tmp directory is user-provided"
         );
         assert!(
-            String::try_from(&test_env.tmp_directory)
-                .expect("tmp")
-                .starts_with(&String::try_from(&test_env.work_directory).expect("work")),
+            String::from(&test_env.tmp_directory)
+                .starts_with(&String::from(&test_env.work_directory)),
             "temporary directory in created temporary work directory"
         )
     }
@@ -352,8 +351,7 @@ mod tests {
             "temporary tmp directory is ephemeral"
         );
         assert!(
-            String::try_from(&test_env.tmp_directory)
-                .expect("tmp")
+            String::from(&test_env.tmp_directory)
                 .starts_with(&sys_temp_dir.to_string_lossy().to_string()),
             "temporary directory in provided work directory"
         )
@@ -371,8 +369,8 @@ mod tests {
             matches!(test_env.tmp_directory, EnvironmentDirectory::Kept(_)),
             "temporary tmp directory is kept"
         );
-        let tmp_directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
-        let work_directory = String::try_from(&test_env.work_directory).expect("work_directory");
+        let tmp_directory = String::from(&test_env.tmp_directory);
+        let work_directory = String::from(&test_env.work_directory);
         assert!(
             !&tmp_directory.starts_with(&work_directory),
             "tmp directory is not under work directory"
@@ -387,7 +385,7 @@ mod tests {
     fn temporary_work_directory_is_created_and_cleaned_up() {
         let test_env =
             TestEnvironment::new(Path::new("bash"), None, false).expect("setup test environment");
-        let directory = String::try_from(&test_env.work_directory).expect("work directory");
+        let directory = String::from(&test_env.work_directory);
         assert!(
             Path::new(&directory).exists(),
             "temporary work directory is created"
@@ -404,7 +402,7 @@ mod tests {
         let sys_temp_dir = env::temp_dir();
         let test_env = TestEnvironment::new(Path::new("bash"), Some(&sys_temp_dir), false)
             .expect("setup test environment");
-        let directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
+        let directory = String::from(&test_env.tmp_directory);
         assert!(
             Path::new(&directory).exists(),
             "temporary tmp directory is created"
@@ -420,8 +418,8 @@ mod tests {
     fn kept_temporary_directories_are_created_but_not_cleaned_up() {
         let test_env =
             TestEnvironment::new(Path::new("bash"), None, true).expect("setup test environment");
-        let tmp_directory = String::try_from(&test_env.tmp_directory).expect("tmp_directory");
-        let work_directory = String::try_from(&test_env.work_directory).expect("work_directory");
+        let tmp_directory = String::from(&test_env.tmp_directory);
+        let work_directory = String::from(&test_env.work_directory);
         assert!(
             Path::new(&tmp_directory).exists(),
             "temporary tmp directory is created"
@@ -489,9 +487,7 @@ mod tests {
 
         for (idx, (has_provided_work_dir, test_env, cram_compat)) in tests.iter_mut().enumerate() {
             let test_file_name = format!("some-test-file-{}.md", idx + 1);
-            let test_file_path = PathBuf::try_from(&test_env.work_directory)
-                .with_context(|| format!("work_directory {:?}", test_env))
-                .unwrap()
+            let test_file_path = PathBuf::from(&test_env.work_directory)
                 .join(&test_file_name);
             /* fs::File::create(&test_file_path)
             .with_context(|| format!("create dummy test file {:?}", test_env))

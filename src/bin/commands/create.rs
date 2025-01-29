@@ -81,7 +81,7 @@ impl Args {
 
         // setup test environment ..
         let test_file_path =
-            PathBuf::try_from(&test_environment.work_directory)?.join("testfile.tmp");
+            PathBuf::from(&test_environment.work_directory).join("testfile.tmp");
         let (test_work_directory, environment) =
             test_environment.init_test_file(&test_file_path, self.format == ParserType::Cram)?;
 

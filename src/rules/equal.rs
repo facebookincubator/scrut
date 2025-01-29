@@ -62,10 +62,8 @@ mod tests {
 
     #[test]
     fn test_rule_matches() {
-        let tests = vec![
-            (false, "foo", "foo".to_string()),
-            (true, "foo", "foo".assure_newline().to_string()),
-        ];
+        let tests = [(false, "foo", "foo".to_string()),
+            (true, "foo", "foo".assure_newline().to_string())];
 
         tests.iter().for_each(|(expect, expression, line)| {
             let rule = EqualRule::make(expression)

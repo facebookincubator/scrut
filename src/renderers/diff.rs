@@ -276,7 +276,7 @@ struct DiffHeader<'a> {
     kind: DiffHeaderKind,
 }
 
-impl<'a> Display for DiffHeader<'a> {
+impl Display for DiffHeader<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
@@ -418,8 +418,7 @@ mod tests {
             ..Default::default()
         };
 
-        let tests = vec![
-            (
+        let tests = [(
                 "missing",
                 Diff::new(vec![DiffLine::UnmatchedExpectation {
                     index: 1,
@@ -450,8 +449,7 @@ mod tests {
                         ],
                     },
                 ]),
-            ),
-        ];
+            )];
 
         [ParserType::Cram, ParserType::Markdown]
             .iter()
@@ -495,8 +493,7 @@ mod tests {
             ..Default::default()
         };
 
-        let tests = vec![
-            (
+        let tests = [(
                 "missing",
                 Diff::new(vec![DiffLine::UnmatchedExpectation {
                     index: 1,
@@ -527,8 +524,7 @@ mod tests {
                         ],
                     },
                 ]),
-            ),
-        ];
+            )];
 
         [ParserType::Cram, ParserType::Markdown]
             .iter()

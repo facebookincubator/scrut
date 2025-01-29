@@ -240,7 +240,7 @@ impl Args {
 
                     // .. and create an updated content (either from actual update or conversion)
                     let outcomes = &outcomes.iter().collect::<Vec<_>>();
-                    let is_conversion = self.convert.map_or(false, |c| c != test.parser_type);
+                    let is_conversion = self.convert.is_some_and(|c| c != test.parser_type);
                     let (updated, output_type) = if is_conversion {
                         self.convert_test(&test, outcomes)
                     } else {
