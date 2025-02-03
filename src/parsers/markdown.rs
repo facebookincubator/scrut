@@ -154,7 +154,7 @@ impl Parser for MarkdownParser {
 #[derive(Debug)]
 pub(crate) enum MarkdownToken {
     /// An arbitrary line; basically any line of markdown we do not care about
-    Line(usize, String),
+    Line(#[allow(dead_code)] usize, String),
 
     /// Raw configuration that is prepending the document
     DocumentConfig(Vec<(usize, String)>),
@@ -214,7 +214,7 @@ impl<'a> MarkdownIterator<'a> {
     }
 }
 
-impl<'a> Iterator for MarkdownIterator<'a> {
+impl Iterator for MarkdownIterator<'_> {
     type Item = MarkdownToken;
 
     fn next(&mut self) -> Option<Self::Item> {

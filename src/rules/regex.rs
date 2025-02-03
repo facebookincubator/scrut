@@ -68,8 +68,10 @@ lazy_static! {
 /// 1. normal use of quantifiers: `something{3,6}` < denotes that the last `g` occurs 3-6 times
 /// 2. escaped use in strings: `hello\{world\}`
 /// 3. misuse, unescaped in strings: `hello{world}`
+///
 /// The `regex` crate implementation of regular expressions is strict and would
 /// not allow for case (3) and throw an error.
+///
 /// The following implementation is a best effort conversion from (3) to (2).
 ///
 /// Reasons:
@@ -112,6 +114,7 @@ pub(super) fn escape_misused_repetition_quantifier(expression: &str) -> String {
 /// 1. normal use: `[a-z]` or `[abc]`
 /// 2. normal use with escaped special characters: `[\[\]]`
 /// 3. misuse, lacking escapes of special characters: `[[]]`
+///
 /// The following implementation is a best effort conversion from (3) to (2).
 ///
 /// Reasons:
@@ -172,6 +175,7 @@ pub(super) fn escape_misused_character_class(expression: &str) -> String {
 /// Compensate for use of unnecessary / misused escape:
 /// 1. required escape: `foo \[\]`
 /// 2. not required escape: `foo\_bar`
+///
 /// The following implementation is a best effort removing all unnecessary escapes
 ///
 /// Reasons:

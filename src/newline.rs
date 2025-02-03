@@ -132,7 +132,7 @@ fn split_at_newline(text: &[u8]) -> Vec<&[u8]> {
     lines
 }
 
-const CRLF: &[u8] = &[b'\r', b'\n'];
+const CRLF: &[u8] = b"\r\n";
 
 /// Replaces all CRLF with LF
 pub fn replace_crlf(bytes: &[u8]) -> Cow<'_, [u8]> {
@@ -170,7 +170,6 @@ macro_rules! bformatln {
     }};
 }
 
-///
 #[macro_export]
 macro_rules! blines {
     ($arg:tt) => {{

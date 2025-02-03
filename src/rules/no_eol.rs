@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_rule_matches() {
-        let tests = vec![
+        let tests = [
             (true, "foo", "foo".to_string()),
             (false, "foo", "foo".assure_newline().to_string()),
         ];

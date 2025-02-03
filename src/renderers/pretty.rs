@@ -478,7 +478,7 @@ mod tests {
             absolute_line_numbers: bool,
             location: Option<String>,
         }
-        let tests = vec![
+        let tests = [
             Test {
                 absolute_line_numbers: false,
                 location: None,
