@@ -1,0 +1,28 @@
+{
+    "outputs": {
+        "scrut": {
+            "platforms": {
+                "macos-x86_64": {
+                    "regex": "^scrut-.*-macos-x86_64",
+                    "path": "scrut-macos-x86_64/scrut"
+                },
+                "macos-aarch64": {
+                    "regex": "^scrut-.*-macos-aarch64",
+                    "path": "scrut-macos-aarch64/scrut"
+                },
+                "linux-x86_64": {
+                    "regex": "^scrut-.*-linux-x86_64",
+                    "path": "scrut-linux-x86_64/scrut"
+                },
+                "linux-aarch64": {
+                    "regex": "^scrut-.*-linux-aarch64",
+                    "path": "scrut-linux-aarch64/scrut"
+                },
+                "windows-x86_64": {
+                    "regex": "^scrut-.*-windows-x86_64",
+                    "path": "scrut-windows-x86_64/scrut.exe"
+                }
+            }
+        }
+    }
+}

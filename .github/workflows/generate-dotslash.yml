@@ -1,0 +1,30 @@
+# See: https://dotslash-cli.com/docs/github/
+name: Generate DotSlash files
+
+on:
+  workflow_run:
+    # These must match the names of the workflows that publish
+    # artifacts to your GitHub release.
+    workflows: ["Build and Release Binaries"]
+    types:
+      - completed
+  workflow_dispatch: {}
+
+jobs:
+  generate-dotslash-files:
+    name: Generating and uploading DotSlash files
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: facebook/dotslash-publish-release@v2
+        # This is necessary because the action uses
+        # `gh release upload` to publish the generated DotSlash file(s)
+        # as part of the release.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Additional file that lives in your repo that defines
+          # how your DotSlash file(s) should be generated.
+          config: .github/workflows/dotslash-config.json
+          # Tag for the release to to target.
+          tag: ${{ github.event.workflow_run.head_branch }}
