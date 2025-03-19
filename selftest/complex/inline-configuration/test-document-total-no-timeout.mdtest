@@ -5,22 +5,23 @@ Run howeverlong
 ## Run the first test
 
 ```scrut
-$ sleep 0.5 && echo Test1
+$ echo TestA && sleep 0.5 && echo Test1
+TestA
 Test1
 ```
 
 ## Run the second test
 
 ```scrut
-$ sleep 0.5 && echo Test2
+$ echo TestB && sleep 0.5 && echo Test2
+TestB
 Test2
 ```
 
 ## Run the third test
 
 ```scrut
-$ sleep 0.5 && echo Test3
+$ echo TestC && sleep 0.5 && echo Test3
+TestC
 Test3
 ```
-
-

@@ -138,7 +138,7 @@ impl Executor for StatefulExecutor {
             let context = context.to_owned();
 
             trace!("effective testcase configuration: {}", &testcase.config);
-            let output = runner_gen(state_directory.path())
+            let mut output = runner_gen(state_directory.path())
                 .run(&name, &testcase, context)
                 .map_err(|err| ExecutionError::failed(index, err))?;
             trace!("{output:?}");
@@ -164,11 +164,20 @@ impl Executor for StatefulExecutor {
                 ExitStatus::Timeout(_) => {
                     // .. of the whole context? (global, timeout over all executions)
                     if is_global_timeout {
-                        return Err(ExecutionError::Timeout(ExecutionTimeout::Total));
+                        // ensure the original timeout is set here, because the global timeout is
+                        // per all tests in one document and the per-testcase-set timeout is the
+                        // remaining timeout, not the total.
+                        output.exit_code = ExitStatus::Timeout(timeout_duration);
+                        outputs.push(output);
+                        return Err(ExecutionError::Timeout(ExecutionTimeout::Total, outputs));
                     }
 
                     // .. or of only this particular execution
-                    return Err(ExecutionError::Timeout(ExecutionTimeout::Index(index)));
+                    outputs.push(output);
+                    return Err(ExecutionError::Timeout(
+                        ExecutionTimeout::Index(index),
+                        outputs,
+                    ));
                 }
 
                 // user triggered skip ends all execution
@@ -223,6 +232,7 @@ mod tests {
     use crate::executors::executor::tests::standard_output_test_suite;
     use crate::executors::DEFAULT_SHELL;
     use crate::output::ExitStatus;
+    use crate::output::Output;
     use crate::testcase::TestCase;
 
     #[test]
@@ -241,19 +251,28 @@ mod tests {
 
     #[test]
     fn test_executor_respects_timeout() {
+        // CAREFUL: Do not reduce sleep and timeout values! Windows execution
+        // comes with a significatn overhead in startup time. These values
+        // are chosen to ensure the tests do not flake in Windows.
         let tests = vec![
             (
-                "Total timeout when exceeding single execution",
+                "Execution aborted when single test-case execution time exceeds per-document timeout",
                 vec![
                     TestCase::from_expression("sleep 1.0 && echo OK1"),
                     TestCase::from_expression("sleep 1.0 && echo OK2"),
                     TestCase::from_expression("sleep 1.0 && echo OK3"),
                 ],
                 Some(Duration::from_millis(150)),
-                Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Total,
+                    vec![Output {
+                        exit_code: ExitStatus::Timeout(Duration::from_millis(150)),
+                        ..Default::default()
+                    }],
+                )),
             ),
             (
-                "Total timeout when exceeding per-execution",
+                "Execution aborted when test-case execution time exceeds per-testcase timeout",
                 vec![
                     TestCase::from_expression("sleep 0.5 && echo OK1"),
                     TestCase::from_expression_timed(
@@ -263,33 +282,52 @@ mod tests {
                     TestCase::from_expression("sleep 0.5 && echo OK3"),
                 ],
                 Some(Duration::from_millis(1200)),
-                Err(ExecutionError::Timeout(ExecutionTimeout::Index(1))),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Index(1),
+                    vec![
+                        Output {
+                            exit_code: ExitStatus::SUCCESS,
+                            stdout: "OK1\n".into(),
+                            ..Default::default()
+                        },
+                        Output {
+                            exit_code: ExitStatus::Timeout(Duration::from_millis(300)),
+                            ..Default::default()
+                        },
+                    ],
+                )),
             ),
             (
-                "Total timeout exceed accumulative",
+                "Execution aborted when cumulative test-case execution time exceeds per-document timeout",
+                vec![
+                    TestCase::from_expression("sleep 1 && echo OK1"),
+                    TestCase::from_expression("sleep 1 && echo OK2"),
+                    TestCase::from_expression("sleep 1 && echo OK3"),
+                ],
+                Some(Duration::from_millis(1500)),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Total,
+                    vec![
+                        Output {
+                            exit_code: ExitStatus::SUCCESS,
+                            stdout: "OK1\n".into(),
+                            ..Default::default()
+                        },
+                        Output {
+                            exit_code: ExitStatus::Timeout(Duration::from_millis(1500)),
+                            ..Default::default()
+                        },
+                    ],
+                )),
+            ),
+            (
+                "Execution not aborted when no timeout is triggered",
                 vec![
                     TestCase::from_expression("sleep 0.1 && echo OK1"),
                     TestCase::from_expression("sleep 0.1 && echo OK2"),
                     TestCase::from_expression("sleep 0.1 && echo OK3"),
                 ],
-                Some(Duration::from_millis(150)),
-                Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
-            ),
-            (
-                "Execution within timeout",
-                vec![
-                    TestCase::from_expression("sleep 0.1 && echo OK1"),
-                    TestCase::from_expression("sleep 0.1 && echo OK2"),
-                    TestCase::from_expression("sleep 0.1 && echo OK3"),
-                ],
-                // windows execution takes a long time to start up, test intends
-                // to assert that timeout > actual execution does not return
-                // a timeout error -> long timeout is fine
-                Some(Duration::from_millis(if cfg!(windows) {
-                    2000
-                } else {
-                    1000
-                })),
+                Some(Duration::from_secs(2)),
                 Ok(vec![
                     ("OK1\n", "").into(),
                     ("OK2\n", "").into(),
@@ -323,7 +361,13 @@ mod tests {
                     Some(Duration::from_millis(50)),
                 )],
                 None,
-                Err(ExecutionError::Timeout(ExecutionTimeout::Index(0))),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Index(0),
+                    vec![Output {
+                        exit_code: ExitStatus::Timeout(Duration::from_millis(50)),
+                        ..Default::default()
+                    }],
+                )),
             ),
             (
                 "Timeout affects execution in isolation",
@@ -346,7 +390,20 @@ mod tests {
                     ),
                 ],
                 None,
-                Err(ExecutionError::Timeout(ExecutionTimeout::Index(1))),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Index(1),
+                    vec![
+                        Output {
+                            exit_code: ExitStatus::SUCCESS,
+                            stdout: "OK1\n".into(),
+                            ..Default::default()
+                        },
+                        Output {
+                            exit_code: ExitStatus::Timeout(Duration::from_millis(10)),
+                            ..Default::default()
+                        },
+                    ],
+                )),
             ),
         ];
 

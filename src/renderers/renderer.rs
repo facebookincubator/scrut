@@ -27,6 +27,7 @@ pub(super) trait ErrorRenderer: Renderer {
                 self.render_invalid_exit_code(outcome, *actual, *expected)
             }
             TestCaseError::InternalError(err) => self.render_delegated_error(outcome, err),
+            TestCaseError::Timeout => self.render_timeout(outcome),
             TestCaseError::Skipped => self.render_skipped(outcome),
         }
     }
@@ -41,6 +42,8 @@ pub(super) trait ErrorRenderer: Renderer {
     fn render_delegated_error(&self, outcome: &Outcome, err: &anyhow::Error) -> Result<String>;
 
     fn render_malformed_output(&self, outcome: &Outcome, diff: &Diff) -> Result<String>;
+
+    fn render_timeout(&self, outcome: &Outcome) -> Result<String>;
 
     fn render_skipped(&self, outcome: &Outcome) -> Result<String>;
 }

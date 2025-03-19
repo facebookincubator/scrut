@@ -112,6 +112,9 @@ impl OutcomeTestGenerator for Outcome {
                 TestCaseError::InternalError(err) => {
                     bail!("cannot generate testcase from internal error: {}", err)
                 }
+                TestCaseError::Timeout => {
+                    bail!("cannot generate timed out testcase")
+                }
                 TestCaseError::Skipped => {
                     bail!("cannot generate skipped testcase")
                 }

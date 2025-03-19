@@ -55,7 +55,7 @@ pub enum ExecutionError {
 
     /// Returned if either a single [`crate::testcase::TestCase`] execution timed
     /// out or if all are (see [`ExecutionTimeout`])
-    Timeout(ExecutionTimeout),
+    Timeout(ExecutionTimeout, Vec<Output>),
 
     /// Returned if a specific [`crate::testcase::TestCase`] execution is
     /// intentionally skipped by the user.
@@ -120,7 +120,7 @@ impl Display for ExecutionError {
                 }
                 Ok(())
             }
-            ExecutionError::Timeout(timeout) => match timeout {
+            ExecutionError::Timeout(timeout, _output) => match timeout {
                 ExecutionTimeout::Index(idx) => write!(
                     f,
                     "timeout in executing shell expression of test {}",

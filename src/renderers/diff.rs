@@ -142,6 +142,10 @@ impl ErrorRenderer for DiffRenderer {
         UnifiedDiff::default().render(outcome, diff)
     }
 
+    fn render_timeout(&self, _outcome: &Outcome) -> Result<String> {
+        Ok("".into())
+    }
+
     fn render_skipped(&self, _outcome: &Outcome) -> Result<String> {
         Ok("".into())
     }

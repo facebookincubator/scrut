@@ -133,7 +133,6 @@ impl Args {
         )?;
 
         // initiate outputs
-        let mut has_failed = false;
         let mut outcomes = vec![];
         let (mut count_success, mut count_skipped, mut count_failed, mut count_detached) =
             (0, 0, 0, 0);
@@ -227,6 +226,9 @@ impl Args {
             // get the appropriate or requested executor
             let executor = make_executor(&test_environment.shell, cram_compat)?;
 
+            // determine output escaping
+            let escaping = self.global.output_escaping(Some(test.parser_type));
+
             // run all testcases from the file and gather output ..
             let outputs = executor.execute_all(
                 testcases.as_slice(),
@@ -239,9 +241,9 @@ impl Args {
                     .context("failed to build execution context")?,
             );
             match outputs {
-                // test execution failed
+                // test execution failed ...
                 Err(err) => match err {
-                    // .. because test was skipped ..
+                    // ... because test was skipped
                     ExecutionError::Skipped(_) => {
                         count_skipped += 1;
                         debug!("Received skip code -> skipping tests");
@@ -249,16 +251,64 @@ impl Args {
                             location: Some(test.path.display().to_string()),
                             testcase: testcase.clone(),
                             output: ("", "", None).into(),
-                            escaping: self.global.output_escaping(Some(test.parser_type)),
+                            escaping: escaping.clone(),
                             format: test.parser_type,
                             result: Err(TestCaseError::Skipped),
                         }));
                         continue;
                     }
 
-                    // TODO: continue on ExecutionError::Timeout, but warn! or error!
+                    // ... because test timed out
+                    ExecutionError::Timeout(_timeout, outputs) => {
+                        // append outcomes for each testcase that was executed (i.e. all testcase
+                        // until and including the one that timed out)
+                        outcomes.extend(outputs.iter().zip(testcases.iter()).map(
+                            |(output, testcase)| {
+                                let result = if matches!(output.exit_code, ExitStatus::Timeout(_)) {
+                                    count_failed += 1;
+                                    Err(TestCaseError::Timeout)
+                                } else {
+                                    let result = testcase.validate(output);
+                                    if result.is_err() {
+                                        count_failed += 1;
+                                        result
+                                    } else {
+                                        count_success += 1;
+                                        Ok(())
+                                    }
+                                };
+                                Outcome {
+                                    location: Some(test.path.display().to_string()),
+                                    testcase: (*testcase).clone(),
+                                    output: output.clone(),
+                                    escaping: escaping.clone(),
+                                    format: test.parser_type,
+                                    result,
+                                }
+                            },
+                        ));
 
-                    // because of a final error
+                        // append outcomes for each testcase that was not executed (i.e. all
+                        // testcases after the one that timed out)
+                        let missing = testcases.len() - outputs.len();
+                        if missing > 0 {
+                            outcomes.extend(testcases.into_iter().skip(outputs.len()).map(
+                                |testcase| Outcome {
+                                    location: Some(test.path.display().to_string()),
+                                    testcase: testcase.clone(),
+                                    output: ("", "", None).into(),
+                                    escaping: escaping.clone(),
+                                    format: test.parser_type,
+                                    result: Err(TestCaseError::Skipped),
+                                },
+                            ));
+
+                            count_skipped += missing;
+                        }
+                        continue;
+                    }
+
+                    // ... because of a final error
                     _ => bail!("failing in {:?}: {}", test.path, err),
                 },
 
@@ -279,7 +329,6 @@ impl Args {
                         let result = testcase.validate(&output);
                         if result.is_err() {
                             count_failed += 1;
-                            has_failed = true
                         } else {
                             count_success += 1;
                         }
@@ -287,7 +336,7 @@ impl Args {
                             location: Some(test.path.display().to_string()),
                             testcase: testcase.clone(),
                             output,
-                            escaping: self.global.output_escaping(Some(test.parser_type)),
+                            escaping: escaping.clone(),
                             format: test.parser_type,
                             result,
                         });
@@ -314,6 +363,7 @@ impl Args {
             ScrutRenderer::Json => Box::<JsonRenderer>::default(),
             ScrutRenderer::Yaml => Box::<YamlRenderer>::default(),
         };
+
         info!(
             success = count_success,
             skipped = count_skipped,
@@ -322,7 +372,7 @@ impl Args {
         );
         print!("{}", renderer.render(&outcomes.iter().collect::<Vec<_>>())?);
 
-        if has_failed {
+        if count_failed > 0 {
             Err(anyhow!(ValidationFailedError))
         } else {
             info!("Validation succeeded");

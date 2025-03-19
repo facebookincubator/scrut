@@ -33,6 +33,7 @@ use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
 use crate::output::ExitStatus;
 use crate::output::Output;
+use crate::output::OutputStream;
 use crate::testcase::TestCase;
 
 // Amount of random characters that will be appended to divider string
@@ -92,7 +93,16 @@ impl Executor for BashScriptExecutor {
             ExitStatus::Code(code) if code == skip_document_code => {
                 return Err(ExecutionError::Skipped(0));
             }
-            ExitStatus::Timeout(_) => return Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
+            ExitStatus::Timeout(_) => {
+                return Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Total,
+                    vec![Output {
+                        exit_code: output.exit_code,
+                        stderr: remove_dividers_from_output(&output.stderr),
+                        stdout: remove_dividers_from_output(&output.stdout),
+                    }],
+                ));
+            }
             ExitStatus::Unknown => {
                 return Err(ExecutionError::aborted(
                     anyhow!("execution failed"),
@@ -220,6 +230,19 @@ fn compile_testcase(testcases: &[&TestCase], context: &ExecutionContext) -> Resu
         config,
         ..Default::default()
     })
+}
+
+/// Returns output stream that does not contain any line that starts with a divider prefix
+fn remove_dividers_from_output(output: &OutputStream) -> OutputStream {
+    let text: &[u8] = &output.to_bytes();
+    let mut updated = vec![];
+    for line in text.split_at_newline() {
+        if line.starts_with(DIVIDER_PREFIX_BYTES) {
+            continue;
+        }
+        updated.push(line);
+    }
+    updated.join(&b"\n"[..]).into()
 }
 
 /// Compiles all shell expressions of a list of [`TestCase`]s into a single bash script
@@ -414,6 +437,7 @@ mod tests {
     use crate::executors::executor::tests::standard_output_test_suite;
     use crate::formatln;
     use crate::output::ExitStatus;
+    use crate::output::Output;
     use crate::testcase::TestCase;
 
     #[test]
@@ -428,28 +452,51 @@ mod tests {
 
     #[test]
     fn test_executor_respects_timeout() {
+        // CAREFUL: Do not reduce sleep and timeout values! Windows execution
+        // comes with a significatn overhead in startup time. These values
+        // are chosen to ensure the tests do not flake in Windows.
         let tests = vec![
             (
-                "Total timeout is respected",
+                "Execution aborted when single test-case execution time exceeds per-document timeout",
                 vec![
                     TestCase::from_expression("sleep 1.0 && echo OK1"),
                     TestCase::from_expression("sleep 1.0 && echo OK2"),
                     TestCase::from_expression("sleep 1.0 && echo OK3"),
                 ],
                 Some(Duration::from_millis(150)),
-                Err(ExecutionError::Timeout(ExecutionTimeout::Total)),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Total,
+                    vec![Output {
+                        exit_code: ExitStatus::Timeout(Duration::from_millis(150)),
+                        ..Default::default()
+                    }],
+                )),
             ),
             (
-                "Execution within timeout",
+                "Execution aborted when cumulative test-case execution time exceeds per-document timeout",
+                vec![
+                    TestCase::from_expression("sleep 1 && echo OK1"),
+                    TestCase::from_expression("sleep 1 && echo OK2"),
+                    TestCase::from_expression("sleep 1 && echo OK3"),
+                ],
+                Some(Duration::from_millis(1500)),
+                Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Total,
+                    vec![Output {
+                        exit_code: ExitStatus::Timeout(Duration::from_millis(1500)),
+                        stdout: "OK1\n".into(),
+                        ..Default::default()
+                    }],
+                )),
+            ),
+            (
+                "Execution not aborted when no timeout is triggered",
                 vec![
                     TestCase::from_expression("sleep 0.1 && echo OK1"),
                     TestCase::from_expression("sleep 0.1 && echo OK2"),
                     TestCase::from_expression("sleep 0.1 && echo OK3"),
                 ],
-                // windows execution takes a long time to start up, test intends
-                // to assert that timeout > actual execution does not return
-                // a timeout error -> long timeout is fine
-                Some(Duration::from_millis(1000)),
+                Some(Duration::from_secs(2)),
                 Ok(vec![
                     ("OK1\n", "").into(),
                     ("OK2\n", "").into(),

@@ -267,6 +267,14 @@ impl ErrorRenderer for PrettyColorRenderer {
         Ok(output)
     }
 
+    fn render_timeout(&self, outcome: &Outcome) -> Result<String> {
+        let mut out = String::new();
+        out.push_str(&formatln!("timeout in execution"));
+        out.push_str(&formatln!(""));
+        out.push_str(&outcome.output.to_error_string(&outcome.escaping));
+        Ok(out)
+    }
+
     fn render_skipped(&self, _outcome: &Outcome) -> Result<String> {
         Ok("".into())
     }

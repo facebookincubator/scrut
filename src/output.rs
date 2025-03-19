@@ -209,6 +209,10 @@ impl OutputStream {
         }
         out
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.clone()
+    }
 }
 
 impl From<Vec<u8>> for OutputStream {
@@ -220,6 +224,12 @@ impl From<Vec<u8>> for OutputStream {
 impl From<&[u8]> for OutputStream {
     fn from(stream: &[u8]) -> Self {
         Self(stream.to_vec())
+    }
+}
+
+impl From<&str> for OutputStream {
+    fn from(stream: &str) -> Self {
+        Self(stream.as_bytes().to_vec())
     }
 }
 

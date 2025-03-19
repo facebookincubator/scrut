@@ -17,16 +17,44 @@ Result: 1 file(s) with 3 test(s): 3 succeeded, 0 failed and 0 skipped
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-document-total-timeout.mdtest 2>&1
-* failing in "*test-document-total-timeout.mdtest": timeout in executing (glob)
-* (glob*)
-[1]
+// =============================================================================
+// @ *test-document-total-timeout.mdtest:20 (glob)
+// -----------------------------------------------------------------------------
+// # Run the second test
+// -----------------------------------------------------------------------------
+// $ echo TestB && sleep 0.5 && echo Test2
+// =============================================================================
+
+timeout in execution
+
+## STDOUT
+#> TestB
+## STDERR
+
+
+Result: 1 file(s) with 3 test(s): 1 succeeded, 1 failed and 1 skipped
+[50]
 ```
 
 ## Timeout with command line parameter
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-document-total-no-timeout.mdtest --timeout-seconds 1 2>&1
-* failing in "*test-document-total-no-timeout.mdtest": timeout in executing (glob)
-* (glob*)
-[1]
+// =============================================================================
+// @ *test-document-total-no-timeout.mdtest:16 (glob)
+// -----------------------------------------------------------------------------
+// # Run the second test
+// -----------------------------------------------------------------------------
+// $ echo TestB && sleep 0.5 && echo Test2
+// =============================================================================
+
+timeout in execution
+
+## STDOUT
+#> TestB
+## STDERR
+
+
+Result: 1 file(s) with 3 test(s): 1 succeeded, 1 failed and 1 skipped
+[50]
 ```

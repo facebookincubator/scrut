@@ -172,6 +172,9 @@ pub enum TestCaseError {
     /// Delegated internal errors, e.g. relating to decoding
     InternalError(anyhow::Error),
 
+    /// Test case timed out
+    Timeout,
+
     /// Whether this test was skipped intentionally
     Skipped,
 }
@@ -219,6 +222,11 @@ impl Serialize for TestCaseError {
                 let mut variant = serializer.serialize_map(Some(2))?;
                 variant.serialize_entry("kind", "internal_error")?;
                 variant.serialize_entry("error", &format!("{}", err))?;
+                variant.end()
+            }
+            Self::Timeout => {
+                let mut variant = serializer.serialize_map(Some(1))?;
+                variant.serialize_entry("kind", "timeout")?;
                 variant.end()
             }
             Self::Skipped => {
