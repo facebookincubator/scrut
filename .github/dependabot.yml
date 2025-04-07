@@ -10,3 +10,4 @@ updates:
     groups:
       production-dependencies:
         dependency-type: "production"
+        applies-to: "security-updates"
