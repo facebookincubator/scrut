@@ -93,6 +93,18 @@ pub(crate) struct GlobalParameters {
     /// Timeout in seconds for whole execution. Use 0 for unlimited. Defaults to 900, if not set.
     #[clap(long, global = true)]
     pub(crate) timeout_seconds: Option<u64>,
+
+    /// Specify the logging level.
+    #[cfg(feature = "logging")]
+    #[clap(long, global = true, value_enum, default_value_t = logging::LogLevel::default())]
+    pub(crate) log_level: logging::LogLevel,
+}
+
+#[cfg(feature = "logging")]
+impl GlobalParameters {
+    pub fn init_logging(&self) -> anyhow::Result<()> {
+        logging::init_logging(&self.log_level)
+    }
 }
 
 #[derive(Parser, Debug, Default)]
@@ -124,6 +136,10 @@ pub(crate) struct GlobalSharedParameters {
 
     #[clap(from_global)]
     pub(crate) timeout_seconds: Option<u64>,
+
+    #[cfg(feature = "logging")]
+    #[clap(from_global)]
+    pub(crate) log_level: logging::LogLevel,
 }
 
 impl GlobalSharedParameters {
@@ -170,6 +186,62 @@ impl GlobalSharedParameters {
                 ParserType::Markdown => Escaper::Unicode,
                 ParserType::Cram => Escaper::Ascii,
             })
+    }
+}
+
+#[cfg(feature = "logging")]
+mod logging {
+    use std::env;
+    use std::fmt::Display;
+    use std::fmt::Formatter;
+    use std::io;
+    use std::io::IsTerminal;
+
+    use anyhow::Context;
+    use clap::ValueEnum;
+    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::FmtSubscriber;
+
+    #[derive(Debug, Clone, ValueEnum, Default)]
+    pub enum LogLevel {
+        Trace,
+        Debug,
+        Info,
+        #[default]
+        Warn,
+        Error,
+    }
+
+    impl Display for LogLevel {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "{}",
+                match self {
+                    Self::Trace => "trace",
+                    Self::Debug => "debug",
+                    Self::Info => "info",
+                    Self::Warn => "warn",
+                    Self::Error => "error",
+                }
+            )
+        }
+    }
+
+    pub fn init_logging(cmd_log_level: &LogLevel) -> anyhow::Result<()> {
+        let log_level = env::var(EnvFilter::DEFAULT_ENV)
+            .ok()
+            .unwrap_or_else(|| cmd_log_level.to_string());
+        let filter = EnvFilter::builder()
+            .parse(&log_level)
+            .with_context(|| format!("invalid log level `{log_level}` provided"))?;
+
+        FmtSubscriber::builder()
+            .with_ansi(io::stdout().is_terminal())
+            .with_writer(io::stderr)
+            .with_env_filter(filter)
+            .init();
+        Ok(())
     }
 }
 

@@ -11,9 +11,6 @@ mod commands;
 mod utils;
 
 use std::env;
-use std::io;
-use std::io::stdout;
-use std::io::IsTerminal;
 use std::process::ExitCode;
 
 use clap::Parser;
@@ -21,10 +18,6 @@ use commands::root::Commands;
 use commands::root::GlobalParameters;
 use commands::test::ValidationFailedError;
 use tracing::error;
-use tracing::Level;
-use tracing_subscriber::filter::Directive;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::FmtSubscriber;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -39,10 +32,15 @@ struct Args {
 }
 
 pub fn main() -> ExitCode {
-    init_logging();
-    let result = Args::parse().commands.run();
+    // init_logging();
+    let app = Args::parse();
 
-    if let Err(err) = result {
+    #[cfg(feature = "logging")]
+    if let Err(err) = app.global.init_logging() {
+        panic!("Failed to initialize logging: {:?}", err);
+    }
+
+    if let Err(err) = app.commands.run() {
         match err.downcast_ref::<ValidationFailedError>() {
             Some(_) => 50.into(),
             None => {
@@ -53,19 +51,4 @@ pub fn main() -> ExitCode {
     } else {
         ExitCode::SUCCESS
     }
-}
-
-const DEFAULT_LOG_LEVEL: Level = Level::WARN;
-
-fn init_logging() {
-    let filter = EnvFilter::builder()
-        .with_default_directive(Directive::from(DEFAULT_LOG_LEVEL))
-        .from_env()
-        .expect("failed to create default EnvFilter");
-
-    FmtSubscriber::builder()
-        .with_ansi(stdout().is_terminal())
-        .with_writer(io::stderr)
-        .with_env_filter(filter)
-        .init()
 }
