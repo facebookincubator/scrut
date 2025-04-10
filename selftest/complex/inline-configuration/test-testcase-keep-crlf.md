@@ -24,7 +24,7 @@ word\r (escaped)
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-testcase-keep-crlf-disabled.mdtest
-Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Explicitly enabled
@@ -43,6 +43,6 @@ $ scrut_test "$TESTDIR"/test-testcase-keep-crlf-disabled.mdtest --keep-output-cr
    1  | + word\r (escaped) (equal)
 
 
-Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```

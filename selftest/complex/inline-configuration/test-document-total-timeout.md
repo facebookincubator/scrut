@@ -10,7 +10,7 @@ $ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-document-total-no-timeout.mdtest
-Result: 1 file(s) with 3 test(s): 3 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 3 testcase(s): 3 succeeded, 0 failed and 0 skipped
 ```
 
 ## Timeout with inline config
@@ -32,7 +32,7 @@ timeout in execution
 ## STDERR
 
 
-Result: 1 file(s) with 3 test(s): 1 succeeded, 1 failed and 1 skipped
+Result: 1 document(s) with 3 testcase(s): 1 succeeded, 1 failed and 1 skipped
 [50]
 ```
 
@@ -55,6 +55,6 @@ timeout in execution
 ## STDERR
 
 
-Result: 1 file(s) with 3 test(s): 1 succeeded, 1 failed and 1 skipped
+Result: 1 document(s) with 3 testcase(s): 1 succeeded, 1 failed and 1 skipped
 [50]
 ```

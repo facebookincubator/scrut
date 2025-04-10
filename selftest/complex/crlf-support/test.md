@@ -20,7 +20,7 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
    2  | + Newlines
 
 
-Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```
 
@@ -28,14 +28,14 @@ Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
 
 ```scrut
 $ "$SCRUT_BIN" test --keep-output-crlf --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Run with explicit CRLF handling (global)
 
 ```scrut
 $ "$SCRUT_BIN" --keep-output-crlf test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 
@@ -43,5 +43,5 @@ Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
 
 ```scrut
 $ "$SCRUT_BIN" --cram-compat test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
-Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```

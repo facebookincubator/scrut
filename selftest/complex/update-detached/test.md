@@ -16,7 +16,7 @@ $ cp "$TESTDIR"/test.mdtest ./test-copy.mdtest
 
 ```scrut
 $ scrut_update --replace --assume-yes "$TESTDIR"/test.mdtest
-Result: 1 file(s) of which 0 updated, 0 skipped and 1 unchanged
+Result: 1 document(s) of which 0 updated, 0 skipped and 1 unchanged
 ```
 
 ## File ought to be unchanged

@@ -25,6 +25,6 @@ timeout in execution
 ## STDERR
 
 
-Result: 1 file(s) with 4 test(s): 1 succeeded, 1 failed and 2 skipped
+Result: 1 document(s) with 4 testcase(s): 1 succeeded, 1 failed and 2 skipped
 [50]
 ```

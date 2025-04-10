@@ -19,7 +19,7 @@ Scrut will always tell you what it did:
 
 ```bash
 $ scrut test selftest/cases/regex.md
-Result: 1 file(s) with 8 test(s): 8 succeeded, 0 failed and 0 skipped
+Result: 1 document(s) with 8 testcase(s): 8 succeeded, 0 failed and 0 skipped
 ```
 
 In case of failure the `pretty` default renderer will provide a human-readable output that points you to the problem with the output:

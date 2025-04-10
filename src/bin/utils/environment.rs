@@ -145,7 +145,10 @@ impl TestEnvironment {
     ) -> Result<(PathBuf, Vec<(String, String)>)> {
         let (test_file_directory, test_file_name) =
             split_path_abs(test_file_path).with_context(|| {
-                format!("split test file path {:?} into components", &test_file_path)
+                format!(
+                    "split test document file path {:?} into components",
+                    &test_file_path
+                )
             })?;
 
         let mut per_file = TestFileEnvironment {
@@ -488,17 +491,14 @@ mod tests {
         for (idx, (has_provided_work_dir, test_env, cram_compat)) in tests.iter_mut().enumerate() {
             let test_file_name = format!("some-test-file-{}.md", idx + 1);
             let test_file_path = PathBuf::from(&test_env.work_directory).join(&test_file_name);
-            /* fs::File::create(&test_file_path)
-            .with_context(|| format!("create dummy test file {:?}", test_env))
-            .unwrap(); */
             let (work_dir, env_vars) = test_env
                 .init_test_file(&test_file_path, *cram_compat)
-                .with_context(|| format!("initialize for test file {:?}", test_env))
+                .with_context(|| format!("initialize for test document {:?}", test_env))
                 .unwrap();
             if *has_provided_work_dir {
                 assert!(
                     work_dir.starts_with(provided_directory_path),
-                    "test file work directory {:?} in provided work directory {:?}",
+                    "test document work directory {:?} in provided work directory {:?}",
                     &work_dir,
                     &provided_directory_path,
                 );
@@ -510,7 +510,7 @@ mod tests {
                 assert_eq!(
                     file_name,
                     Some(test_file_name),
-                    "test file work directory {:?} derived from test file",
+                    "work directory {:?} is derived from test document file path",
                     &work_dir,
                 );
             }

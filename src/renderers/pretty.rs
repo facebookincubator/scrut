@@ -56,7 +56,7 @@ impl PrettyColorRenderer {
     fn render_summary(&self, files: usize, ok: usize, errors: usize, ignored: usize) -> String {
         let summary = "Result".underline();
         let total = ok + errors + ignored;
-        let tests = format!("{} test(s)", total).bold();
+        let tests = format!("{} testcase(s)", total).bold();
         let mut succeeded = format!("{} succeeded", ok).green();
         if ok > 0 {
             succeeded = succeeded.bold();
@@ -70,7 +70,7 @@ impl PrettyColorRenderer {
             skipped = skipped.bold();
         }
         format!(
-            "{}: {} file(s) with {}: {}, {} and {}\n",
+            "{}: {} document(s) with {}: {}, {} and {}\n",
             summary, files, tests, succeeded, failed, skipped,
         )
     }
@@ -423,7 +423,8 @@ mod tests {
             }])
             .expect("render succeeds");
         assert_eq!(
-            "Result: 1 file(s) with 1 test(s): 1 succeeded, 0 failed and 0 skipped\n", &rendered,
+            "Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped\n",
+            &rendered,
             "success results are not rendered",
         );
     }

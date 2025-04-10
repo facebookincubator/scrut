@@ -145,14 +145,17 @@ impl Args {
                 format: self.format,
                 result,
             }])
-            .context("generate formatted test")?;
+            .context("generate formatted test document content")?;
 
         // write testcase to STDOUT or file
         if self.output == "-" {
             info!("Writing generated test to STDOUT");
             print!("{generated}");
         } else {
-            info!(path = &self.output as &str, "Writing generated test");
+            info!(
+                path = &self.output as &str,
+                "Writing generated test document"
+            );
             fs::write(&self.output, &generated).context("write to output")?;
         }
 

@@ -22,7 +22,7 @@ $ scrut_test "$TESTDIR"/test-document-append.mdtest
    1  | + FooInAppended1
 
 
-Result: 1 file(s) with 1 test(s): 0 succeeded, 1 failed and 0 skipped
+Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 [50]
 ```
 
@@ -54,7 +54,7 @@ $ scrut_test "$TESTDIR"/test-document-append.mdtest --append-test-file-paths "$T
    1  | + FooInAppended2
 
 
-Result: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped
+Result: 1 document(s) with 2 testcase(s): 0 succeeded, 2 failed and 0 skipped
 [50]
 ```
 

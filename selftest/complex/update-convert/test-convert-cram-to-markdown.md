@@ -19,7 +19,7 @@ Command executes successfully
 
 ```scrut
 $ "${SCRUT_BIN}" update --convert markdown test.t
-Result: 1 file(s) of which 1 updated, 0 skipped and 0 unchanged
+Result: 1 document(s) of which 1 updated, 0 skipped and 0 unchanged
 ```
 
 Converted Markdown test file looks like this:

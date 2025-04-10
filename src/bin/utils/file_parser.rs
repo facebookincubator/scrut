@@ -66,7 +66,7 @@ impl<'a> FileParser<'a> {
     ) -> Result<Vec<ParsedTestFile>> {
         let contents = self
             .find_all_test_files(paths)
-            .with_context(|| format!("read contents from {} file path(s)", name))?;
+            .with_context(|| format!("read contents from {} document path(s)", name))?;
         let mut result = vec![];
         for (test_file_path, test_file_content) in contents {
             let (parser_type, parser) = self.parser(&test_file_path, cram_compat)?;
@@ -142,7 +142,7 @@ impl<'a> FileParser<'a> {
 
         let attrs = fs::metadata(path.as_ref()).context("read metadata from path")?;
         if attrs.is_dir() {
-            let paths = fs::read_dir(path).context("list tests in directory")?;
+            let paths = fs::read_dir(path).context("list tests documents in directory")?;
             for entry in paths {
                 let path = entry?.path();
                 let sub = self.read_test_contents(&path)?;
@@ -169,8 +169,8 @@ fn make_expectation_maker(cram_compat: bool) -> Arc<ExpectationMaker> {
 }
 
 fn read_file<P: AsRef<Path>>(path: P) -> Result<String> {
-    debug!(test_file = %path.as_ref().display(), "reading test file");
-    let contents = fs::read(&path).context("read contents from file")?;
+    debug!(test_file = %path.as_ref().display(), "reading test document");
+    let contents = fs::read(&path).context("read contents from test document")?;
     let contents = replace_crlf(&contents[..]);
     String::from_utf8(contents.into()).with_context(|| {
         format!(

@@ -38,6 +38,6 @@ $ $SCRUT_BIN test --match-markdown "*.mdtest" "$TESTDIR"/test.mdtest
    1  | + foo\t   (escaped) (equal)
 
 
-Result: 1 file(s) with 4 test(s): 1 succeeded, 3 failed and 0 skipped
+Result: 1 document(s) with 4 testcase(s): 1 succeeded, 3 failed and 0 skipped
 [50]
 ```

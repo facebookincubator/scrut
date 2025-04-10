@@ -12,7 +12,7 @@ $ cp "$TESTDIR/invalid.mdtest" "$(pwd)/invalid.mdtest"
 
 ```scrut
 $ "$SCRUT_BIN" update --match-markdown "*.mdtest" "$(pwd)/invalid.mdtest"
-Result: 1 file(s) of which 1 updated, 0 skipped and 0 unchanged
+Result: 1 document(s) of which 1 updated, 0 skipped and 0 unchanged
 ```
 
 ## Generated file matches valid result

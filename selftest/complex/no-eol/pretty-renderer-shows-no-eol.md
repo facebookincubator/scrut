@@ -31,6 +31,6 @@ $ "$SCRUT_BIN" test --renderer pretty --match-markdown "*.mdtest" "$TESTDIR/inva
    1  | + There is a new line
 
 
-Result: 1 file(s) with 2 test(s): 0 succeeded, 2 failed and 0 skipped
+Result: 1 document(s) with 2 testcase(s): 0 succeeded, 2 failed and 0 skipped
 [50]
 ```

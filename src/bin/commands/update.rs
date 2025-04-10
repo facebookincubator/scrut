@@ -131,10 +131,10 @@ impl Args {
         let testcase_config = self.to_testcase_config();
 
         // iterate each test file
-        debug!("updating {} test files", tests.len());
+        debug!("updating {} test documents", tests.len());
         let (mut count_updated, mut count_unchanged, mut count_skipped) = (0, 0, 0);
         for mut test in tests {
-            debug!("updating test file {:?}", test.path);
+            debug!("updating test document {:?}", test.path);
 
             let config = test.config.with_overrides_from(&document_config);
             let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
@@ -148,7 +148,7 @@ impl Args {
             // must have test-cases to continue
             if test.testcases.is_empty() {
                 warn!(
-                    "Ignoring file {:?} that does not contain any testcases",
+                    "Ignoring document {:?} that does not contain any testcases",
                     &test.path
                 );
                 count_skipped += 1;
@@ -158,7 +158,7 @@ impl Args {
             // TODO(config): Add support for updating prepended and appended files (or reason why not)
             if !config.prepend.is_empty() || !config.prepend.is_empty() {
                 warn!(
-                    "Skipping file {:?} that contains 'prepend' or 'append' configuration, which is currently not supported in update command",
+                    "Skipping document {:?} that contains 'prepend' or 'append' configuration, which is currently not supported in update command",
                     &test.path
                 );
                 count_skipped += 1;
@@ -205,7 +205,7 @@ impl Args {
                     // .. intentionally with skip, so skip
                     ExecutionError::Skipped(_) => {
                         count_skipped += 1;
-                        info!("Skipping test file {:?}", &test.path);
+                        info!("Skipping test document {:?}", &test.path);
                         continue;
                     }
 
@@ -250,7 +250,7 @@ impl Args {
                     // .. without changes -> next plz
                     if updated == test.content {
                         count_unchanged += 1;
-                        info!("Keep unchanged test file {:?}", test.path);
+                        info!("Keep unchanged test document {:?}", test.path);
                         continue;
                     }
                     self.print_changes(outcomes);
@@ -277,7 +277,10 @@ impl Args {
                     // always ask, in case the file exists
                     if !self.assume_yes
                         && Path::new(&output_path).exists()
-                        && !confirm(&format!("> Overwrite existing file {:?}?", &output_path))?
+                        && !confirm(&format!(
+                            "> Overwrite existing document {:?}?",
+                            &output_path
+                        ))?
                     {
                         eprintln!("  Skipping!");
                         count_skipped += 1;
@@ -285,9 +288,10 @@ impl Args {
                     }
 
                     count_updated += 1;
-                    info!("Writing updated test file to {:?}", output_path);
-                    fs::write(&output_path, &updated)
-                        .with_context(|| format!("overwrite existing file in {:?}", test.path))?;
+                    info!("Writing updated test document to {:?}", output_path);
+                    fs::write(&output_path, &updated).with_context(|| {
+                        format!("overwrite existing test document in {:?}", test.path)
+                    })?;
                 }
             }
         }
@@ -315,7 +319,12 @@ impl Args {
 
         let generated = generator
             .generate_update(&test.content, outcomes)
-            .with_context(|| format!("generating update for tests in file {:?}", test.path))?;
+            .with_context(|| {
+                format!(
+                    "generating update for testcases in document {:?}",
+                    test.path
+                )
+            })?;
         Ok((generated, test.parser_type))
     }
 
@@ -333,9 +342,12 @@ impl Args {
                 ),
             };
 
-        let generated = generator
-            .generate_testcases(outcomes)
-            .with_context(|| format!("generating conversion for tests in file {:?}", test.path))?;
+        let generated = generator.generate_testcases(outcomes).with_context(|| {
+            format!(
+                "generating conversion for testcases in document {:?}",
+                test.path
+            )
+        })?;
 
         Ok((generated, parser_type))
     }
@@ -357,7 +369,7 @@ impl Args {
     fn render_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> String {
         let summary = "Result".underline();
         let total = updated + skipped + unchanged;
-        let files = format!("{} file(s)", total).bold();
+        let files = format!("{} document(s)", total).bold();
         let mut updated_fmt = format!("{} updated", updated).green();
         if updated > 0 {
             updated_fmt = updated_fmt.bold();

@@ -10,12 +10,12 @@ $ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-testcase-skip-document-code-default.mdtest
-Result: 1 file(s) with 3 test(s): 0 succeeded, 0 failed and 3 skipped
+Result: 1 document(s) with 3 testcase(s): 0 succeeded, 0 failed and 3 skipped
 ```
 
 ## Custom skip document code
 
 ```scrut
 $ scrut_test "$TESTDIR"/test-testcase-skip-document-code-custom.mdtest
-Result: 1 file(s) with 3 test(s): 0 succeeded, 0 failed and 3 skipped
+Result: 1 document(s) with 3 testcase(s): 0 succeeded, 0 failed and 3 skipped
 ```
