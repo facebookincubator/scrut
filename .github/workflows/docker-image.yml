@@ -1,0 +1,81 @@
+name: Publish Docker Image to GHCR
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" =~ refs/tags ]]; then
+            SCRUT_VERSION="${GITHUB_REF#refs/tags/}"
+            echo "SCRUT_VERSION=${SCRUT_VERSION//+/_}" >> $GITHUB_ENV
+          else
+            echo "SCRUT_VERSION=debug-${GITHUB_REF#refs/heads/}-$(date +%s)" >> $GITHUB_ENV
+          fi
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+              registry: ghcr.io
+              username: ${{ github.repository_owner }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Cargo Cache Storage
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: |
+            usr-local-cargo-git
+            usr-local-cargo-registry
+          key: docker-cargo-${{ hashFiles('Dockerfile') }}
+
+      - name: Inject Cargo Cache into Docker
+        uses: reproducible-containers/buildkit-cache-dance@v3.1.0
+        with:
+          cache-map: |
+            {
+              "usr-local-cargo-git": "/usr/local/cargo/git"
+              "usr-local-cargo-registry": "/usr/local/cargo/registry"
+            }
+          skip-extraction: ${{ steps.cache.outputs.cache-hit }}
+
+      - name: Build and Push Production Docker Image
+        uses: docker/build-push-action@v6
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        with:
+              context: ./
+              file: ./Dockerfile
+              cache-from: type=gha
+              cache-to: type=gha,mode=max
+              push: true
+              tags: |
+                  ghcr.io/${{ github.repository }}:latest
+                  ghcr.io/${{ github.repository }}:${{ env.SCRUT_VERSION }}
+
+      - name: Build and Push Development Docker Image
+        uses: docker/build-push-action@v6
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        with:
+              context: ./
+              file: ./Dockerfile
+              cache-from: type=gha
+              cache-to: type=gha,mode=max
+              push: true
+              tags: |
+                  ghcr.io/${{ github.repository }}:${{ env.SCRUT_VERSION }}

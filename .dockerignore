@@ -1,0 +1,7 @@
+*
+!/build.rs
+!/Cargo.toml
+!/Makefile
+!/selftest
+!/src
+/src/bin/fb*
