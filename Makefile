@@ -27,11 +27,11 @@ selftest/cases/crlf-encoded.md:
 # TODO remove this once T136897640 closes
 selftest_cram: $(SCRUT_BIN)
 	$(SCRUT_BIN) test --cram-compat --keep-output-crlf --combine-output \
-		$$(find selftest -type f \( -name "*.t" \) -not -name "*fail*")
+		$$(find selftest -type f -name "*.t" -not -name "*fail*")
 
 selftest_markdown: $(SCRUT_BIN)
 	$(SCRUT_BIN) test \
-		$$(find selftest -type f \( -name "*.md" \) -not -name "*fail*")
+		$$(find selftest -type f -name "*.md" -not -name "*fail*")
 
 selftest: selftest_markdown selftest_cram
 
@@ -48,13 +48,14 @@ pytest: $(SCRUT_BIN)
 
 test: cargotest selftest doctest pytest
 
-
-update-tests: $(SCRUT_BIN)
+update_tests_markdown: $(SCRUT_BIN)
 	export PATH="$$(dirname "$(SCRUT_BIN)"):$$PATH"; \
 	$(SCRUT_BIN) update --replace \
-		$$(find selftest -type f \( -name "*.md" \) -not -name "*fail*"); \
-	$(SCRUT_BIN) update --replace \
-		$$(find selftest -type f \( -name "*.t" \) --combine-output --keep-output-crlf -not -name "*fail*"); \
-	$(SCRUT_BIN) update \
-		--replace --work-directory="$$(pwd)" --markdown-languages=sh \
-			$$(find docs -type f -not -name "*Meta*" -and -not -name "Tutorial.md")
+		$$(find selftest -type f -name "*.md" -not -name "*fail*");
+
+update_tests_cram: $(SCRUT_BIN)
+	export PATH="$$(dirname "$(SCRUT_BIN)"):$$PATH"; \
+	$(SCRUT_BIN) update --replace --combine-output --keep-output-crlf \
+		$$(find selftest -type f -name "*.t" -not -name "*fail*");
+
+update_tests: update_tests_markdown update_tests_cram

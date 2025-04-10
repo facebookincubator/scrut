@@ -15,6 +15,7 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use dialoguer::console::style;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
 use scrut::executors::bash_script_executor::BashScriptExecutor;
@@ -26,10 +27,11 @@ use scrut::generators::markdown::MarkdownTestCaseGenerator;
 use scrut::outcome::Outcome;
 use scrut::parsers::parser::ParserType;
 use scrut::testcase::TestCase;
-use tracing::info;
 
 use super::root::GlobalSharedParameters;
 use crate::utils::canonical_shell;
+use crate::utils::get_log_level;
+use crate::utils::ProgressWriter;
 use crate::utils::TestEnvironment;
 
 /// Create tests from provided shell expression
@@ -71,6 +73,19 @@ impl Args {
         };
         let shell_path = canonical_shell(self.global.shell.as_ref().map(|p| p as &Path))?;
         let executor = BashScriptExecutor::new(&shell_path);
+
+        // init output
+        let pw: ProgressWriter = ProgressWriter::try_new(
+            1,
+            get_log_level() <= tracing::Level::WARN,
+            self.global.no_color || !console::colors_enabled(),
+        )?;
+        pw.set_message(format!(
+            "⭐️ Creating test for {}{}{}",
+            style("`").blue().bold(),
+            style(&expression.replace('\n', "\\n").replace('\r', "\\r")).blue(),
+            style("`").blue().bold(),
+        ));
 
         // initialize test environment
         let mut test_environment = TestEnvironment::new(
@@ -147,15 +162,20 @@ impl Args {
             }])
             .context("generate formatted test document content")?;
 
+        pw.finish_and_clear();
+
         // write testcase to STDOUT or file
         if self.output == "-" {
-            info!("Writing generated test to STDOUT");
+            pw.println(format!(
+                "✍️ {}: Writing generated test document",
+                style("STDOUT").bold()
+            ));
             print!("{generated}");
         } else {
-            info!(
-                path = &self.output as &str,
-                "Writing generated test document"
-            );
+            pw.println(format!(
+                "✍️ {}: Writing generated test document",
+                style(&self.output).blue(),
+            ));
             fs::write(&self.output, &generated).context("write to output")?;
         }
 

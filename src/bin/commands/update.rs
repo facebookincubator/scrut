@@ -16,9 +16,11 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use dialoguer::console;
 use dialoguer::console::style;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
+use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::escaping::strip_colors;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
@@ -36,17 +38,16 @@ use scrut::renderers::pretty::PrettyMonochromeRenderer;
 use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::renderer::Renderer;
 use scrut::testcase::TestCase;
-use tracing::debug;
-use tracing::info;
-use tracing::warn;
 
 use super::root::GlobalSharedParameters;
 use crate::utils::canonical_shell;
 use crate::utils::confirm;
 use crate::utils::debug_testcases;
+use crate::utils::get_log_level;
 use crate::utils::make_executor;
 use crate::utils::FileParser;
 use crate::utils::ParsedTestFile;
+use crate::utils::ProgressWriter;
 use crate::utils::TestEnvironment;
 
 /// Re-run all testcases in given file(s) and update the output expectations
@@ -63,11 +64,6 @@ pub struct Args {
     /// For markdown format: Language annotations that are considered test cases
     #[clap(long, hide = true, default_values = DEFAULT_MARKDOWN_LANGUAGES, num_args=1..)]
     markdown_languages: Vec<String>,
-
-    /// Per default colo(u)r output is enabled on TTYs when the `diff` renderer
-    /// is used. This flag disables colo(u)r output in that case
-    #[clap(long, alias = "no-colour")]
-    no_color: bool,
 
     /// What suffix to add to thew newly created file (will overwrite already
     /// existing files!)
@@ -106,6 +102,10 @@ pub struct Args {
     #[clap(long, short, value_enum)]
     convert: Option<ParserType>,
 
+    /// Increase output verbosity, print out information that is not warning or errors
+    #[clap(long)]
+    verbose: bool,
+
     #[clap(flatten)]
     global: GlobalSharedParameters,
 }
@@ -127,14 +127,29 @@ impl Args {
             self.global.cram_compat,
         )?;
 
+        if tests.is_empty() {
+            println!("👋 No test documents found in {:?}. Stopping.", &self.paths);
+            return Ok(());
+        }
+
         let document_config = self.to_document_config();
         let testcase_config = self.to_testcase_config();
 
+        let pw = ProgressWriter::try_new(
+            tests.len() as u64,
+            get_log_level() <= tracing::Level::WARN,
+            self.global.no_color || !console::colors_enabled(),
+        )?;
+
         // iterate each test file
-        debug!("updating {} test documents", tests.len());
+        pw.println(format!("🔎 Found {} test document(s)", tests.len()));
         let (mut count_updated, mut count_unchanged, mut count_skipped) = (0, 0, 0);
         for mut test in tests {
-            debug!("updating test document {:?}", test.path);
+            pw.inc(1);
+            pw.set_message(format!(
+                "👀 {}",
+                style(test.path.to_string_lossy()).yellow()
+            ));
 
             let config = test.config.with_overrides_from(&document_config);
             let shell_path = canonical_shell(config.shell.as_ref().map(|p| p as &Path))?;
@@ -147,21 +162,21 @@ impl Args {
 
             // must have test-cases to continue
             if test.testcases.is_empty() {
-                warn!(
-                    "Ignoring document {:?} that does not contain any testcases",
-                    &test.path
-                );
                 count_skipped += 1;
+                pw.println(format!(
+                    "⏩ {}: skipped, because no testcases were found in the document",
+                    style(test.path.to_string_lossy()).blue()
+                ));
                 continue;
             }
 
             // TODO(config): Add support for updating prepended and appended files (or reason why not)
             if !config.prepend.is_empty() || !config.prepend.is_empty() {
-                warn!(
-                    "Skipping document {:?} that contains 'prepend' or 'append' configuration, which is currently not supported in update command",
-                    &test.path
-                );
                 count_skipped += 1;
+                pw.println(format!(
+                    "⏩ {}: skipped, because 'prepend' or 'append' are currently not supported in update",
+                    style(test.path.to_string_lossy()).blue()
+                ));
                 continue;
             }
 
@@ -203,13 +218,18 @@ impl Args {
                 // test execution failed ..
                 Err(err) => match err {
                     // .. intentionally with skip, so skip
-                    ExecutionError::Skipped(_) => {
+                    ExecutionError::Skipped(idx) => {
                         count_skipped += 1;
-                        info!("Skipping test document {:?}", &test.path);
+                        pw.println(format!(
+                            "⏩ {}: skipped, because testcase #{} ended in exit code {}",
+                            style(test.path.to_string_lossy()).blue(),
+                            idx + 1,
+                            testcases.get(idx).map_or(DEFAULT_SKIP_DOCUMENT_CODE, |t| t
+                                .config
+                                .get_skip_document_code())
+                        ));
                         continue;
                     }
-
-                    // TODO: continue on ExecutionError::Timeout, but warn! or error!
 
                     // .. unintentionally with an error -> give up
                     _ => bail!("failing in {:?}: {}", test.path, err),
@@ -250,7 +270,12 @@ impl Args {
                     // .. without changes -> next plz
                     if updated == test.content {
                         count_unchanged += 1;
-                        info!("Keep unchanged test document {:?}", test.path);
+                        if self.verbose {
+                            pw.println(format!(
+                                "👍 {}: keep as-is, no changes in document content",
+                                style(test.path.to_string_lossy()).blue()
+                            ));
+                        }
                         continue;
                     }
                     self.print_changes(outcomes);
@@ -275,26 +300,51 @@ impl Args {
                     };
 
                     // always ask, in case the file exists
-                    if !self.assume_yes
-                        && Path::new(&output_path).exists()
-                        && !confirm(&format!(
-                            "> Overwrite existing document {:?}?",
-                            &output_path
-                        ))?
-                    {
-                        eprintln!("  Skipping!");
-                        count_skipped += 1;
-                        continue;
+                    if !self.assume_yes && Path::new(&output_path).exists() {
+                        let confirmed = pw.suspend(|| {
+                            confirm(
+                                &format!(
+                                    "Overwrite existing document {}?",
+                                    style(output_path.to_string_lossy()).blue()
+                                ),
+                                false,
+                                self.global.no_color,
+                            )
+                        })?;
+
+                        if !confirmed {
+                            //eprintln!("  Skipping!");
+                            count_skipped += 1;
+
+                            pw.println(format!(
+                                "👎 {}: keep as-is, chosen not to overwrite document",
+                                style(test.path.to_string_lossy()).red()
+                            ));
+                            continue;
+                        }
                     }
 
                     count_updated += 1;
-                    info!("Writing updated test document to {:?}", output_path);
                     fs::write(&output_path, &updated).with_context(|| {
-                        format!("overwrite existing test document in {:?}", test.path)
+                        format!("overwrite existing document in {:?}", test.path)
                     })?;
+                    if output_path == test.path {
+                        pw.println(format!(
+                            "✍️ {}: overwritten document with updated contents",
+                            style(test.path.to_string_lossy()).green()
+                        ));
+                    } else {
+                        pw.println(format!(
+                            "🌟 {}: updated document contents written to {}",
+                            style(test.path.to_string_lossy()).green(),
+                            style(output_path.to_string_lossy()).blue()
+                        ));
+                    }
                 }
             }
         }
+        pw.println("");
+        pw.finish_and_clear();
 
         self.print_summary(count_updated, count_skipped, count_unchanged)?;
 
@@ -358,7 +408,7 @@ impl Args {
             absolute_line_numbers: self.absolute_line_numbers,
             summarize: false,
         };
-        let diff: Box<dyn Renderer> = if self.no_color {
+        let diff: Box<dyn Renderer> = if self.global.no_color {
             Box::new(PrettyMonochromeRenderer::new(color_renderer))
         } else {
             Box::new(color_renderer)
@@ -390,7 +440,7 @@ impl Args {
 
     fn print_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> Result<()> {
         let mut summary = self.render_summary(updated, skipped, unchanged);
-        if self.no_color || !stdout().is_terminal() {
+        if self.global.no_color || !stdout().is_terminal() {
             summary = strip_colors(&summary)?;
         }
         println!("{}", summary);

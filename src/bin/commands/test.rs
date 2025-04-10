@@ -6,8 +6,6 @@
  */
 
 use std::collections::BTreeMap;
-use std::io::stdout;
-use std::io::IsTerminal;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -16,10 +14,14 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser as ClapParser;
+use dialoguer::console::style;
+use humantime::format_duration;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
+use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
+use scrut::executors::error::ExecutionTimeout;
 use scrut::outcome::Outcome;
 use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
@@ -42,8 +44,10 @@ use super::root::GlobalSharedParameters;
 use super::root::ScrutRenderer;
 use crate::utils::canonical_shell;
 use crate::utils::debug_testcases;
+use crate::utils::get_log_level;
 use crate::utils::make_executor;
 use crate::utils::FileParser;
+use crate::utils::ProgressWriter;
 use crate::utils::TestEnvironment;
 
 #[derive(Debug, thiserror::Error)]
@@ -90,11 +94,6 @@ pub struct Args {
     #[clap(long, default_value = "*.{md,markdown}")]
     match_markdown: String,
 
-    /// Per default colo(u)r output is enabled on TTYs when the `diff` renderer
-    /// is used. This flag disables colo(u)r output in that case
-    #[clap(long, alias = "no-colour")]
-    no_color: bool,
-
     /// Which renderer to use for generating the result, with `diff` being the
     /// best choice for human consumption and `json` or `yaml` for further
     /// machine processing.
@@ -106,6 +105,10 @@ pub struct Args {
     /// to use absolute line numbers from within the test file.
     #[clap(long)]
     absolute_line_numbers: bool,
+
+    /// Increase output verbosity, print out information that is not warning or errors
+    #[clap(long)]
+    verbose: bool,
 
     #[clap(flatten)]
     global: GlobalSharedParameters,
@@ -142,7 +145,23 @@ impl Args {
         let testcase_config = self.to_testcase_config();
         let current_directory = std::env::current_dir().context("get current directory")?;
 
+        let pw = ProgressWriter::try_new(
+            tests.len() as u64,
+            get_log_level() <= tracing::Level::WARN,
+            self.global.no_color || !console::colors_enabled(),
+        )?;
+        pw.println(format!(
+            "🔎 Found {} test document(s)",
+            style(tests.len()).bold()
+        ));
+
         for mut test in tests {
+            pw.inc(1);
+            pw.set_message(format!(
+                "👀 {}",
+                style(test.path.to_string_lossy()).yellow()
+            ));
+
             // prefix append and prepend in document config with directory where test is
             let test_directory = &test.path.parent().unwrap_or(&current_directory);
             test.config.append = prefix_with_directory(test_directory, &test.config.append);
@@ -236,7 +255,7 @@ impl Args {
                     .work_directory(PathBuf::from(&test_work_directory))
                     .temp_directory(test_environment.tmp_directory.as_path_buf())
                     .file(test.path.clone())
-                    .config(config)
+                    .config(config.clone())
                     .build()
                     .context("failed to build execution context")?,
             );
@@ -244,22 +263,29 @@ impl Args {
                 // test execution failed ...
                 Err(err) => match err {
                     // ... because test was skipped
-                    ExecutionError::Skipped(_) => {
+                    ExecutionError::Skipped(idx) => {
                         count_skipped += 1;
-                        debug!("Received skip code -> skipping tests");
-                        outcomes.extend(testcases.into_iter().map(|testcase| Outcome {
+                        outcomes.extend(testcases.iter().map(|testcase| Outcome {
                             location: Some(test.path.display().to_string()),
-                            testcase: testcase.clone(),
+                            testcase: (*testcase).clone(),
                             output: ("", "", None).into(),
                             escaping: escaping.clone(),
                             format: test.parser_type,
                             result: Err(TestCaseError::Skipped),
                         }));
+                        pw.println(format!(
+                            "⏩ {}: skipped, because testcase #{} ended in exit code {}",
+                            style(test.path.to_string_lossy()).blue(),
+                            idx + 1,
+                            testcases.get(idx).map_or(DEFAULT_SKIP_DOCUMENT_CODE, |t| t
+                                .config
+                                .get_skip_document_code())
+                        ));
                         continue;
                     }
 
                     // ... because test timed out
-                    ExecutionError::Timeout(_timeout, outputs) => {
+                    ExecutionError::Timeout(timeout, outputs) => {
                         // append outcomes for each testcase that was executed (i.e. all testcase
                         // until and including the one that timed out)
                         outcomes.extend(outputs.iter().zip(testcases.iter()).map(
@@ -292,19 +318,38 @@ impl Args {
                         // testcases after the one that timed out)
                         let missing = testcases.len() - outputs.len();
                         if missing > 0 {
-                            outcomes.extend(testcases.into_iter().skip(outputs.len()).map(
-                                |testcase| Outcome {
+                            outcomes.extend(testcases.iter().skip(outputs.len()).map(|testcase| {
+                                Outcome {
                                     location: Some(test.path.display().to_string()),
-                                    testcase: testcase.clone(),
+                                    testcase: (*testcase).clone(),
                                     output: ("", "", None).into(),
                                     escaping: escaping.clone(),
                                     format: test.parser_type,
                                     result: Err(TestCaseError::Skipped),
-                                },
-                            ));
+                                }
+                            }));
 
                             count_skipped += missing;
                         }
+
+                        let (location, timeout) = match timeout {
+                            ExecutionTimeout::Index(idx) => (
+                                format!("per-testcase timeout in testcase #{}", idx + 1),
+                                testcases[idx].config.timeout,
+                            ),
+                            ExecutionTimeout::Total => {
+                                ("per-document timeout".to_string(), config.total_timeout)
+                            }
+                        };
+                        pw.println(format!(
+                            "⌛️ {}: execution timed out after {} at {}",
+                            style(test.path.to_string_lossy()).red(),
+                            timeout.map_or_else(
+                                || "<undef>".to_string(), // this should never happen
+                                |t| format_duration(t).to_string()
+                            ),
+                            location,
+                        ));
                         continue;
                     }
 
@@ -320,6 +365,7 @@ impl Args {
 
                     // .. to compare the outputs with testcases and gather that
                     //    outcome for later rendering
+                    let (mut failed, mut success) = (0, 0);
                     for (testcase, output) in testcases.into_iter().zip(outputs.into_iter()) {
                         if output.exit_code == ExitStatus::Detached {
                             count_detached += 1;
@@ -328,9 +374,9 @@ impl Args {
 
                         let result = testcase.validate(&output);
                         if result.is_err() {
-                            count_failed += 1;
+                            failed += 1;
                         } else {
-                            count_success += 1;
+                            success += 1;
                         }
                         outcomes.push(Outcome {
                             location: Some(test.path.display().to_string()),
@@ -341,9 +387,31 @@ impl Args {
                             result,
                         });
                     }
+                    count_failed += failed;
+                    count_success += success;
+                    let total = failed + success;
+
+                    if failed > 0 {
+                        pw.println(format!(
+                            "❌ {}: failed {} out of {} testcase{}",
+                            style(test.path.to_string_lossy()).red(),
+                            style(failed).red().bold(),
+                            style(total).bold(),
+                            if total == 1 { "" } else { "s" },
+                        ));
+                    } else if self.verbose {
+                        pw.println(format!(
+                            "✅ {}: passed {} testcase{}",
+                            style(test.path.to_string_lossy()).green(),
+                            style(success).green().bold(),
+                            if success == 1 { "" } else { "s" },
+                        ));
+                    }
                 }
             }
         }
+        pw.println("");
+        pw.finish_and_clear();
 
         // finally render all outcomes of testcase validations
         let renderer: Box<dyn Renderer> = match self.renderer {
@@ -353,7 +421,7 @@ impl Args {
                     absolute_line_numbers: self.absolute_line_numbers,
                     summarize: true,
                 };
-                if stdout().is_terminal() && !self.no_color {
+                if !self.global.no_color && console::colors_enabled() {
                     Box::new(color_renderer)
                 } else {
                     Box::new(PrettyMonochromeRenderer::new(color_renderer))
@@ -375,7 +443,6 @@ impl Args {
         if count_failed > 0 {
             Err(anyhow!(ValidationFailedError))
         } else {
-            info!("Validation succeeded");
             Ok(())
         }
     }

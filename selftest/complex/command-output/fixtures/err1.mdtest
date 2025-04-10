@@ -1,0 +1,6 @@
+# A failing test 1
+
+```scrut
+$ echo OK
+Fail
+```

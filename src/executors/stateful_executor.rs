@@ -23,7 +23,6 @@ use super::executor::Executor;
 use super::executor::Result;
 use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
-use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::executors::error::ExecutionTimeout;
 use crate::output::ExitStatus;
 use crate::output::Output;
@@ -144,10 +143,7 @@ impl Executor for StatefulExecutor {
             trace!("{output:?}");
 
             // handle exit code
-            let skip_document_code = testcase
-                .config
-                .skip_document_code
-                .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE);
+            let skip_document_code = testcase.config.get_skip_document_code();
             match output.exit_code {
                 // having an actual numeric exit code ..
                 ExitStatus::Code(code) => {

@@ -94,6 +94,11 @@ pub(crate) struct GlobalParameters {
     #[clap(long, global = true)]
     pub(crate) timeout_seconds: Option<u64>,
 
+    /// Per default colo(u)r output is enabled on TTYs when the `diff` renderer
+    /// is used. This flag disables colo(u)r output in that case
+    #[clap(long, alias = "no-colour", global = true)]
+    pub(crate) no_color: bool,
+
     /// Specify the logging level.
     #[cfg(feature = "logging")]
     #[clap(long, global = true, value_enum, default_value_t = logging::LogLevel::default())]
@@ -103,7 +108,7 @@ pub(crate) struct GlobalParameters {
 #[cfg(feature = "logging")]
 impl GlobalParameters {
     pub fn init_logging(&self) -> anyhow::Result<()> {
-        logging::init_logging(&self.log_level)
+        logging::init_logging(&self.log_level, self.no_color)
     }
 }
 
@@ -136,6 +141,9 @@ pub(crate) struct GlobalSharedParameters {
 
     #[clap(from_global)]
     pub(crate) timeout_seconds: Option<u64>,
+
+    #[clap(from_global)]
+    pub(crate) no_color: bool,
 
     #[cfg(feature = "logging")]
     #[clap(from_global)]
@@ -195,7 +203,6 @@ mod logging {
     use std::fmt::Display;
     use std::fmt::Formatter;
     use std::io;
-    use std::io::IsTerminal;
 
     use anyhow::Context;
     use clap::ValueEnum;
@@ -228,7 +235,7 @@ mod logging {
         }
     }
 
-    pub fn init_logging(cmd_log_level: &LogLevel) -> anyhow::Result<()> {
+    pub fn init_logging(cmd_log_level: &LogLevel, no_color: bool) -> anyhow::Result<()> {
         let log_level = env::var(EnvFilter::DEFAULT_ENV)
             .ok()
             .unwrap_or_else(|| cmd_log_level.to_string());
@@ -237,7 +244,7 @@ mod logging {
             .with_context(|| format!("invalid log level `{log_level}` provided"))?;
 
         FmtSubscriber::builder()
-            .with_ansi(io::stdout().is_terminal())
+            .with_ansi(!no_color && console::colors_enabled())
             .with_writer(io::stderr)
             .with_env_filter(filter)
             .init();

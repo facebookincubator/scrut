@@ -456,6 +456,11 @@ impl TestCaseConfig {
         }
         format!("{{{}}}", output.join(", "))
     }
+
+    pub fn get_skip_document_code(&self) -> i32 {
+        self.skip_document_code
+            .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE)
+    }
 }
 
 impl Display for TestCaseConfig {

@@ -27,7 +27,6 @@ use super::subprocess_runner::SubprocessRunner;
 use super::DEFAULT_SHELL;
 use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
-use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::lossy_string;
 use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
@@ -85,10 +84,7 @@ impl Executor for BashScriptExecutor {
         let output = runner
             .run("script", &testcase, context)
             .map_err(|err| ExecutionError::from_execute(err, None, None))?;
-        let skip_document_code = testcase
-            .config
-            .skip_document_code
-            .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE);
+        let skip_document_code = testcase.config.get_skip_document_code();
         match output.exit_code {
             ExitStatus::Code(code) if code == skip_document_code => {
                 return Err(ExecutionError::Skipped(0));

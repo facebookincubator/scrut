@@ -1,0 +1,10 @@
+---
+total_timeout: 1s
+---
+
+# A test that times out per-document
+
+```scrut
+$ echo Before; sleep 3; echo After
+OK
+```

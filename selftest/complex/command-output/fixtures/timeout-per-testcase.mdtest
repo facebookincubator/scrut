@@ -1,0 +1,6 @@
+# A test that times out per-test
+
+```scrut { timeout: 1s }
+$ echo Before; sleep 3; echo After
+OK
+```
