@@ -8,11 +8,19 @@
 .features {
   display: flex;
   align-items: center;
-  padding: 10rem 0;
+
   width: 100%;
 }
 
 .featureSvg {
   height: 200px;
   width: 200px;
+}
+
+.features h3 {
+  font-size: 2em;
+}
+
+.features p {
+  font-size: 1.2em;
 }

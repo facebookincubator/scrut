@@ -32,3 +32,115 @@
 html[data-theme="dark"] .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.3);
 }
+
+/*
+ * -------------------------------
+ * Fix Sidebar
+ * -------------------------------
+ */
+
+.menu a:not([href]) {
+  color: black !important;
+}
+
+.menu li li a:not([href]) {
+  color: black !important;
+  font-size: 0.8em;
+}
+
+.menu li > div:has(a:not([href])):hover {
+  background-color: transparent !important;
+}
+
+/*
+ * -------------------------------
+ * Fix Code
+ * -------------------------------
+ */
+
+code {
+  white-space: pre-wrap;
+}
+
+
+/*
+ * -------------------------------
+ * Code Block
+ * -------------------------------
+ */
+
+.theme-code-block .language-markdown .title {
+  font-weight: bold;
+}
+
+.theme-code-block .language-markdown .punctuation {
+  font-weight: bold;
+}
+
+.theme-code-block .language-markdown .code-language {
+  color: grey;
+}
+
+.theme-code-block .language-markdown .scrut-code-block,
+.theme-code-block .language-markdown .scrut-inline-config,
+.theme-code-block .language-markdown .scrut-shell-expression,
+.theme-code-block .language-markdown .scrut-output-expectation,
+.theme-code-block .language-markdown .scrut-rule-type {
+  color: var(--ifm-color-primary-darker);
+}
+
+.theme-code-block .language-markdown .scrut-inline-config {
+  font-style: italic;
+}
+
+.theme-code-block .language-markdown .scrut-shell-expression {
+  font-weight: bold !important;
+}
+
+
+.theme-code-block .language-markdown .scrut-rule-type {
+  font-style: italic;
+}
+
+
+.theme-code-block .language-bash .scrut-command-line-start {
+  color: black;
+  font-weight: bold;
+}
+
+.theme-code-block .language-bash .scrut-command-line-content {
+  color: var(--ifm-color-primary);
+  font-weight: bold;
+}
+
+.theme-code-block .language-bash .scrut-result-output-decoration {
+  color: grey;
+}
+
+.theme-code-block .language-bash .scrut-result-output-file {
+  color: rgb(46, 156, 81);
+}
+
+.theme-code-block .language-bash .scrut-result-output-title {
+  color: rgb(61, 149, 165);
+}
+
+.theme-code-block .language-bash .scrut-result-output-shell-expression {
+  color: var(--ifm-color-primary-darker);
+}
+
+.theme-code-block .language-bash .scrut-result-output-expected-line {
+  color: rgb(46, 156, 81);
+}
+
+.theme-code-block .language-bash .scrut-result-output-unexpected-line {
+  color: rgb(156, 46, 46);
+}
+
+.theme-code-block .language-bash .scrut-result-output-summary-line-start {
+  text-decoration: underline;
+}
+
+.theme-code-block .theme-code-block-highlighted-line {
+  background-color: var(--ifm-color-primary-lightest) !important;
+}

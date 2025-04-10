@@ -7,7 +7,7 @@
 
 const lightCodeTheme = require('prism-react-renderer').themes.github;
 const darkCodeTheme = require('prism-react-renderer').themes.dracula;
-
+// const Prism = require('prism-react-renderer').Prism;
 const {customFields} = require('./constants');
 
 const { organizationName, baseUrl } =
@@ -18,14 +18,26 @@ const { organizationName, baseUrl } =
       })()
     : { organizationName: "facebook", baseUrl: "/" };
 
+
+
+/* Prism.languages.scrut = {
+  'special-line': {
+    pattern: /^([>$]).*$/m,
+    lookbehind: true,
+    alias: 'keyword',
+    bold: true
+  }
+}; */
+
 // With JSDoc @type annotations, IDEs can provide config autocompletion
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 (module.exports = {
   title: 'Scrut',
-  tagline: 'A CLI Testing Framework',
+  tagline: 'CLI Testing Made Easy',
   url: 'https://internalfb.com',
   baseUrl,
   onBrokenLinks: 'warn',
+  onBrokenAnchors: 'warn',
   onBrokenMarkdownLinks: 'warn',
   trailingSlash: true,
   favicon: 'img/favicon.ico',
@@ -46,7 +58,7 @@ const { organizationName, baseUrl } =
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://www.internalfb.com/code/fbsource/fbcode/clifoundation/scrut/website', // TODO Please change this to your repo.
+          editUrl: 'https://www.internalfb.com/code/fbsource/fbcode/clifoundation/scrut/website',
         },
         experimentalXRepoSnippets: {
           baseDir: '.',
@@ -106,6 +118,11 @@ const { organizationName, baseUrl } =
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        // additionalLanguages: ['markdown', 'bash'],
       },
     }),
+
+  /* scripts: [
+    'prism.scrut.js'
+  ], */
 });

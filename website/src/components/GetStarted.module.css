@@ -1,0 +1,52 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+.getStarted {
+    padding: 5rem 0;
+}
+
+.getStartedButton {
+    background: #6957bf;
+    color: rgba(255, 255, 255, 0.8);
+    margin: auto;
+    display: block;
+    width: 350px;
+    padding: 0.5em;
+    text-align: center;
+    font-weight: bold;
+    font-size: 2em;
+    border-radius: 8px;
+}
+
+.getStartedButton:before,
+.getStartedButton:after {
+    color: #8c75ff;
+    font-size: 2em;
+    line-height: 0.5em;
+    vertical-align: middle;
+    position: relative;
+    top: -0.15em;
+}
+
+.getStartedButton:before {
+    content: "» ";
+}
+
+.getStartedButton:after {
+    content: " «";
+}
+
+.getStartedButton:hover {
+    color: white;
+    text-decoration: none;
+}
+
+.getStartedButton:hover:before,
+.getStartedButton:hover:after {
+    color: white;
+    font-weight: bold;
+}

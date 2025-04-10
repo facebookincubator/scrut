@@ -7,7 +7,7 @@
 
 import React from 'react';
 import clsx from 'clsx';
-import styles from './HomepageFeatures.module.css';
+import styles from './Features.module.css';
 
 const FeatureList = [
   {
@@ -59,7 +59,7 @@ function Feature({Svg, title, description}) {
   );
 }
 
-export default function HomepageFeatures() {
+export default function Features() {
   return (
     <section className={styles.features}>
       <div className="container">

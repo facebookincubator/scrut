@@ -1,0 +1,56 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+.heroBanner {
+    padding: 4rem 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.heroImage {
+    height: 350px;
+    position: relative;
+}
+
+.heroImage h1 {
+    display: none;
+}
+
+.heroImage h2 {
+    width: 100%;
+    text-align: center;
+    position: absolute;
+    bottom: 0;
+}
+
+.heroImage::before {
+    content: "";
+    background-image: url(/static/img/scrut-big-with-text.webp);
+    background-position: center center;
+    background-size: 600px;
+    background-repeat: no-repeat;
+    width: 50%;
+    height: 300px;
+    width: 100%;
+}
+
+@media screen and (max-width: 966px) {
+    .heroBanner {
+        padding: 2rem;
+    }
+    .heroImage {
+        height: 250px;
+    }
+    .heroImage::before {
+        background-size: 300px;
+        width: auto;
+        left: 0;
+        margin-left: 0;
+        min-width: 100%;
+    }
+}
