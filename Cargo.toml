@@ -20,7 +20,7 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = "1.0.95"
 clap = { version = "4.5.30", features = ["derive", "env", "string", "unicode", "wrap_help"] }
-colored = "2.1.0"
+console = "0.15.7"
 derivative = "2.2"
 derive_builder = { version = "0.20.0", features = ["alloc"] }
 dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }

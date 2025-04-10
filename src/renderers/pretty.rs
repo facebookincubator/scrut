@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use colored::Colorize;
+use console::style;
 
 use super::outcome::OutcomeHeader;
 use super::renderer::ErrorRenderer;
@@ -54,18 +54,18 @@ pub struct PrettyColorRenderer {
 
 impl PrettyColorRenderer {
     fn render_summary(&self, files: usize, ok: usize, errors: usize, ignored: usize) -> String {
-        let summary = "Result".underline();
+        let summary = style("Result").underlined();
         let total = ok + errors + ignored;
-        let tests = format!("{} testcase(s)", total).bold();
-        let mut succeeded = format!("{} succeeded", ok).green();
+        let tests = style(format!("{} testcase(s)", total)).bold();
+        let mut succeeded = style(format!("{} succeeded", ok)).green();
         if ok > 0 {
             succeeded = succeeded.bold();
         }
-        let mut failed = format!("{} failed", errors).red();
+        let mut failed = style(format!("{} failed", errors)).red();
         if errors > 0 {
             failed = failed.bold();
         }
-        let mut skipped = format!("{} skipped", ignored).yellow();
+        let mut skipped = style(format!("{} skipped", ignored)).yellow();
         if ignored > 0 {
             skipped = skipped.bold();
         }
@@ -290,7 +290,7 @@ impl<T: AsRef<str>> TailingSpacesHighlighter for T {
         let index = space_start_index(input);
         if index < input.len() {
             let prefix = &input[0..index];
-            let suffix = render_spaces(&input[index..]).magenta().bold();
+            let suffix = style(render_spaces(&input[index..])).magenta().bold();
             format!("{prefix}{suffix}")
         } else {
             input.to_string()
@@ -355,23 +355,24 @@ impl Decorator {
         content: &str,
     ) -> String {
         let color = match symbol {
-            "+" => |s: &str| s.green().bold(),
-            "-" => |s: &str| s.red().bold(),
-            _ => |s: &str| s.white(),
+            "+" => |s: &str| style(s).green().bold().to_string(),
+            "-" => |s: &str| style(s).red().bold().to_string(),
+            _ => |s: &str| style(s).white().to_string(),
         };
         let line_color = match symbol {
-            "+" => |s: &str| s.green().to_string(),
-            "-" => |s: &str| s.red().to_string(),
+            "+" => |s: &str| style(s).green().to_string(),
+            "-" => |s: &str| style(s).red().to_string(),
             _ => |s: &str| s.to_string(),
         };
-        format!(
+        style(format!(
             "{} {}  | {} {}",
             line_color(&self.expectation_line_number(expectation_number, multiline)),
             line_color(&self.output_line_number(line_number)),
             color(symbol),
             color(content)
-        )
-        .bright_black()
+        ))
+        .bright()
+        .black()
         .to_string()
     }
 }

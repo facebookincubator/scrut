@@ -16,7 +16,7 @@ use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use colored::Colorize;
+use dialoguer::console::style;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
 use scrut::escaping::strip_colors;
@@ -367,18 +367,18 @@ impl Args {
     }
 
     fn render_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> String {
-        let summary = "Result".underline();
+        let summary = style("Result").underlined();
         let total = updated + skipped + unchanged;
-        let files = format!("{} document(s)", total).bold();
-        let mut updated_fmt = format!("{} updated", updated).green();
+        let files = style(format!("{} document(s)", total)).bold();
+        let mut updated_fmt = style(format!("{} updated", updated)).green();
         if updated > 0 {
             updated_fmt = updated_fmt.bold();
         }
-        let mut skipped_fmt = format!("{} skipped", skipped).yellow();
+        let mut skipped_fmt = style(format!("{} skipped", skipped)).yellow();
         if skipped > 0 {
             skipped_fmt = skipped_fmt.bold();
         }
-        let mut unchanged_fmt = format!("{} unchanged", unchanged).magenta();
+        let mut unchanged_fmt = style(format!("{} unchanged", unchanged)).magenta();
         if unchanged > 0 {
             unchanged_fmt = unchanged_fmt.bold();
         }
