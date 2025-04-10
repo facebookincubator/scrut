@@ -36,6 +36,7 @@ const { organizationName, baseUrl } =
   },
   themes: ['@docusaurus/theme-mermaid'],
   customFields,
+  staticDirectories: ['static'],
 
 
   presets: [
