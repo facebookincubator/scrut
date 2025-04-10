@@ -158,9 +158,12 @@ fn has_unprintable_unicode(bytes: &[u8]) -> bool {
 }
 
 pub fn strip_colors(input: &str) -> Result<String> {
-    let stripped = strip_ansi_escapes::strip(input)
-        .context("strip ansi escape sequences from rendered output")?;
+    let stripped = strip_colors_bytes(input.as_bytes())?;
     String::from_utf8(stripped).context("decode stripped bytes back to utf8 string")
+}
+
+pub fn strip_colors_bytes(input: &[u8]) -> Result<Vec<u8>> {
+    strip_ansi_escapes::strip(input).context("strip ansi escape sequences from rendered output")
 }
 
 #[cfg(test)]

@@ -20,6 +20,7 @@ use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
 use crate::diff::Diff;
 use crate::diff::DiffTool;
+use crate::escaping::strip_colors_bytes;
 use crate::expectation::Expectation;
 use crate::newline::replace_crlf;
 use crate::output::ExitStatus;
@@ -83,13 +84,20 @@ impl TestCase {
         }
     }
 
-    /// Update the given output by either replacing CRLF with LF or keeping as-is
-    /// depending on the [`TestCaseConfig`] settings
-    pub fn render_output<'a>(&self, output: &'a [u8]) -> Cow<'a, [u8]> {
-        if self.config.keep_crlf == Some(true) {
-            Cow::from(output)
-        } else {
+    /// Returns output with configured transformations applied:
+    /// - Remove CRLF?
+    /// - Strip ANSI escaping?
+    pub fn render_output<'a>(&self, output: &'a [u8]) -> anyhow::Result<Cow<'a, [u8]>> {
+        let processed_output = if self.config.keep_crlf != Some(true) {
             replace_crlf(output)
+        } else {
+            Cow::Borrowed(output)
+        };
+
+        if self.config.strip_ansi_escaping == Some(true) {
+            Ok(Cow::Owned(strip_colors_bytes(&processed_output)?))
+        } else {
+            Ok(processed_output)
         }
     }
 
@@ -329,7 +337,7 @@ mod tests {
     }
 
     #[test]
-    fn test_render_output() {
+    fn test_render_output_crlf_support() {
         let tests = &[
             (false, "foo", "foo"),
             (true, "foo", "foo"),
@@ -350,13 +358,54 @@ mod tests {
                     ..Default::default()
                 },
             };
-            let output = tc.render_output(from.as_bytes());
+            let output = tc
+                .render_output(from.as_bytes())
+                .expect("rendering should succeed");
             assert_eq!(
                 *expect,
                 lossy_string!(&output),
                 "from {} (crlf = {})",
                 *from,
                 *crlf_support
+            );
+        }
+    }
+
+    #[test]
+    fn test_render_output_strip_ansi_escaping() {
+        let tests = &[
+            (false, "foo", "foo"),
+            (true, "foo", "foo"),
+            (false, "foo\nbar\nbaz", "foo\nbar\nbaz"),
+            (true, "foo\nbar\nbaz", "foo\nbar\nbaz"),
+            (
+                false,
+                "foo\n\x1b[1mbar\x1b[0m\nbaz",
+                "foo\n\x1b[1mbar\x1b[0m\nbaz",
+            ),
+            (true, "foo\n\x1b[1mbar\x1b[0m\nbaz", "foo\nbar\nbaz"),
+        ];
+        for (strip_ansi_escaping, from, expect) in tests {
+            let tc = TestCase {
+                title: "an testcase".to_string(),
+                shell_expression: "a command".to_string(),
+                expectations: vec![test_expectation!("no-eol", "the stdout")],
+                exit_code: Some(123),
+                line_number: 234,
+                config: TestCaseConfig {
+                    strip_ansi_escaping: Some(*strip_ansi_escaping),
+                    ..Default::default()
+                },
+            };
+            let output = tc
+                .render_output(from.as_bytes())
+                .expect("rendering should succeed");
+            assert_eq!(
+                *expect,
+                lossy_string!(&output),
+                "from {} (strip = {})",
+                *from,
+                *strip_ansi_escaping
             );
         }
     }

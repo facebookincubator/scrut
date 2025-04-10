@@ -258,6 +258,10 @@ pub struct TestCaseConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skip_document_code: Option<i32>,
 
+    /// Whether to strip ANSI escape sequences from the tested output before validation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strip_ansi_escaping: Option<bool>,
+
     /// A max execution time a test can run before it is considered failed (and
     /// will be aborted).
     #[serde(
@@ -323,6 +327,7 @@ impl TestCaseConfig {
             && self.detached.is_none()
             && self.wait.is_none()
             && self.skip_document_code.is_none()
+            && self.strip_ansi_escaping.is_none()
             && self.environment.is_empty()
     }
 
@@ -344,6 +349,7 @@ impl TestCaseConfig {
             detached: self.detached.or(defaults.detached),
             wait: self.wait.clone().or_else(|| defaults.wait.clone()),
             skip_document_code: self.skip_document_code.or(defaults.skip_document_code),
+            strip_ansi_escaping: self.strip_ansi_escaping.or(defaults.strip_ansi_escaping),
         }
     }
 
@@ -392,6 +398,9 @@ impl TestCaseConfig {
         if self.skip_document_code != other.skip_document_code {
             diff.skip_document_code = self.skip_document_code;
         }
+        if self.strip_ansi_escaping != other.strip_ansi_escaping {
+            diff.strip_ansi_escaping = self.strip_ansi_escaping;
+        }
         if self.wait != other.wait {
             diff.wait = self.wait.clone();
         }
@@ -433,6 +442,9 @@ impl TestCaseConfig {
         }
         if let Some(value) = self.skip_document_code {
             output.push(format!("skip_document_code: {}", value))
+        }
+        if let Some(value) = self.strip_ansi_escaping {
+            output.push(format!("strip_ansi_escaping: {}", value))
         }
         if let Some(ref wait) = self.wait {
             let duration = humantime::format_duration(wait.timeout).to_string();
@@ -534,6 +546,7 @@ defaults:
   keep_crlf: true
   output_stream: stdout
   skip_document_code: 123
+  strip_ansi_escaping: true
   timeout: 6m 4s
   wait:
     timeout: 2m 1s
@@ -572,6 +585,7 @@ total_timeout: 5m 3s
                         path: Some(PathBuf::from("the-wait-path")),
                     }),
                     skip_document_code: Some(123),
+                    strip_ansi_escaping: Some(true),
                 }
             }
         )
@@ -600,6 +614,7 @@ total_timeout: 5m 3s
                     path: Some(PathBuf::from("the-wait-path")),
                 }),
                 skip_document_code: Some(123),
+                strip_ansi_escaping: Some(true),
             },
         };
         assert_eq!(
@@ -616,6 +631,7 @@ environment:
 keep_crlf: true
 output_stream: stderr
 skip_document_code: 123
+strip_ansi_escaping: true
 timeout: 6m 4s
 wait:
   timeout: 2m 1s
@@ -644,6 +660,7 @@ wait:
                     path: Some(PathBuf::from("the-wait-path")),
                 }),
                 skip_document_code: Some(123),
+                strip_ansi_escaping: Some(true),
             }
         )
     }
@@ -666,6 +683,7 @@ wait:
                 path: Some(PathBuf::from("the-wait-path")),
             }),
             skip_document_code: Some(123),
+            strip_ansi_escaping: Some(true),
         };
         assert_eq!(
             serde_yaml::to_string(&config).expect("render testcase config to YAML"),
@@ -701,13 +719,14 @@ wait:
                     detached: Some(false),
                     environment: BTreeMap::from([("foo".to_string(), "bar".to_string())]),
                     skip_document_code: Some(123),
+                    strip_ansi_escaping: Some(true),
                     timeout: Some(Duration::from_secs(234)),
                     wait: Some(TestCaseWait {
                         timeout: Duration::from_secs(123),
                         path: Some(PathBuf::from("/tmp/wait")),
                     }),
                 },
-                "{output_stream: stderr, keep_crlf: true, timeout: 3m 54s, detached: false, skip_document_code: 123, wait: {timeout: 2m 3s, path: /tmp/wait}, environment: {foo: \"bar\"}}",
+                "{output_stream: stderr, keep_crlf: true, timeout: 3m 54s, detached: false, skip_document_code: 123, strip_ansi_escaping: true, wait: {timeout: 2m 3s, path: /tmp/wait}, environment: {foo: \"bar\"}}",
             ),
         ];
         for (idx, (config, expected)) in tests.iter().enumerate() {

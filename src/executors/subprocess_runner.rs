@@ -146,11 +146,11 @@ impl Runner for SubprocessRunner {
 
         Ok(Output {
             stderr: testcase
-                .render_output(&stderr.unwrap_or_default()[..])
+                .render_output(&stderr.unwrap_or_default()[..])?
                 .to_vec()
                 .into(),
             stdout: testcase
-                .render_output(&stdout.unwrap_or_default()[..])
+                .render_output(&stdout.unwrap_or_default()[..])?
                 .to_vec()
                 .into(),
             exit_code,

@@ -135,7 +135,7 @@ fn split_at_newline(text: &[u8]) -> Vec<&[u8]> {
 const CRLF: &[u8] = b"\r\n";
 
 /// Replaces all CRLF with LF
-pub fn replace_crlf(bytes: &[u8]) -> Cow<'_, [u8]> {
+pub fn replace_crlf<'a>(bytes: &'a [u8]) -> Cow<'a, [u8]> {
     if let Some(index) = bytes.windows(2).position(|window| window == CRLF) {
         [
             Cow::from(&bytes[0..index]),

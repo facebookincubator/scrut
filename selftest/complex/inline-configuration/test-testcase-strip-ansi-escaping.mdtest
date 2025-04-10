@@ -1,0 +1,15 @@
+# Test if ANSI escape sequences are stripped from the output
+
+## Per default output is not stripped
+
+```scrut
+$ echo -e "\x1b[31mnope\x1b[0m"
+\x1b[31mnope\x1b[0m (escaped)
+```
+
+## Output is stripped when configured
+
+```scrut {strip_ansi_escaping: true}
+$ echo -e "\x1b[31myes\x1b[0m"
+yes
+```
