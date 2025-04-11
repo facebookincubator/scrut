@@ -6,6 +6,7 @@
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
+    "build-oss": "mkdir -p docs/fb/components && touch docs/fb/components/_oss{,-tutorial}-note.md && docusaurus build; rm -rf docs/fb",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

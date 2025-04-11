@@ -1,4 +1,8 @@
+import OssNote from '../fb/components/_oss-note.md';
+
 # Dotslash and Version Pinning
+
+<FbInternalOnly><OssNote /></FbInternalOnly>
 
 On the [GitHub release page of Scrut](https://github.com/facebookincubator/scrut/releases/latest) you will find a file  named `scrut`. This is a [Dotslash](https://dotslash-cli.com/docs/) file. Dotslash is a command line tool that is designed to fetch, verify and execute arbitrary other command line tools.
 
