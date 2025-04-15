@@ -10,9 +10,9 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
 use scrut::executors::DEFAULT_SHELL;
 use tempfile::TempDir;
 use tracing::debug;

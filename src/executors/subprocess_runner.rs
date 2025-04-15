@@ -22,9 +22,9 @@ use tracing::debug;
 use tracing::debug_span;
 use tracing::trace;
 
+use super::DEFAULT_SHELL;
 use super::context::Context as ExecutionContext;
 use super::runner::Runner;
-use super::DEFAULT_SHELL;
 use crate::output::ExitStatus as OutputExitStatus;
 use crate::output::Output;
 use crate::testcase::TestCase;

@@ -7,20 +7,20 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::stdout;
 use std::io::IsTerminal;
+use std::io::stdout;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use clap::Parser;
 use dialoguer::console;
 use dialoguer::console::style;
+use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
-use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::escaping::strip_colors;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
@@ -33,22 +33,22 @@ use scrut::generators::markdown::MarkdownUpdateGenerator;
 use scrut::outcome::Outcome;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
+use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::pretty::PrettyColorRenderer;
 use scrut::renderers::pretty::PrettyMonochromeRenderer;
-use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::renderer::Renderer;
 use scrut::testcase::TestCase;
 
 use super::root::GlobalSharedParameters;
+use crate::utils::FileParser;
+use crate::utils::ParsedTestFile;
+use crate::utils::ProgressWriter;
+use crate::utils::TestEnvironment;
 use crate::utils::canonical_shell;
 use crate::utils::confirm;
 use crate::utils::debug_testcases;
 use crate::utils::get_log_level;
 use crate::utils::make_executor;
-use crate::utils::FileParser;
-use crate::utils::ParsedTestFile;
-use crate::utils::ProgressWriter;
-use crate::utils::TestEnvironment;
 
 /// Re-run all testcases in given file(s) and update the output expectations
 #[derive(Debug, Parser)]

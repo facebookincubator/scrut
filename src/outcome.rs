@@ -7,8 +7,8 @@
 
 use std::collections::HashMap;
 
-use serde::ser::SerializeMap;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 
 use crate::escaping::Escaper;
 use crate::output::Output;

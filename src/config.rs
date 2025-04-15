@@ -12,13 +12,13 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use serde::de;
-use serde::de::MapAccess;
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde::de;
+use serde::de::MapAccess;
+use serde::de::Visitor;
 
 /// The default total (per-document) timeout in seconds
 pub const DEFAULT_DOCUMENT_TIMEOUT: u64 = 900;

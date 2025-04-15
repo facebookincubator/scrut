@@ -8,8 +8,8 @@
 use std::cmp::Ordering;
 use std::fmt::Display;
 
-use anyhow::bail;
 use anyhow::Result;
+use anyhow::bail;
 
 use super::renderer::ErrorRenderer;
 use super::renderer::Renderer;

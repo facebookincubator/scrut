@@ -8,9 +8,9 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use regex::bytes::Regex as ByteRegex;
 use regex::Captures;
 use regex::Regex;
+use regex::bytes::Regex as ByteRegex;
 
 use super::rule::Rule;
 use super::rule::RuleMaker;
@@ -223,10 +223,10 @@ pub(super) fn cleanup_unrecognized_escape_sequences(expression: &str) -> String 
 
 #[cfg(test)]
 mod tests {
+    use super::RegexRule;
     use super::cleanup_unrecognized_escape_sequences;
     use super::escape_misused_character_class;
     use super::escape_misused_repetition_quantifier;
-    use super::RegexRule;
     use crate::lossy_string;
     use crate::newline::StringNewline;
     use crate::rules::rule::RuleMaker;

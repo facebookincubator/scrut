@@ -182,10 +182,10 @@ macro_rules! blines {
 
 #[cfg(test)]
 mod tests {
-    use super::replace_crlf;
     use super::BytesNewline;
     use super::SplitLinesByNewline;
     use super::StringNewline;
+    use super::replace_crlf;
     use crate::newline::assure_newline;
 
     #[test]

@@ -128,8 +128,8 @@ mod tests {
 
     use super::BashRunner;
     use super::Runner;
-    use crate::executors::context::Context as ExecutionContext;
     use crate::executors::DEFAULT_SHELL;
+    use crate::executors::context::Context as ExecutionContext;
     use crate::output::Output;
     use crate::testcase::TestCase;
 

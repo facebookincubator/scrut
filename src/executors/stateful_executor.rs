@@ -19,9 +19,9 @@ use tracing::trace_span;
 
 use super::context::Context as ExecutionContext;
 use super::error::ExecutionError;
+use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::executor::Executor;
 use super::executor::Result;
-use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
 use crate::executors::error::ExecutionTimeout;
 use crate::output::ExitStatus;
@@ -220,13 +220,13 @@ mod tests {
     use regex::Regex;
 
     use super::StatefulExecutor;
+    use crate::executors::DEFAULT_SHELL;
     use crate::executors::bash_runner::BashRunner;
     use crate::executors::error::ExecutionError;
     use crate::executors::error::ExecutionTimeout;
     use crate::executors::executor::tests::combined_output_test_suite;
     use crate::executors::executor::tests::run_executor_tests;
     use crate::executors::executor::tests::standard_output_test_suite;
-    use crate::executors::DEFAULT_SHELL;
     use crate::output::ExitStatus;
     use crate::output::Output;
     use crate::testcase::TestCase;

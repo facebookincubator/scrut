@@ -10,11 +10,11 @@ use std::fmt::Display;
 #[cfg(test)]
 use std::time::Duration;
 
-use serde::ser::SerializeMap;
 use serde::Serialize;
 use serde::Serializer;
-use serde_json::json;
+use serde::ser::SerializeMap;
 use serde_json::Value;
+use serde_json::json;
 
 use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;

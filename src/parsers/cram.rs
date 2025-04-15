@@ -10,8 +10,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use tracing::debug;
 
-use super::line_parser::is_comment;
 use super::line_parser::LineParser;
+use super::line_parser::is_comment;
 use super::parser::Parser;
 use crate::config::DocumentConfig;
 use crate::config::TestCaseConfig;

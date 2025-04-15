@@ -79,8 +79,8 @@ impl Drop for Context {
 mod test {
     use std::path::PathBuf;
 
-    use tempfile::tempdir;
     use tempfile::Builder;
+    use tempfile::tempdir;
 
     use super::Context;
 

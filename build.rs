@@ -16,8 +16,8 @@ use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
 
-use vergen::vergen;
 use vergen::Config;
+use vergen::vergen;
 
 fn main() {
     let content = vergen(Config::default())

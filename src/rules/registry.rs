@@ -7,8 +7,8 @@
 
 use std::collections::HashMap;
 
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use regex::Regex;
 
 use super::equal::EqualRule;

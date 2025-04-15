@@ -9,12 +9,12 @@ use std::borrow::Cow;
 
 use anyhow::Context;
 use anyhow::Result;
-use dialoguer::console::strip_ansi_codes;
+use dialoguer::Confirm;
 use dialoguer::console::Term;
+use dialoguer::console::strip_ansi_codes;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::theme::SimpleTheme;
 use dialoguer::theme::Theme;
-use dialoguer::Confirm;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use tracing::info;

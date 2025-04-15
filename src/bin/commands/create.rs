@@ -11,9 +11,9 @@ use std::io::BufRead;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
 use clap::Parser;
 use dialoguer::console::style;
 use scrut::config::DocumentConfig;
@@ -29,10 +29,10 @@ use scrut::parsers::parser::ParserType;
 use scrut::testcase::TestCase;
 
 use super::root::GlobalSharedParameters;
-use crate::utils::canonical_shell;
-use crate::utils::get_log_level;
 use crate::utils::ProgressWriter;
 use crate::utils::TestEnvironment;
+use crate::utils::canonical_shell;
+use crate::utils::get_log_level;
 
 /// Create tests from provided shell expression
 #[derive(Debug, Parser)]

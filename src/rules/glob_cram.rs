@@ -91,9 +91,9 @@ mod tests {
     use anyhow::Context;
     use regex::Regex;
 
+    use super::CramGlobRule;
     use super::glob_to_regex;
     use super::glob_to_regex_string;
-    use super::CramGlobRule;
     use crate::lossy_string;
     use crate::newline::StringNewline;
     use crate::rules::rule::RuleMaker;

@@ -120,9 +120,9 @@ mod tests {
     use crate::diff::DiffLine;
     use crate::escaping::Escaper;
     use crate::formatln;
+    use crate::generators::generator::tests::UpdateGeneratorTest;
     use crate::generators::generator::tests::run_update_generator_tests;
     use crate::generators::generator::tests::standard_testcase_generator_test_suite;
-    use crate::generators::generator::tests::UpdateGeneratorTest;
     use crate::outcome::Outcome;
     use crate::parsers::parser::ParserType;
     use crate::test_expectation;

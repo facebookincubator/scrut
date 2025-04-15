@@ -396,8 +396,8 @@ mod tests {
     use crate::config::TestCaseConfig;
     use crate::config::TestCaseWait;
     use crate::expectation::tests::expectation_maker;
-    use crate::parsers::markdown::extract_code_block_start;
     use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
+    use crate::parsers::markdown::extract_code_block_start;
     use crate::parsers::parser::Parser;
     use crate::test_expectation;
     use crate::testcase::TestCase;

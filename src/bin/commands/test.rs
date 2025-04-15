@@ -9,16 +9,16 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
+use anyhow::bail;
 use clap::Parser as ClapParser;
 use dialoguer::console::style;
 use humantime::format_duration;
+use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::config::DocumentConfig;
 use scrut::config::TestCaseConfig;
-use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::executors::error::ExecutionTimeout;
@@ -27,9 +27,9 @@ use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
 use scrut::renderers::diff::DiffRenderer;
+use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::pretty::PrettyColorRenderer;
 use scrut::renderers::pretty::PrettyMonochromeRenderer;
-use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::renderer::Renderer;
 use scrut::renderers::structured::JsonRenderer;
 use scrut::renderers::structured::YamlRenderer;
@@ -42,13 +42,13 @@ use tracing::trace;
 
 use super::root::GlobalSharedParameters;
 use super::root::ScrutRenderer;
+use crate::utils::FileParser;
+use crate::utils::ProgressWriter;
+use crate::utils::TestEnvironment;
 use crate::utils::canonical_shell;
 use crate::utils::debug_testcases;
 use crate::utils::get_log_level;
 use crate::utils::make_executor;
-use crate::utils::FileParser;
-use crate::utils::ProgressWriter;
-use crate::utils::TestEnvironment;
 
 #[derive(Debug, thiserror::Error)]
 #[error("validation failed")]

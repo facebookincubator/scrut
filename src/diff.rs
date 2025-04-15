@@ -8,8 +8,8 @@
 use std::fmt::Debug;
 
 use anyhow::Result;
-use serde::ser::SerializeMap;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 
 use crate::expectation::Expectation;
 use crate::lossy_string;

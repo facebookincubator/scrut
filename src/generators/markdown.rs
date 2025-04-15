@@ -17,10 +17,10 @@ use crate::formatln;
 use crate::generators::outcome::OutcomeTestGenerator;
 use crate::newline::StringNewline;
 use crate::outcome::Outcome;
+use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use crate::parsers::markdown::MarkdownIterator;
 use crate::parsers::markdown::MarkdownToken;
 use crate::parsers::markdown::NumberedLines;
-use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 
 /// Update [`crate::testcase::TestCase`]s in an existing Markdown document
 pub struct MarkdownUpdateGenerator(Vec<String>);
@@ -188,9 +188,9 @@ mod tests {
     use crate::diff::DiffLine;
     use crate::escaping::Escaper;
     use crate::formatln;
+    use crate::generators::generator::tests::UpdateGeneratorTest;
     use crate::generators::generator::tests::run_update_generator_tests;
     use crate::generators::generator::tests::standard_testcase_generator_test_suite;
-    use crate::generators::generator::tests::UpdateGeneratorTest;
     use crate::outcome::Outcome;
     use crate::parsers::parser::ParserType;
     use crate::test_expectation;

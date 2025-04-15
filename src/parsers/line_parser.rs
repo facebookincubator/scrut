@@ -7,9 +7,9 @@
 
 use std::sync::Arc;
 
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use regex::Regex;
 
 use crate::config::TestCaseConfig;
@@ -199,8 +199,8 @@ pub(super) fn is_comment(line: &str) -> bool {
 mod tests {
     use std::sync::Arc;
 
-    use super::extract_exit_code;
     use super::LineParser;
+    use super::extract_exit_code;
     use crate::expectation::tests::expectation_maker;
     use crate::test_expectation;
     use crate::testcase::TestCase;

@@ -6,8 +6,8 @@
  */
 
 use anyhow::Result;
-use console::style;
 use console::StyledObject;
+use console::style;
 
 use crate::formatln;
 use crate::outcome::Outcome;

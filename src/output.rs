@@ -9,8 +9,8 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
 
-use serde::ser::SerializeMap;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 
 use crate::config::DEFAULT_SKIP_DOCUMENT_CODE;
 use crate::escaping::Escaper;

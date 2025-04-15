@@ -5,10 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::anyhow;
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::anyhow;
+use anyhow::bail;
 
 /// Some rule expressions require additionally escaping, e.g. a glob expression
 /// that contains non-printable characters. In this case, the glob expression

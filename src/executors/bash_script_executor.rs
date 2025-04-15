@@ -8,23 +8,23 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
-use anyhow::Context;
+use rand::Rng;
 use rand::distributions::Alphanumeric;
 use rand::thread_rng;
-use rand::Rng;
 use tracing::debug;
 
+use super::DEFAULT_SHELL;
 use super::context::Context as ExecutionContext;
 use super::error::ExecutionError;
 use super::error::ExecutionTimeout;
+use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::executor::Executor;
 use super::executor::Result;
-use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::runner::Runner;
 use super::subprocess_runner::SubprocessRunner;
-use super::DEFAULT_SHELL;
 use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
 use crate::lossy_string;
@@ -421,10 +421,10 @@ mod tests {
     use anyhow::anyhow;
     use regex::Regex;
 
-    use super::parse_divider_bytes;
     use super::BashScriptExecutor;
-    use super::DividerSearch;
     use super::DIVIDER_PREFIX;
+    use super::DividerSearch;
+    use super::parse_divider_bytes;
     use crate::config::TestCaseConfig;
     use crate::executors::error::ExecutionError;
     use crate::executors::error::ExecutionTimeout;

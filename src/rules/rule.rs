@@ -9,8 +9,8 @@ use std::fmt::Debug;
 use std::fmt::Display;
 
 use anyhow::Result;
-use serde::ser::SerializeMap;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 
 use crate::escaping::Escaper;
 
