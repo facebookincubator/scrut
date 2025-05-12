@@ -83,10 +83,12 @@ Due to the different [execution model of Cram](/docs/reference/behavior/executio
 
 When Scrut runs a shell expression it will wait for the execution to finish, so that it can gather the exit code and the output and validate it as defined by the [test case](/docs/reference/fundamentals/test-case/).
 
-However, if the shell expression detaches from the shell, or spawns processes that are detached (or both) then Scrut will not wait for them. Scrut will not manage their lifetime at all.
+However, if the shell expression detaches from the shell, or spawns processes that are detached (or both) then Scrut will not wait for them. **Scrut will not manage their lifetime at all.**
 
 :::tip
 
 If you need to test a server/client scenario, where first a server must be started and before the CLI [test cases](/docs/reference/fundamentals/test-case/) can execute then have a look at the [`detached`/`wait` configuration directives](/docs/reference/fundamentals/inline-configuration/#wait-configuration).
+
+Here the `detached_kill_signal` can be specified to send a user-definedable signal to the detached process to terminate it. **Note that Scrut will only send the signal, it is up to the process to handle it correctly.**
 
 :::
