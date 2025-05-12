@@ -2,7 +2,7 @@
 
 [package]
 name = "scrut"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.81.0"
 description = "A simple and powerful test framework for CLI applications"
@@ -50,6 +50,12 @@ insta = { version = "1.34", features = ["colors", "console", "default", "glob", 
 
 [build-dependencies]
 vergen = "7"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nix = { version = "0.29.0", features = ["dir", "event", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "ptrace", "reboot", "resource", "sched", "signal", "term", "time", "user", "zerocopy"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nix = { version = "0.29.0", features = ["dir", "event", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "ptrace", "reboot", "resource", "sched", "signal", "term", "time", "user", "zerocopy"] }
 
 [features]
 default = ["logging"]

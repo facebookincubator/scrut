@@ -25,7 +25,7 @@ Result: 2 document(s) with 2 testcase(s): 2 succeeded, 0 failed and 0 skipped
 $ scrut_run "$TESTDIR/fixtures/"err* 2>&1
 * INFO scrut::utils::ui: 🔎 Found 1 test document(s) (glob)
 * INFO scrut::utils::ui: 👀 *err1.mdtest (glob)
-* WARN scrut::utils::ui: ❌ *err1.mdtest: failed 1 out of 1 testcase (glob)
+* ERROR scrut::utils::ui: ❌ *err1.mdtest: failed 1 out of 1 testcase (glob)
 * INFO scrut::commands::test: success=0 skipped=0 failed=1 detached=0 (glob)
 // =============================================================================
 // @ *err1.mdtest:4 (glob)

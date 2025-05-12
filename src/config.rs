@@ -20,6 +20,8 @@ use serde::de;
 use serde::de::MapAccess;
 use serde::de::Visitor;
 
+use crate::signal::KillSignal;
+
 /// The default total (per-document) timeout in seconds
 pub const DEFAULT_DOCUMENT_TIMEOUT: u64 = 900;
 
@@ -236,6 +238,10 @@ pub struct TestCaseConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detached: Option<bool>,
 
+    /// Kill signal to send to the detached process after test execution on unix systems
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detached_kill_signal: Option<KillSignal>,
+
     /// A set of environment variable names and values that will be explicitly set
     /// for the test.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -300,6 +306,7 @@ impl TestCaseConfig {
         Self {
             output_stream: Some(OutputStreamControl::Stdout),
             skip_document_code: Some(DEFAULT_SKIP_DOCUMENT_CODE),
+            detached_kill_signal: Some(KillSignal::default()),
             ..Default::default()
         }
     }
@@ -347,6 +354,10 @@ impl TestCaseConfig {
                 .chain(defaults.environment.clone())
                 .collect(),
             detached: self.detached.or(defaults.detached),
+            detached_kill_signal: self
+                .detached_kill_signal
+                .clone()
+                .or_else(|| defaults.detached_kill_signal.clone()),
             wait: self.wait.clone().or_else(|| defaults.wait.clone()),
             skip_document_code: self.skip_document_code.or(defaults.skip_document_code),
             strip_ansi_escaping: self.strip_ansi_escaping.or(defaults.strip_ansi_escaping),
@@ -530,6 +541,7 @@ mod tests {
     use std::time::Duration;
 
     use super::DocumentConfig;
+    use super::KillSignal;
     use super::TestCaseWait;
     use crate::config::OutputStreamControl;
     use crate::config::TestCaseConfig;
@@ -540,6 +552,7 @@ append:
 - app2
 defaults:
   detached: true
+  detached_kill_signal: quit
   environment:
     BAZ: zoing
     FOO: bar
@@ -580,6 +593,7 @@ total_timeout: 5m 3s
                         m
                     },
                     detached: Some(true),
+                    detached_kill_signal: Some(KillSignal::test_default()),
                     wait: Some(TestCaseWait {
                         timeout: Duration::from_secs(2 * 60 + 1),
                         path: Some(PathBuf::from("the-wait-path")),
@@ -609,6 +623,7 @@ total_timeout: 5m 3s
                     m
                 },
                 detached: Some(true),
+                detached_kill_signal: Some(KillSignal::test_default()),
                 wait: Some(TestCaseWait {
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
@@ -625,6 +640,7 @@ total_timeout: 5m 3s
 
     const FULL_TESTCASE_CONFIG: &str = "
 detached: true
+detached_kill_signal: quit
 environment:
   BAZ: zoing
   FOO: bar
@@ -655,6 +671,7 @@ wait:
                     m
                 },
                 detached: Some(true),
+                detached_kill_signal: Some(KillSignal::test_default()),
                 wait: Some(TestCaseWait {
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
@@ -678,6 +695,7 @@ wait:
                 m
             },
             detached: Some(true),
+            detached_kill_signal: Some(KillSignal::test_default()),
             wait: Some(TestCaseWait {
                 timeout: Duration::from_secs(2 * 60 + 1),
                 path: Some(PathBuf::from("the-wait-path")),
@@ -717,6 +735,7 @@ wait:
                     output_stream: Some(OutputStreamControl::Stderr),
                     keep_crlf: Some(true),
                     detached: Some(false),
+                    detached_kill_signal: None,
                     environment: BTreeMap::from([("foo".to_string(), "bar".to_string())]),
                     skip_document_code: Some(123),
                     strip_ansi_escaping: Some(true),

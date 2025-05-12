@@ -17,6 +17,16 @@ use crate::escaping::Escaper;
 use crate::formatln;
 use crate::lossy_string;
 use crate::newline::SplitLinesByNewline;
+use crate::signal::KillSignal;
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct DetachedProcess {
+    /// The process PID
+    pub pid: u32,
+
+    /// The configured kill signal
+    pub signal: KillSignal,
+}
 
 /// Product of a single execution that captures output and status
 #[derive(Clone, PartialEq, Eq)]
@@ -30,6 +40,10 @@ pub struct Output {
     /// The exit code the execution ended in. A value of `None` implies the
     /// execution did not return (i.e. aborted due to timeout)
     pub exit_code: ExitStatus,
+
+    /// The process PID and the configured kill signal, if the execution was
+    /// intentionally detached.
+    pub detached_process: Option<DetachedProcess>,
 }
 
 impl Output {
@@ -69,6 +83,7 @@ impl Default for Output {
             stdout: vec![].into(),
             stderr: vec![].into(),
             exit_code: ExitStatus::Unknown,
+            detached_process: None,
         }
     }
 }
@@ -78,10 +93,19 @@ impl Serialize for Output {
     where
         S: serde::Serializer,
     {
-        let mut map = serializer.serialize_map(Some(3))?;
+        let count = if self.detached_process.is_some() {
+            5
+        } else {
+            3
+        };
+        let mut map = serializer.serialize_map(Some(count))?;
         map.serialize_entry("exit_code", &self.exit_code.to_string())?;
         map.serialize_entry("stdout", &lossy_string!((&self.stdout).into()))?;
         map.serialize_entry("stderr", &lossy_string!((&self.stderr).into()))?;
+        if let Some(ref detached_process) = self.detached_process {
+            map.serialize_entry("detached_process_pid", &detached_process.pid)?;
+            map.serialize_entry("detached_process_signal", &detached_process.signal)?;
+        }
         map.end()
     }
 }
@@ -95,6 +119,7 @@ impl<T: ToString, U: ToString> From<(T, U, Option<i32>)> for Output {
                 None => ExitStatus::Unknown,
                 Some(code) => ExitStatus::Code(code),
             },
+            detached_process: None,
         }
     }
 }
@@ -111,6 +136,7 @@ impl From<Duration> for Output {
             stdout: vec![].into(),
             stderr: vec![].into(),
             exit_code: ExitStatus::Timeout(timeout),
+            detached_process: None,
         }
     }
 }
@@ -121,6 +147,7 @@ impl From<ExitStatus> for Output {
             stdout: vec![].into(),
             stderr: vec![].into(),
             exit_code: status,
+            detached_process: None,
         }
     }
 }

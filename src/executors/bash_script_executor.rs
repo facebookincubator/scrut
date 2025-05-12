@@ -96,6 +96,7 @@ impl Executor for BashScriptExecutor {
                         exit_code: output.exit_code,
                         stderr: remove_dividers_from_output(&output.stderr),
                         stdout: remove_dividers_from_output(&output.stdout),
+                        detached_process: None,
                     }],
                 ));
             }
@@ -118,6 +119,7 @@ impl Executor for BashScriptExecutor {
                     stderr: vec![].into(),
                     stdout: out.to_vec().into(),
                     exit_code: ExitStatus::Code(exit_code),
+                    detached_process: None,
                 });
                 Ok(())
             },

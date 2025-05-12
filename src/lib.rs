@@ -24,4 +24,5 @@ pub mod output;
 pub mod parsers;
 pub mod renderers;
 pub mod rules;
+pub mod signal;
 pub mod testcase;

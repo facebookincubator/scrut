@@ -1,0 +1,33 @@
+# Run Detached
+
+This test emulates an execution that accepts SIGINT or SIGHUP to abort.
+
+## Start a long running process
+
+```scrut {detached: true, detached_kill_signal: int}
+$ function cleanup_int {
+>     echo INT received > "$DELEGATED_TMPDIR"/signal
+>     exit
+> }
+> function cleanup_hup {
+>     echo HUP received > "$DELEGATED_TMPDIR"/signal
+>     exit
+> }
+> function cleanup_exit {
+>     echo OK > "$DELEGATED_TMPDIR"/exit
+> }
+> trap "cleanup_int" INT
+> trap "cleanup_hup" HUP
+> trap "cleanup_exit" EXIT
+> echo $$ > "$DELEGATED_TMPDIR"/pid
+> for i in $(seq 1 30); do
+>    sleep 1
+> done
+```
+
+## A test that does something
+
+```scrut
+$ echo OK
+OK
+```

@@ -171,6 +171,28 @@ $ my-server --start
 ```
 ````
 
+### `detached_kill_signal`
+
+- Type: **enum(`disabled`, `SIGINT`, `int`, 2, `SIGABRT`, `abrt`, 6, ...)**, see [here](https://docs.rs/nix/0.29.0/nix/sys/signal/enum.Signal.html#variants) for all supported names
+- Command Line Parameter: **n/a**
+- Default: **`term`**
+
+If `detached` is set to `true` then this configuration specifies the signal that is send to the detached process when all testcases in the test document have been executed.
+
+**Example:**
+
+````markdown showLineNumbers
+```scrut {detached: true, detached_kill_signal: term}
+$ my-server --start
+```
+````
+
+:::warning
+
+Kill signals are only supported on Linux and MacOS. They are ignored (but validated) on Windows.
+
+:::
+
 ### `environment`
 
 - Type: **object**

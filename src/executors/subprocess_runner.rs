@@ -25,6 +25,7 @@ use tracing::trace;
 use super::DEFAULT_SHELL;
 use super::context::Context as ExecutionContext;
 use super::runner::Runner;
+use crate::output::DetachedProcess;
 use crate::output::ExitStatus as OutputExitStatus;
 use crate::output::Output;
 use crate::testcase::TestCase;
@@ -91,9 +92,18 @@ impl Runner for SubprocessRunner {
 
         // when detaching, do not wait for the process to finish
         if is_detached {
-            debug!("detaching, not waiting for output");
+            let detached_process =
+                match (process.pid(), testcase.config.detached_kill_signal.clone()) {
+                    (Some(pid), Some(signal)) => Some(DetachedProcess { pid, signal }),
+                    (_, _) => None,
+                };
+            debug!(
+                "detaching, not waiting for output, marking for kill = {}",
+                detached_process.is_some(),
+            );
             return Ok(Output {
                 exit_code: OutputExitStatus::Detached,
+                detached_process,
                 ..Default::default()
             });
         }
@@ -154,6 +164,7 @@ impl Runner for SubprocessRunner {
                 .to_vec()
                 .into(),
             exit_code,
+            detached_process: None,
         })
     }
 }

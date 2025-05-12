@@ -48,6 +48,7 @@ use crate::utils::TestEnvironment;
 use crate::utils::canonical_shell;
 use crate::utils::debug_testcases;
 use crate::utils::get_log_level;
+use crate::utils::kill_detached_process;
 use crate::utils::make_executor;
 
 #[derive(Debug, thiserror::Error)]
@@ -369,6 +370,9 @@ impl Args {
                     for (testcase, output) in testcases.into_iter().zip(outputs.into_iter()) {
                         if output.exit_code == ExitStatus::Detached {
                             count_detached += 1;
+                            if let Some(ref detached_process) = output.detached_process {
+                                kill_detached_process(&pw, detached_process)?;
+                            }
                             continue;
                         }
 

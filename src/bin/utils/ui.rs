@@ -17,6 +17,8 @@ use dialoguer::theme::SimpleTheme;
 use dialoguer::theme::Theme;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
+use tracing::debug;
+use tracing::error;
 use tracing::info;
 use tracing::warn;
 
@@ -51,6 +53,36 @@ pub(crate) fn progress_bar(size: u64) -> Result<ProgressBar> {
     Ok(pb)
 }
 
+macro_rules! has_prefix {
+    ($var:expr, $prefix:expr) => {
+        {
+            $var.starts_with($prefix)
+        }
+    };
+    ($var:expr, $($prefix:expr),+) => {
+        {
+            [$($prefix, )+].iter().any(|p| $var.starts_with(p))
+        }
+    };
+}
+
+macro_rules! log {
+    ($msg:expr) => {
+        match $msg {
+            _ if has_prefix!($msg, "❌") => {
+                error!("{}", $msg)
+            }
+            _ if has_prefix!($msg, "⌛️", "⚠️") => {
+                warn!("{}", $msg)
+            }
+            _ if has_prefix!($msg, "🤏") => {
+                debug!("{}", $msg)
+            }
+            _ => info!("{}", $msg),
+        }
+    };
+}
+
 /// A wrapper that exports a subset of the `ProgressBar` API. It can be instantiated to use an
 /// actual `ProgressBar` or use log messages instead.
 ///
@@ -77,11 +109,7 @@ impl ProgressWriter {
         if let Some(pb) = &self.pb {
             pb.println(msg);
         } else if !msg.is_empty() {
-            if is_warn_or_error_message(&msg) {
-                warn!("{}", msg);
-            } else {
-                info!("{}", msg);
-            }
+            log!(msg)
         }
     }
 
@@ -123,10 +151,6 @@ impl ProgressWriter {
             Cow::from(msg)
         }
     }
-}
-
-fn is_warn_or_error_message(msg: &str) -> bool {
-    msg.contains("❌") || msg.contains("⌛️")
 }
 
 fn is_in_scrut_test() -> bool {

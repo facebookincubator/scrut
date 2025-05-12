@@ -184,6 +184,7 @@ impl Executor for StatefulExecutor {
                 // user says the process is running detached and we should ignore it
                 ExitStatus::Detached => outputs.push(Output {
                     exit_code: ExitStatus::Detached,
+                    detached_process: output.detached_process,
                     ..Default::default()
                 }),
 
