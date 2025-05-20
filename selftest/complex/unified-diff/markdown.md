@@ -22,7 +22,7 @@ $ cat output.diff
 -BAR
 +bar
 @@ -23 +23,3 @@ malformed output: This is a test with invalid quantifiers
--F* (glob+)
+-F* (glob+) (equal)
 +foo
 +foo
 +foo

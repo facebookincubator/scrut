@@ -50,7 +50,7 @@ jobs:
         with:
           cache-map: |
             {
-              "usr-local-cargo-git": "/usr/local/cargo/git"
+              "usr-local-cargo-git": "/usr/local/cargo/git",
               "usr-local-cargo-registry": "/usr/local/cargo/registry"
             }
           skip-extraction: ${{ steps.cache.outputs.cache-hit }}

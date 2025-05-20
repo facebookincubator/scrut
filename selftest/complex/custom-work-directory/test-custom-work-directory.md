@@ -14,7 +14,7 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // $ ls
 // =============================================================================
 
-1     | - temp.* (glob)
+1     | - temp.* (glob) (equal)
 2     | - test-me.fixture
 
 

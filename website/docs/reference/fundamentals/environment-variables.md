@@ -36,3 +36,9 @@ When using the `--cram-compat` flag, or when a Cram `.t` test document is being 
 - `CRAMTMP`: if no specific working directory was provided (default), then it contains the absolute path to the temporary directory in which per-test-file directories will be created in which those test files are then executed in (`CRAMTMP=$(realpath "$(pwd)/..")`); otherwise the path to the provided working directory
 - `TMP`: same as `TMPDIR`
 - `TEMP`: same as `TMPDIR`
+
+## Controlling Environment Variables
+
+All environment variables above are exported by Scrut for test execution. Additionally there are environment variables that can be used to control Scrut's behavior:
+
+- `SCRUT_DEFAULT_SHELL`: Overrides the path to the [default shell](/docs/reference/fundamentals/inline-configuration/#shell) that is used for executing [shell expressions](/docs/reference/fundamentals/shell-expression/). This is useful when the `bash` binary is located in a non-standard location.

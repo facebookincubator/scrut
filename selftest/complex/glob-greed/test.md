@@ -21,7 +21,7 @@ $ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-bad.mdtest"
 // $ echo -e "foo\nbar\nbaz"
 // =============================================================================
 
-1+ +  |   * (glob*)
+1+ +  |   * (glob*) (equal)
 2     | - bla
 
 

@@ -1,0 +1,151 @@
+name: Run Test Suite
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # linux
+          - build: linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - build: linux-aarch64
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-musl
+
+          # macos
+          - build: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+          - build: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+
+          # windows
+          - build: windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-gnu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v0-rust-v1
+          shared-key: ${{ matrix.target }}
+          cache-all-crates: true
+
+      - name: Build Test
+        run: cargo build --bins --tests --benches
+
+  unit-tests:
+    needs: build-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # linux
+          - build: linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - build: linux-aarch64
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-musl
+
+          # macos
+          - build: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+          - build: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+
+          # windows
+          - build: windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-gnu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v0-rust-v1
+          shared-key: ${{ matrix.target }}
+          save-if: false
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          # GH issue: https://github.com/actions/runner-images/issues/7218
+          #   Problem: Action runner selects wrong bash.exe
+          #   Error: Windows Subsystem for Linux has no installed distributions
+          #   Workaround: Choose right bash.exe
+          if [[ "${{ matrix.target }}" == *-windows-gnu ]]; then
+            export SCRUT_DEFAULT_SHELL="C:\\Program Files\\Git\\bin\\bash.exe"
+          fi
+          cargo test
+
+  integration-tests:
+    needs: build-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # linux
+          - build: linux-x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - build: linux-aarch64
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-musl
+
+          # macos
+          - build: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+          - build: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+
+          # windows
+          - build: windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-gnu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v0-rust-v1
+          shared-key: ${{ matrix.target }}
+          save-if: false
+
+      - name: Run integration tests
+        run: make selftest

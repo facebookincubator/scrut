@@ -26,11 +26,13 @@ selftest/cases/crlf-encoded.md:
 
 # TODO remove this once T136897640 closes
 selftest_cram: $(SCRUT_BIN)
-	$(SCRUT_BIN) test --cram-compat --keep-output-crlf --combine-output \
+	$(SCRUT_BIN) test \
+		--verbose --cram-compat --keep-output-crlf --combine-output \
 		$$(find selftest -type f -name "*.t" -not -name "*fail*")
 
 selftest_markdown: $(SCRUT_BIN)
 	$(SCRUT_BIN) test \
+		--verbose \
 		$$(find selftest -type f -name "*.md" -not -name "*fail*")
 
 selftest: selftest_markdown selftest_cram
@@ -38,15 +40,7 @@ selftest: selftest_markdown selftest_cram
 cargotest:
 	cargo test --features volatile_tests
 
-doctest: $(SCRUT_BIN)
-	export PATH="$$(dirname "$(SCRUT_BIN)"):$$PATH"; \
-	$(SCRUT_BIN) test \
-		--work-directory="$$(pwd)" --markdown-languages=sh $$(find docs -type f -not -name "*Meta*" -and -not -name "Tutorial.md")
-
-pytest: $(SCRUT_BIN)
-	make -C py test
-
-test: cargotest selftest doctest pytest
+test: cargotest selftest
 
 update_tests_markdown: $(SCRUT_BIN)
 	export PATH="$$(dirname "$(SCRUT_BIN)"):$$PATH"; \

@@ -34,14 +34,13 @@ pub mod stateful_executor;
 pub mod subprocess_runner;
 pub mod util;
 
-#[cfg(target_os = "windows")]
 lazy_static! {
-    /// Default path to shell on Windows
-    pub static ref DEFAULT_SHELL: &'static Path = Path::new("bash");
-}
-
-#[cfg(not(target_os = "windows"))]
-lazy_static! {
-    /// Default path to shell on Linux/Mac/..
-    pub static ref DEFAULT_SHELL: &'static Path = Path::new("/bin/bash");
+    static ref SHELL_PATH: String = if let Ok(value) = std::env::var("SCRUT_DEFAULT_SHELL") {
+        value
+    } else if cfg!(target_os = "windows") {
+        "bash".to_string()
+    } else {
+        "/bin/bash".to_string()
+    };
+    pub static ref DEFAULT_SHELL: &'static Path = Path::new(&*SHELL_PATH as &str);
 }
