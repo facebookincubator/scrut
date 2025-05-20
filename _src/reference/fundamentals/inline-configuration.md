@@ -121,15 +121,22 @@ Per-document configuration, including defaults, from prepended documents is igno
 
 - Type: **string**
 - Command Line Parameter: **`--shell`**
-- Default: **`bash`**
+- Default (Linux, MacOS): **`/bin/bash`**
+- Default (Windows): **`bash`**
 
 The `shell` configuration specifies the path to the shell that should be used to execute the test cases. If a full path is not provided, the shell command must be available in the system's `$PATH`. Currently, only `bash` compatible shells are supported. This configuration is useful when you need to run tests in a specific shell environment that might have different features or behaviors compared to the default shell.
 
 **Example:**
 
 ```yaml
-shell: /bin/bash
+shell: /bin/my-bash
 ```
+
+:::tip
+
+You can also overwrite the default shell using the `SCRUT_DEFAULT_SHELL` [environment variable](/docs/reference/fundamentals/environment-variables/).
+
+:::
 
 ### `total_timeout`
 
