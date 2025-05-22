@@ -55,21 +55,47 @@ impl Context {
 #[cfg(test)]
 impl Drop for Context {
     fn drop(&mut self) {
+        use std::time::Duration;
+
+        static MAX_DELETE_ATTEMPTS: i32 = 20;
+        static WAIT_AFTER_FAIL_TIME: Duration = Duration::from_millis(100);
+        static MAX_WAIT_AFTER_FAIL_TIME: Duration = Duration::from_secs(1);
+
         for (name, directory) in [
             ("temp", &self.temp_directory),
             ("work", &self.work_directory),
         ] {
-            if directory
+            if !directory
                 .to_string_lossy()
                 .contains(test::TESTING_PATH_PREFIX)
             {
-                std::fs::remove_dir_all(directory).unwrap_or_else(|err| {
-                    panic!(
-                        "failed to clean up testing {name} directory recursively in \"{}\": {}",
-                        directory.display(),
-                        err
-                    )
-                });
+                continue;
+            }
+
+            // windows takes a good amount of time to release access to the directory, so
+            // a couple of tries and wait time is likely required
+            let mut wait_time = WAIT_AFTER_FAIL_TIME;
+            for attempt in 1..(MAX_DELETE_ATTEMPTS + 1) {
+                match std::fs::remove_dir_all(directory) {
+                    Err(err) => {
+                        if attempt == MAX_DELETE_ATTEMPTS {
+                            panic!(
+                                "failed to clean up testing {name} directory recursively in \"{}\": {}",
+                                directory.display(),
+                                err
+                            )
+                        } else {
+                            tracing::warn!(
+                                attempt,
+                                ?err,
+                                "failed to clean up {name} directory and will try again shortly"
+                            )
+                        }
+                        std::thread::sleep(wait_time);
+                        wait_time = std::cmp::min(wait_time * 2, MAX_WAIT_AFTER_FAIL_TIME);
+                    }
+                    Ok(_) => break,
+                }
             }
         }
     }
