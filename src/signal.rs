@@ -290,7 +290,7 @@ mod win_signal {
             S: Serializer,
         {
             match self {
-                KillSignal::Enabled(ref signal) => serializer.serialize_str(signal),
+                KillSignal::Enabled(signal) => serializer.serialize_str(signal),
                 KillSignal::Disabled => serializer.serialize_str("disabled"),
             }
         }
