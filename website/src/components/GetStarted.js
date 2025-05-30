@@ -13,7 +13,7 @@ import styles from './GetStarted.module.css';
 export default function GetStarted() {
     return (
         <div className={clsx(["container", styles.getStarted])}>
-            <a href="/docs/getting-started/" className={styles.getStartedButton}>
+            <a href="/scrut/docs/getting-started/" className={styles.getStartedButton}>
                 Get Started
             </a>
         </div>
