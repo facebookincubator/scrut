@@ -95,6 +95,82 @@ This should be mostly self-explanatory. Scrut does not provide any [output expec
 
 The tailing `## STDOUT` and `## STDERR` contain the output lines (prefixed with `#> `) that were printed out from the failed execution.
 
+### Multiline Matches
+
+If you use output expectations with a [quantifier](/docs/reference/fundamentals/output-expectations/#quantifiers) that allows for multiline matches then Scrut will print the output lines that match the expectation. For example, consider the following test:
+
+````markdown title="some-test.md" showLineNumbers
+# Some test
+
+```scrut
+$ echo -e "foo\nbar1\nbar2\nbar3\nbar4\nbaz"
+bar* (glob+)
+```
+````
+
+This test will fail, because `bar* (glob+)` does not mach the first or the last line. The failed output will look like this:
+
+```bash title="Terminal"
+$ scrut test some-test.md
+🔎 Found 1 test document(s)
+❌ some-test.md: failed 1 out of 1 testcase
+
+// =============================================================================
+// @ some-test.md:4
+// -----------------------------------------------------------------------------
+// # Some test
+// -----------------------------------------------------------------------------
+// $ echo -e "foo\nbar1\nbar2\nbar3\nbar4\nbaz"
+// =============================================================================
+
+   1  | + foo
+1+ 2  |   bar1  // bar* (glob+)
+ + 3  |   bar2
+ + 4  |   bar3
+ + 5  |   bar4
+   6  | + baz
+
+
+Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
+```
+
+:::note
+
+The amount of lines that are printed is controlled by the `--multiline-match-lines` flag. The default is `100` to strike a balance between meaningful output and flooding the terminal. If more lines than that are produced then only the first 50 and last 50 lines are printed, with a hint that there are more lines in between:
+
+```bash title="Terminal"
+$ scrut test --max-multiline-matched-lines=2 some-test.md
+🔎 Found 1 test document(s)
+❌ some-test.md: failed 1 out of 1 testcase
+
+// =============================================================================
+// @ some-test.md:4
+// -----------------------------------------------------------------------------
+// # Some test
+// -----------------------------------------------------------------------------
+// $ echo -e "foo\nbar1\nbar2\nbar3\nbar4\nbaz"
+// =============================================================================
+
+   1  | + foo
+1+ 2  |   bar1  // bar* (glob+)
+ +    | …
+ + 5  |   bar4
+   6  | + baz
+
+
+Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
+```
+
+If you set `--multiline-match-lines` to less or equal `1` then Scrut will not print any lines that match the expectation, but only the expectation itself:
+
+```
+   1  | + foo
+1+ +  |   bar* (glob+)
+   6  | + baz
+```
+
+:::
+
 ## Diff renderer
 
 The `diff` renderer, that can be enabled with `--renderer diff` (or `-r diff`), prints a diff in the [unified format](https://en.wikipedia.org/wiki/Diff#Unified_format).

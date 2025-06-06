@@ -27,6 +27,7 @@ use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
 use scrut::renderers::diff::DiffRenderer;
+use scrut::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
 use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::pretty::PrettyColorRenderer;
 use scrut::renderers::pretty::PrettyMonochromeRenderer;
@@ -106,6 +107,12 @@ pub struct Args {
     /// to use absolute line numbers from within the test file.
     #[clap(long)]
     absolute_line_numbers: bool,
+
+    /// Specifies the number of lines to display when tests with multiline expectations
+    /// fail when using the pretty renderer. If the number of matched lines exceeds
+    /// this value, the extra lines will be truncated in the output.
+    #[clap(long, default_value_t = DEFAULT_MULTILINE_MATCHED_LINES)]
+    max_multiline_matched_lines: usize,
 
     /// Increase output verbosity, print out information that is not warning or errors
     #[clap(long)]
@@ -424,6 +431,7 @@ impl Args {
                     max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
                     absolute_line_numbers: self.absolute_line_numbers,
                     summarize: true,
+                    max_multiline_matched_lines: self.max_multiline_matched_lines,
                 };
                 if !self.global.no_color && console::colors_enabled() {
                     Box::new(color_renderer)

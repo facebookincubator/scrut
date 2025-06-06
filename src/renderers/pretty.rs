@@ -25,6 +25,7 @@ use crate::testcase::TestCaseError;
 pub const DEFAULT_SURROUNDING_LINES: usize = 5;
 pub const DEFAULT_ABSOLUTE_LINE_NUMBERS: bool = false;
 pub const DEFAULT_SUMMARIZE: bool = true;
+pub const DEFAULT_MULTILINE_MATCHED_LINES: usize = 100;
 
 /// Renders errors in a human readable way, that higlights the differences eper
 /// test case.
@@ -50,6 +51,7 @@ pub struct PrettyColorRenderer {
     pub max_surrounding_lines: usize,
     pub absolute_line_numbers: bool,
     pub summarize: bool,
+    pub max_multiline_matched_lines: usize,
 }
 
 impl PrettyColorRenderer {
@@ -82,6 +84,7 @@ impl Default for PrettyColorRenderer {
             max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
             absolute_line_numbers: DEFAULT_ABSOLUTE_LINE_NUMBERS,
             summarize: DEFAULT_SUMMARIZE,
+            max_multiline_matched_lines: DEFAULT_MULTILINE_MATCHED_LINES,
         }
     }
 }
@@ -203,21 +206,90 @@ impl ErrorRenderer for PrettyColorRenderer {
                         skip = false;
                     }
                     if !skip {
-                        output.push_str(
-                            &decorator
-                                .line(
-                                    if expectation.multiline {
-                                        Some(0)
-                                    } else {
-                                        Some(line_base + lines[0].0 + 1)
-                                    },
-                                    Some(line_base + index + 1),
-                                    expectation.multiline,
-                                    " ",
-                                    &expectation.to_expression_string(&outcome.escaping),
-                                )
-                                .assure_newline(),
-                        );
+                        if !expectation.multiline || self.max_multiline_matched_lines <= 1 {
+                            output.push_str(
+                                &decorator
+                                    .line(
+                                        if expectation.multiline {
+                                            Some(0)
+                                        } else {
+                                            Some(line_base + lines[0].0 + 1)
+                                        },
+                                        Some(line_base + index + 1),
+                                        expectation.multiline,
+                                        " ",
+                                        &expectation.to_expression_string(&outcome.escaping),
+                                    )
+                                    .assure_newline(),
+                            );
+                        } else {
+                            let mut half = 0;
+                            let lines = if lines.len() > self.max_multiline_matched_lines {
+                                // take lines from the top and the bottom and truncate the middle
+                                half = ((self.max_multiline_matched_lines as f64) / 2.0).ceil()
+                                    as usize;
+                                let mut new_lines: Vec<(usize, Vec<u8>)> =
+                                    Vec::with_capacity(self.max_multiline_matched_lines);
+                                new_lines.extend(lines.iter().take(half).cloned());
+                                new_lines.extend(
+                                    lines
+                                        .iter()
+                                        .rev()
+                                        .take(self.max_multiline_matched_lines - half)
+                                        .rev()
+                                        .cloned(),
+                                );
+                                new_lines
+                            } else {
+                                lines.to_vec()
+                            };
+
+                            let max_line_length =
+                                lines.iter().map(|(_, line)| line.len()).max().unwrap_or(0);
+                            for (output_index, (line_index, line)) in lines.into_iter().enumerate()
+                            {
+                                let mut line = outcome
+                                    .escaping
+                                    .escaped_printable((&line as &[u8]).trim_newlines())
+                                    .to_string();
+
+                                // append expectation as a "comment" infirst line
+                                if output_index == 0 {
+                                    line += &format!(
+                                        "{}{} {}",
+                                        " ".repeat(max_line_length - line.len() + 1),
+                                        style("//").magenta(),
+                                        style(expectation.to_expression_string(&outcome.escaping))
+                                            .magenta()
+                                            .bold()
+                                    );
+                                }
+                                output.push_str(
+                                    &decorator
+                                        .line(
+                                            Some(line_base + line_index + 1),
+                                            if output_index == 0 {
+                                                Some(line_base + index + 1)
+                                            } else {
+                                                None
+                                            },
+                                            expectation.multiline,
+                                            " ",
+                                            &line,
+                                        )
+                                        .assure_newline(),
+                                );
+
+                                // insert "..." if half of the lines have been added
+                                if half > 0 && output_index + 1 == half {
+                                    output.push_str(
+                                        &decorator
+                                            .line(None, None, expectation.multiline, "…", "")
+                                            .assure_newline(),
+                                    );
+                                }
+                            }
+                        }
                     } else if first_skip {
                         output.push_str(&"...".assure_newline());
                     }
@@ -400,6 +472,7 @@ mod tests {
             max_surrounding_lines: 0,
             absolute_line_numbers: false,
             summarize: true,
+            ..Default::default()
         })
     }
 
@@ -511,6 +584,7 @@ mod tests {
                 max_surrounding_lines: 0,
                 absolute_line_numbers: test.absolute_line_numbers,
                 summarize: true,
+                ..Default::default()
             });
             let rendered = renderer
                 .render(&[&Outcome {
@@ -614,6 +688,7 @@ mod tests {
             max_surrounding_lines: 10,
             absolute_line_numbers: false,
             summarize: true,
+            ..Default::default()
         });
         let testcase = TestCase {
             title: "the title".to_string(),
@@ -728,6 +803,7 @@ mod tests {
                 max_surrounding_lines: surrounding,
                 absolute_line_numbers: false,
                 summarize: true,
+                ..Default::default()
             });
             let testcase = TestCase {
                 title: "the title".to_string(),
@@ -842,6 +918,7 @@ mod tests {
                 max_surrounding_lines: 0,
                 absolute_line_numbers: *absolute_numbers,
                 summarize: true,
+                ..Default::default()
             });
             let rendered = renderer
                 .render(&[&Outcome {
@@ -858,5 +935,63 @@ mod tests {
                 rendered
             );
         })
+    }
+
+    #[test]
+    fn test_render_multiline_match_excerpt() {
+        let output = format!("bar\n{}baz", "foo\n".repeat(12));
+        let expectations = vec![test_expectation!("glob", "foo*", false, true)];
+        let lines = vec![
+            DiffLine::UnexpectedLines {
+                lines: vec![(0, bformatln!("bar"))],
+            },
+            DiffLine::MatchedExpectation {
+                index: 1,
+                expectation: expectations[0].clone(),
+                lines: (1..13)
+                    .map(|i| (i, bformatln!("foo{}", i)))
+                    .collect::<Vec<_>>(),
+            },
+            DiffLine::UnexpectedLines {
+                lines: vec![(13, bformatln!("bar"))],
+            },
+        ];
+
+        let testcase = TestCase {
+            title: "the title".to_string(),
+            shell_expression: "the command".to_string(),
+            expectations,
+            exit_code: None,
+            line_number: 10,
+            ..Default::default()
+        };
+
+        [12, 6, 3, 1]
+            .into_iter()
+            .for_each(|max_multiline_matched_lines| {
+                let renderer = PrettyMonochromeRenderer::new(PrettyColorRenderer {
+                    max_surrounding_lines: 0,
+                    absolute_line_numbers: false,
+                    summarize: false,
+                    max_multiline_matched_lines: max_multiline_matched_lines as usize,
+                });
+                let rendered = renderer
+                    .render(&[&Outcome {
+                        location: None,
+                        output: (&output, "", Some(123)).into(),
+                        testcase: testcase.clone(),
+                        result: Err(TestCaseError::MalformedOutput(Diff::new(lines.clone()))),
+                        escaping: Escaper::default(),
+                        format: ParserType::Markdown,
+                    }])
+                    .expect("render does not fail");
+                insta::assert_snapshot!(
+                    format!(
+                        "test_render_multiline_match_excerpt={:?}",
+                        max_multiline_matched_lines
+                    ),
+                    rendered
+                );
+            })
     }
 }
