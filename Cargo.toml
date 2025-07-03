@@ -28,7 +28,7 @@ dunce = "1.0.2"
 globset = { version = "0.4.13", features = ["serde1"] }
 humantime = "2.1"
 indicatif = { version = "0.17.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
-lazy_static = { version = "1.5", features = ["spin_no_std"], default-features = false }
+lazy_static = "1.5"
 rand = { version = "0.8", features = ["small_rng"] }
 regex = "1.11.1"
 serde = { version = "1.0.185", features = ["derive", "rc"] }
