@@ -70,3 +70,24 @@ Use shell function
 $ bla
 BLA
 ```
+
+## Use-case: Heredoc
+
+Create a file with a heredoc
+
+```scrut
+$ cat > file.txt <<EOF
+> Hello,
+>
+> world!
+> EOF
+```
+
+Read file
+
+```scrut
+$ cat file.txt
+Hello,
+
+world!
+```

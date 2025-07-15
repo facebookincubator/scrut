@@ -93,17 +93,16 @@ impl LineParser {
         }
 
         // continuation of command
-        if self.in_command {
-            if let Some(line) = line.strip_prefix("> ") {
-                if self.command.is_empty() {
-                    bail!(
-                        "line {}: command extender '>' requires previous command start '$' which is not given",
-                        index + 1
-                    );
-                }
-                self.command.push(line.into());
-                return Ok(CodeType::CommandContinue);
+        if self.in_command && (line == ">" || line.starts_with("> ")) {
+            if self.command.is_empty() {
+                bail!(
+                    "line {}: command extender '>' requires previous command start '$' which is not given",
+                    index + 1
+                );
             }
+            self.command
+                .push(line.strip_prefix("> ").unwrap_or_default().into());
+            return Ok(CodeType::CommandContinue);
         }
 
         self.in_command = false;
@@ -259,6 +258,7 @@ mod tests {
         let mut engine = engine(false);
         engine.set_testcase_title("foo");
         engine.add_testcase_body("$ bar1", 1).expect("add command");
+        engine.add_testcase_body(">", 1).expect("add command");
         engine.add_testcase_body("> bar2", 1).expect("add command");
         engine.add_testcase_body("> bar3", 1).expect("add command");
         engine.add_testcase_body("baz", 2).expect("add expectation");
@@ -269,7 +269,7 @@ mod tests {
                 title: "foo".to_string(),
                 exit_code: Some(5),
                 expectations: vec![test_expectation!("equal", "baz"),],
-                shell_expression: "bar1\nbar2\nbar3".to_string(),
+                shell_expression: "bar1\n\nbar2\nbar3".to_string(),
                 line_number: 2,
                 ..Default::default()
             },],
