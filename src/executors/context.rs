@@ -121,7 +121,7 @@ mod test {
             .prefix(TESTING_PATH_PREFIX)
             .tempdir()
             .expect("create testing working directory for context")
-            .into_path()
+            .keep()
     }
 
     #[test]

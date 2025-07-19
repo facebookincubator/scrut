@@ -93,10 +93,10 @@ impl TestEnvironment {
         let (work_directory, tmp_directory) = if keep_temporary_directories {
             let work_path = TempDir::with_prefix("execution.")
                 .context("create temporary working directory")?
-                .into_path();
+                .keep();
             let temp_path = TempDir::with_prefix("temp.")
                 .context("create temporary working directory")?
-                .into_path();
+                .keep();
             (
                 EnvironmentDirectory::Kept(work_path),
                 EnvironmentDirectory::Kept(temp_path),
