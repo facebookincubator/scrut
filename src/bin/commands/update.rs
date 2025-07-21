@@ -82,7 +82,7 @@ pub struct Args {
     match_cram: String,
 
     /// Glob match that identifies markdown files
-    #[clap(long, default_value = "*.{md,markdown}")]
+    #[clap(long, default_value = "*.{md,markdown,scrut}")]
     match_markdown: String,
 
     /// Whether to replace the contents of the files (see --output-suffix)

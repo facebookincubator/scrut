@@ -1,0 +1,10 @@
+# This is a scrut test
+
+Tests whether `.scrut` tests are automatically picked up.
+
+## Test me
+
+```scrut
+$ echo Hello World
+Hello World
+```

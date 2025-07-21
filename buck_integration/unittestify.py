@@ -138,34 +138,40 @@ class ScrutTests(unittest.TestCase):
         args = [os.path.join(os.getcwd(), scrut_location), "test"] + scrut_args
 
         method_names = {}
-        for fmt, suffix in {"cram": ".t", "markdown": ".md"}.items():
-            for testpath in Path(scrut_tests_dir).glob(f"**/*{suffix}"):
-                method_name = scruttest.generate_test_method_name(testpath)
-                if method_name in method_names:
-                    raise Exception(
-                        "Colliding test names: {} and {} both result in {}".format(
-                            testpath,
-                            method_names[method_name],
-                            method_name,
+        for fmt, suffixes in {
+            "cram": [".t", ".cram"],
+            "markdown": [".md", ".markdown", ".scrut"],
+        }.items():
+            for suffix in suffixes:
+                for testpath in Path(scrut_tests_dir).glob(f"**/*{suffix}"):
+                    method_name = scruttest.generate_test_method_name(testpath)
+                    if method_name in method_names:
+                        raise Exception(
+                            "Colliding test names: {} and {} both result in {}".format(
+                                testpath,
+                                method_names[method_name],
+                                method_name,
+                            )
                         )
+                    method_names[method_name] = testpath
+
+                    fmt_args = []
+                    if fmt == "cram":
+                        fmt_args.append("--cram-compat")
+                        fmt_args.append("--combine-output")
+                        fmt_args.append("--keep-output-crlf")
+
+                    setattr(
+                        cls,
+                        method_name,
+                        _make_scrut_test_method(
+                            args=args
+                            + fmt_args
+                            + [str(testpath.relative_to(base_path))],
+                            env=env,
+                            cwd=Path.joinpath(Path(os.getcwd()), base_path),
+                        ),
                     )
-                method_names[method_name] = testpath
-
-                fmt_args = []
-                if fmt == "cram":
-                    fmt_args.append("--cram-compat")
-                    fmt_args.append("--combine-output")
-                    fmt_args.append("--keep-output-crlf")
-
-                setattr(
-                    cls,
-                    method_name,
-                    _make_scrut_test_method(
-                        args=args + fmt_args + [str(testpath.relative_to(base_path))],
-                        env=env,
-                        cwd=Path.joinpath(Path(os.getcwd()), base_path),
-                    ),
-                )
 
 
 def _make_scrut_test_method(
