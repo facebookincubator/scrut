@@ -97,6 +97,10 @@ If you are testing actual markdown output, be aware that you can embed code bloc
 
 :::
 
+## File Suffix
+
+Per default Scrut picks up files with `.md`, `.markdown` or `.scrut` file suffixes. This can be configured via the `--match-markdown` command line option, which accepts a glob statement like `*.md` or `*.{md,scrut}`.
+
 ## Configuration
 
 Markdown [test documents](/docs/reference/fundamentals/test-document/) may contain inline configuration. Read more in [Reference > Fundamentals > Inline Configuration](/docs/reference/fundamentals/inline-configuration/).
