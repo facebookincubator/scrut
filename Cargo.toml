@@ -24,7 +24,7 @@ console = "0.15.7"
 derivative = "2.2"
 derive_builder = { version = "0.20.0", features = ["alloc"] }
 dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }
-dunce = "1.0.2"
+dunce = "1.0.5"
 globset = { version = "0.4.13", features = ["serde1"] }
 humantime = "2.1"
 indicatif = { version = "0.17.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
