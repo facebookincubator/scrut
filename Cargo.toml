@@ -22,7 +22,7 @@ anyhow = "1.0.98"
 clap = { version = "4.5.41", features = ["derive", "env", "string", "unicode", "wrap_help"] }
 console = "0.15.7"
 derivative = "2.2"
-derive_builder = { version = "0.20.0", features = ["alloc"] }
+derive_builder = { version = "0.20.2", features = ["alloc"] }
 dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }
 dunce = "1.0.5"
 globset = { version = "0.4.13", features = ["serde1"] }
