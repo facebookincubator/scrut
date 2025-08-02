@@ -31,7 +31,7 @@ indicatif = { version = "0.17.6", features = ["futures", "improved_unicode", "ra
 lazy_static = "1.5"
 rand = { version = "0.8", features = ["small_rng"] }
 regex = "1.11.1"
-serde = { version = "1.0.185", features = ["derive", "rc"] }
+serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["alloc", "float_roundtrip", "unbounded_depth"] }
 serde_yaml = "0.9.25"
 shell-escape = "0.1.5"
