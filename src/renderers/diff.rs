@@ -21,7 +21,7 @@ use crate::outcome::Outcome;
 use crate::parsers::parser::ParserType;
 
 /// Renderer that uses the traditional Diff render format
-/// See: https://en.wikipedia.org/wiki/Diff
+/// See: <https://en.wikipedia.org/wiki/Diff>
 pub struct DiffRenderer {}
 
 impl DiffRenderer {
