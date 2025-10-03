@@ -51,7 +51,8 @@ pub const BASH_EXCLUDED_VARIABLES: &[&str] = &[
 
 const BASH_TEMPLATE: &str = include_str!("bash_runner.template");
 
-/// A [`Runner`], that is intended to run a series of contextual related [`Execution`]s, which
+/// A [`Runner`], that is intended to run a series of contextual related 
+/// [`crate::executors::execution::Execution`]s, which
 /// that ought to share the same environmental context (environment variables, shell
 /// variables, shopt, set, functions and aliases).
 ///
@@ -67,7 +68,7 @@ const BASH_TEMPLATE: &str = include_str!("bash_runner.template");
 /// This Runner is not concurrency-safe (the shared state directory with the `state` file mandates
 /// sequential, isolated execution).
 ///
-/// Underlying the [`ThreadedRunner`] is used, so timeout constraints are fully supported.
+/// Underneath the [`SubprocessRunner`] is used, so timeout constraints are fully supported.
 #[derive(Clone)]
 pub struct BashRunner {
     pub shell: PathBuf,
