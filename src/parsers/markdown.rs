@@ -161,11 +161,13 @@ pub(crate) enum MarkdownToken {
 
     /// The parsed contents of a code block within backticks, representing a Scrut test:
     ///
+    /// ````markdown
     /// ```scrut { ... config ..}
     /// # comment
     /// $ shell expression
     /// output expectations
     /// ```
+    /// ````
     TestCodeBlock {
         /// The used language token of the test (i.e. `scrut`)
         language: String,
