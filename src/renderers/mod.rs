@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-//! This module is concerned with rendering the [`outcome::Outcome`] of test
+//! This module is concerned with rendering the [`crate::outcome::Outcome`] of test
 //! executions.
 
 pub mod diff;

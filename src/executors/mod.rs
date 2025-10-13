@@ -14,12 +14,8 @@
 //! described in the [`crate::executors::executor::Executor`] trait.
 //!
 //! Currently there are two implementations available:
-//! - [`crate::executors::sequential_shell`], which runs executions from within
-//!   a file sequentially, allowing for shared state (environment variables,
-//!   aliases) to be "passed down"
-//! - [`crate::executors::parallel_shell`], which runs executions from within
-//!   a file in parallel, returning results quickly, but not supporting shared
-//!   state in between
+//! - [`crate::executors::bash_script_executor::BashScriptExecutor`]
+//! - [`crate::executors::stateful_executor::StatefulExecutor`]
 
 use std::path::Path;
 
