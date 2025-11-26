@@ -30,7 +30,7 @@ humantime = "2.1"
 indicatif = { version = "0.18.3", features = ["futures", "improved_unicode", "rayon", "tokio"] }
 lazy_static = "1.5"
 rand = { version = "0.8", features = ["small_rng"] }
-regex = "1.11.1"
+regex = "1.12.2"
 serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = { version = "1.0.140", features = ["alloc", "float_roundtrip", "raw_value", "unbounded_depth"] }
 serde_yaml = "0.9.25"
