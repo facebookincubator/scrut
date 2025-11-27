@@ -154,6 +154,13 @@ impl Executor for StatefulExecutor {
 
                     // .. otherwise keep collecting output
                     outputs.push(output);
+
+                    // check if fail_fast is enabled and validation fails
+                    if testcase.config.get_fail_fast() {
+                        if testcase.validate(outputs.last().unwrap()).is_err() {
+                            return Err(ExecutionError::Failed(index, outputs));
+                        }
+                    }
                 }
 
                 // running into a timeout ends all execution ..

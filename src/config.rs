@@ -242,6 +242,11 @@ pub struct TestCaseConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detached_kill_signal: Option<KillSignal>,
 
+    /// If true, stops execution of the entire test document immediately if this
+    /// test case fails for any reason (exit status, snapshot validation, etc).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fail_fast: Option<bool>,
+
     /// A set of environment variable names and values that will be explicitly set
     /// for the test.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -332,6 +337,7 @@ impl TestCaseConfig {
             && self.keep_crlf.is_none()
             && self.timeout.is_none()
             && self.detached.is_none()
+            && self.fail_fast.is_none()
             && self.wait.is_none()
             && self.skip_document_code.is_none()
             && self.strip_ansi_escaping.is_none()
@@ -358,6 +364,7 @@ impl TestCaseConfig {
                 .detached_kill_signal
                 .clone()
                 .or_else(|| defaults.detached_kill_signal.clone()),
+            fail_fast: self.fail_fast.or(defaults.fail_fast),
             wait: self.wait.clone().or_else(|| defaults.wait.clone()),
             skip_document_code: self.skip_document_code.or(defaults.skip_document_code),
             strip_ansi_escaping: self.strip_ansi_escaping.or(defaults.strip_ansi_escaping),
@@ -406,6 +413,9 @@ impl TestCaseConfig {
         if self.detached != other.detached {
             diff.detached = self.detached;
         }
+        if self.fail_fast != other.fail_fast {
+            diff.fail_fast = self.fail_fast;
+        }
         if self.skip_document_code != other.skip_document_code {
             diff.skip_document_code = self.skip_document_code;
         }
@@ -451,6 +461,9 @@ impl TestCaseConfig {
         if let Some(value) = self.detached {
             output.push(format!("detached: {}", value))
         }
+        if let Some(value) = self.fail_fast {
+            output.push(format!("fail_fast: {}", value))
+        }
         if let Some(value) = self.skip_document_code {
             output.push(format!("skip_document_code: {}", value))
         }
@@ -483,6 +496,10 @@ impl TestCaseConfig {
     pub fn get_skip_document_code(&self) -> i32 {
         self.skip_document_code
             .unwrap_or(DEFAULT_SKIP_DOCUMENT_CODE)
+    }
+
+    pub fn get_fail_fast(&self) -> bool {
+        self.fail_fast.unwrap_or(false)
     }
 }
 
@@ -553,6 +570,7 @@ append:
 defaults:
   detached: true
   detached_kill_signal: quit
+  fail_fast: true
   environment:
     BAZ: zoing
     FOO: bar
@@ -594,6 +612,7 @@ total_timeout: 5m 3s
                     },
                     detached: Some(true),
                     detached_kill_signal: Some(KillSignal::test_default()),
+                    fail_fast: Some(true),
                     wait: Some(TestCaseWait {
                         timeout: Duration::from_secs(2 * 60 + 1),
                         path: Some(PathBuf::from("the-wait-path")),
@@ -624,6 +643,7 @@ total_timeout: 5m 3s
                 },
                 detached: Some(true),
                 detached_kill_signal: Some(KillSignal::test_default()),
+                fail_fast: Some(true),
                 wait: Some(TestCaseWait {
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
@@ -641,6 +661,7 @@ total_timeout: 5m 3s
     const FULL_TESTCASE_CONFIG: &str = "
 detached: true
 detached_kill_signal: quit
+fail_fast: true
 environment:
   BAZ: zoing
   FOO: bar
@@ -672,6 +693,7 @@ wait:
                 },
                 detached: Some(true),
                 detached_kill_signal: Some(KillSignal::test_default()),
+                fail_fast: Some(true),
                 wait: Some(TestCaseWait {
                     timeout: Duration::from_secs(2 * 60 + 1),
                     path: Some(PathBuf::from("the-wait-path")),
@@ -696,6 +718,7 @@ wait:
             },
             detached: Some(true),
             detached_kill_signal: Some(KillSignal::test_default()),
+            fail_fast: Some(true),
             wait: Some(TestCaseWait {
                 timeout: Duration::from_secs(2 * 60 + 1),
                 path: Some(PathBuf::from("the-wait-path")),
@@ -711,7 +734,7 @@ wait:
 
     #[test]
     fn test_testcase_config_yaml_one_liner() {
-        let tests = vec![
+        let tests = [
             (TestCaseConfig::empty(), "{}"),
             (
                 TestCaseConfig {
@@ -736,6 +759,7 @@ wait:
                     keep_crlf: Some(true),
                     detached: Some(false),
                     detached_kill_signal: None,
+                    fail_fast: Some(false),
                     environment: BTreeMap::from([("foo".to_string(), "bar".to_string())]),
                     skip_document_code: Some(123),
                     strip_ansi_escaping: Some(true),
@@ -745,7 +769,7 @@ wait:
                         path: Some(PathBuf::from("/tmp/wait")),
                     }),
                 },
-                "{output_stream: stderr, keep_crlf: true, timeout: 3m 54s, detached: false, skip_document_code: 123, strip_ansi_escaping: true, wait: {timeout: 2m 3s, path: /tmp/wait}, environment: {foo: \"bar\"}}",
+                "{output_stream: stderr, keep_crlf: true, timeout: 3m 54s, detached: false, fail_fast: false, skip_document_code: 123, strip_ansi_escaping: true, wait: {timeout: 2m 3s, path: /tmp/wait}, environment: {foo: \"bar\"}}",
             ),
         ];
         for (idx, (config, expected)) in tests.iter().enumerate() {

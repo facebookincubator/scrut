@@ -1,0 +1,24 @@
+# This test validates normal behavior without fail_fast
+
+This file has 3 tests: first passes, second fails WITHOUT fail_fast, third should still run.
+
+## First test passes
+
+```scrut
+$ echo "Test 1"
+Test 1
+```
+
+## Second test fails without fail_fast
+
+```scrut
+$ echo "Test 2"
+Wrong output
+```
+
+## Third test should still run
+
+```scrut
+$ echo "Test 3"
+Test 3
+```

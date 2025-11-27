@@ -57,6 +57,11 @@ pub enum ExecutionError {
     /// out or if all are (see [`ExecutionTimeout`])
     Timeout(ExecutionTimeout, Vec<Output>),
 
+    /// Returned if a [`crate::testcase::TestCase`] failed validation and had
+    /// fail_fast set to true, causing immediate termination of the test document.
+    /// Contains the index of the failed test and all outputs collected so far.
+    Failed(usize, Vec<Output>),
+
     /// Returned if a specific [`crate::testcase::TestCase`] execution is
     /// intentionally skipped by the user.
     /// This is not a final error.
@@ -128,6 +133,9 @@ impl Display for ExecutionError {
                 ),
                 ExecutionTimeout::Total => write!(f, "timeout in executing"),
             },
+            ExecutionError::Failed(idx, _output) => {
+                write!(f, "test {} failed with fail_fast enabled", idx + 1)
+            }
             ExecutionError::Skipped(idx) => write!(f, "skipped test {}", idx + 1),
         }
     }
