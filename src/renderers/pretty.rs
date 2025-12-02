@@ -244,26 +244,36 @@ impl ErrorRenderer for PrettyColorRenderer {
                                 lines.to_vec()
                             };
 
-                            let max_line_length =
-                                lines.iter().map(|(_, line)| line.len()).max().unwrap_or(0);
-                            for (output_index, (line_index, line)) in lines.into_iter().enumerate()
+                            let escaped_lines = lines.into_iter().map(|(line_index, line)| {
+                                (
+                                    line_index,
+                                    outcome
+                                        .escaping
+                                        .escaped_printable((&line as &[u8]).trim_newlines()),
+                                )
+                            });
+                            let max_line_length = escaped_lines
+                                .clone()
+                                .map(|(_, line)| line.len())
+                                .max()
+                                .unwrap_or(0);
+                            for (output_index, (line_index, line)) in
+                                escaped_lines.into_iter().enumerate()
                             {
-                                let mut line = outcome
-                                    .escaping
-                                    .escaped_printable((&line as &[u8]).trim_newlines())
-                                    .to_string();
-
-                                // append expectation as a "comment" infirst line
-                                if output_index == 0 {
-                                    line += &format!(
-                                        "{}{} {}",
-                                        " ".repeat(max_line_length - line.len() + 1),
+                                let output_line = if output_index == 0 {
+                                    // append expectation as a "comment" infirst line
+                                    format!(
+                                        "{line}{}{} {}",
+                                        " ".repeat(max_line_length - line.len() + 2),
                                         style("//").magenta(),
                                         style(expectation.to_expression_string(&outcome.escaping))
                                             .magenta()
                                             .bold()
-                                    );
-                                }
+                                    )
+                                } else {
+                                    line
+                                };
+
                                 output.push_str(
                                     &decorator
                                         .line(
@@ -275,7 +285,7 @@ impl ErrorRenderer for PrettyColorRenderer {
                                             },
                                             expectation.multiline,
                                             " ",
-                                            &line,
+                                            &output_line,
                                         )
                                         .assure_newline(),
                                 );
