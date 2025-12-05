@@ -25,7 +25,7 @@ use crate::testcase::TestCase;
 
 lazy_static! {
     /// Default timeout for all executions within a single test document
-    pub static ref DEFAULT_TOTAL_TIMEOUT: Duration = Duration::from_secs(900);
+    pub static ref DEFAULT_TOTAL_TIMEOUT: Duration = Duration::from_mins(15);
 }
 
 pub type Result<T> = anyhow::Result<T, ExecutionError>;
