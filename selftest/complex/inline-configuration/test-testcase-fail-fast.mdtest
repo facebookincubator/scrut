@@ -1,0 +1,24 @@
+# This test validates fail_fast stops execution on first failure
+
+This file has 3 tests: first passes, second fails with fail_fast enabled, third should be skipped.
+
+## First test passes
+
+```scrut
+$ echo "Test 1"
+Test 1
+```
+
+## Second test fails with fail_fast
+
+```scrut {fail_fast: true}
+$ echo "Test 2"
+Wrong output
+```
+
+## Third test should be skipped
+
+```scrut
+$ echo "Test 3"
+Test 3
+```

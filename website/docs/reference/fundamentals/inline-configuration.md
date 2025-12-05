@@ -200,6 +200,24 @@ Kill signals are only supported on Linux and MacOS. They are ignored (but valida
 
 :::
 
+### `fail_fast`
+
+- Type: **boolean**
+- Command Line Parameter: **n/a**
+- Default: **`false`**
+
+If set to `true`, stops execution of the entire test document immediately if this test case fails for any reason (exit status, snapshot validation, etc.). All remaining test cases in the document will be marked as skipped. This is useful when a critical test fails and subsequent tests are not meaningful or would fail anyway.
+
+**Example:**
+
+````markdown showLineNumbers
+```scrut {fail_fast: true}
+$ critical-setup-command
+```
+````
+
+In this example, if `critical-setup-command` fails, all subsequent tests in the document are skipped.
+
 ### `environment`
 
 - Type: **object**

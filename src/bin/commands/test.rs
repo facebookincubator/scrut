@@ -294,51 +294,24 @@ impl Args {
 
                     // ... because test timed out
                     ExecutionError::Timeout(timeout, outputs) => {
-                        // append outcomes for each testcase that was executed (i.e. all testcase
-                        // until and including the one that timed out)
-                        outcomes.extend(outputs.iter().zip(testcases.iter()).map(
-                            |(output, testcase)| {
-                                let result = if matches!(output.exit_code, ExitStatus::Timeout(_)) {
-                                    count_failed += 1;
+                        handle_early_termination(
+                            &outputs,
+                            &testcases,
+                            &mut outcomes,
+                            test.path.display().to_string(),
+                            escaping.clone(),
+                            test.parser_type,
+                            &mut count_success,
+                            &mut count_failed,
+                            &mut count_skipped,
+                            |output, testcase| {
+                                if matches!(output.exit_code, ExitStatus::Timeout(_)) {
                                     Err(TestCaseError::Timeout)
                                 } else {
-                                    let result = testcase.validate(output);
-                                    if result.is_err() {
-                                        count_failed += 1;
-                                        result
-                                    } else {
-                                        count_success += 1;
-                                        Ok(())
-                                    }
-                                };
-                                Outcome {
-                                    location: Some(test.path.display().to_string()),
-                                    testcase: (*testcase).clone(),
-                                    output: output.clone(),
-                                    escaping: escaping.clone(),
-                                    format: test.parser_type,
-                                    result,
+                                    testcase.validate(output)
                                 }
                             },
-                        ));
-
-                        // append outcomes for each testcase that was not executed (i.e. all
-                        // testcases after the one that timed out)
-                        let missing = testcases.len() - outputs.len();
-                        if missing > 0 {
-                            outcomes.extend(testcases.iter().skip(outputs.len()).map(|testcase| {
-                                Outcome {
-                                    location: Some(test.path.display().to_string()),
-                                    testcase: (*testcase).clone(),
-                                    output: ("", "", None).into(),
-                                    escaping: escaping.clone(),
-                                    format: test.parser_type,
-                                    result: Err(TestCaseError::Skipped),
-                                }
-                            }));
-
-                            count_skipped += missing;
-                        }
+                        );
 
                         let (location, timeout) = match timeout {
                             ExecutionTimeout::Index(idx) => (
@@ -357,6 +330,29 @@ impl Args {
                                 |t| format_duration(t).to_string()
                             ),
                             location,
+                        ));
+                        continue;
+                    }
+
+                    // ... because test failed with fail_fast enabled
+                    ExecutionError::Failed(idx, outputs) => {
+                        handle_early_termination(
+                            &outputs,
+                            &testcases,
+                            &mut outcomes,
+                            test.path.display().to_string(),
+                            escaping.clone(),
+                            test.parser_type,
+                            &mut count_success,
+                            &mut count_failed,
+                            &mut count_skipped,
+                            |output, testcase| testcase.validate(output),
+                        );
+
+                        pw.println(format!(
+                            "⚡ {}: stopped at testcase #{} due to fail_fast",
+                            style(test.path.to_string_lossy()).red(),
+                            idx + 1,
                         ));
                         continue;
                     }
@@ -477,6 +473,65 @@ impl Args {
     /// values set which are provided by the user.
     fn to_testcase_config(&self) -> TestCaseConfig {
         self.global.to_testcase_config()
+    }
+}
+
+/// Helper function to handle early termination cases (timeout, fail_fast).
+/// Validates outputs that were collected, marks remaining tests as skipped.
+fn handle_early_termination<F>(
+    outputs: &[scrut::output::Output],
+    testcases: &[&TestCase],
+    outcomes: &mut Vec<Outcome>,
+    location: String,
+    escaping: scrut::escaping::Escaper,
+    format: ParserType,
+    count_success: &mut usize,
+    count_failed: &mut usize,
+    count_skipped: &mut usize,
+    mut validate_output: F,
+) where
+    F: FnMut(&scrut::output::Output, &TestCase) -> Result<(), TestCaseError>,
+{
+    // append outcomes for each testcase that was executed
+    outcomes.extend(
+        outputs
+            .iter()
+            .zip(testcases.iter())
+            .map(|(output, testcase)| {
+                let result = validate_output(output, testcase);
+                if result.is_err() {
+                    *count_failed += 1;
+                } else {
+                    *count_success += 1;
+                }
+                Outcome {
+                    location: Some(location.clone()),
+                    testcase: (*testcase).clone(),
+                    output: output.clone(),
+                    escaping: escaping.clone(),
+                    format,
+                    result,
+                }
+            }),
+    );
+
+    // append outcomes for testcases not executed
+    let missing = testcases.len() - outputs.len();
+    if missing > 0 {
+        outcomes.extend(
+            testcases
+                .iter()
+                .skip(outputs.len())
+                .map(|testcase| Outcome {
+                    location: Some(location.clone()),
+                    testcase: (*testcase).clone(),
+                    output: ("", "", None).into(),
+                    escaping: escaping.clone(),
+                    format,
+                    result: Err(TestCaseError::Skipped),
+                }),
+        );
+        *count_skipped += missing;
     }
 }
 
