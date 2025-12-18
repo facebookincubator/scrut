@@ -14,18 +14,13 @@ use crate::newline::BytesNewline;
 
 /// Provide ASCII and unicode compatible strings with all non-printable
 /// characters escaped
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, Default)]
 pub enum Escaper {
     /// All non ASCII and all non-printable ASCII characters are escaped
     Ascii,
     /// All non-printable Unicode characters are escaped
+    #[default]
     Unicode,
-}
-
-impl Default for Escaper {
-    fn default() -> Self {
-        Self::Unicode
-    }
 }
 
 impl Escaper {
