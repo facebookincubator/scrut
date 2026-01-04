@@ -61,9 +61,16 @@ $ cargo build --release --bin scrut
 
 This will create `target/release/scrut` which you now can move to a directory in your `PATH`.
 
-## Install via Homebrew (Mac)
+## Install via Homebrew (Linux, Mac)
 
-Coming soon
+If you have [Homebrew](https://brew.sh/) installed, you can install Scrut with:
+
+```bash title="Terminal"
+$ brew tap facebookincubator/scrut
+$ brew install scrut
+```
+
+This will download the latest pre-built binary for your platform and install it in your Homebrew prefix (typically `/opt/homebrew/bin` on Apple Silicon Macs or `/usr/local/bin` on Intel Macs and Linux).
 
 ## Verify
 
