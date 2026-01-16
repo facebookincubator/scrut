@@ -75,3 +75,53 @@ scrut v0.X.Y
 ```
 
 (You will see the latest version here)
+
+## Shell Completions
+
+Scrut can generate shell completion scripts for tab-completion of commands and options.
+
+:::note
+If you installed via Homebrew, completions are already installed automatically.
+:::
+
+Generate and install completions for your shell:
+
+### Bash
+
+```bash title="Terminal"
+$ scrut completions bash > ~/.local/share/bash-completion/completions/scrut
+```
+
+Or, if using an older setup:
+
+```bash title="Terminal"
+$ scrut completions bash > ~/.bash_completion.d/scrut
+```
+
+### Zsh
+
+```bash title="Terminal"
+$ scrut completions zsh > ~/.zfunc/_scrut
+```
+
+Then ensure your `~/.zshrc` includes:
+
+```bash
+fpath=(~/.zfunc $fpath)
+autoload -Uz compinit && compinit
+```
+
+### Fish
+
+```bash title="Terminal"
+$ scrut completions fish > ~/.config/fish/completions/scrut.fish
+```
+
+### PowerShell
+
+```powershell title="PowerShell"
+$ scrut completions powershell > scrut.ps1
+$ . ./scrut.ps1
+```
+
+To load completions automatically, add the above to your PowerShell profile.
