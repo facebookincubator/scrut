@@ -30,6 +30,7 @@ class Scrut < Formula
 
   def install
     bin.install "scrut"
+    generate_completions_from_executable(bin/"scrut", "completions")
   end
 
   test do
