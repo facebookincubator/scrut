@@ -70,7 +70,7 @@ $ brew tap facebookincubator/scrut
 $ brew install scrut
 ```
 
-This will download the latest pre-built binary for your platform and install it in your Homebrew prefix (typically `/opt/homebrew/bin` on Apple Silicon Macs or `/usr/local/bin` on Intel Macs and Linux). Shell completions for Bash, Fish, PowerShell, and Zsh are installed automatically.
+This will download the latest pre-built binary for your platform and install it in your Homebrew prefix (typically `/opt/homebrew/bin` on Apple Silicon Macs or `/usr/local/bin` on Intel Macs and Linux). Shell completions for Bash, Fish, PowerShell, and Zsh are installed automatically. For Elvish, you'll have to install completions manually; see [the instructions below](#shell-completions).
 
 ## Verify
 
