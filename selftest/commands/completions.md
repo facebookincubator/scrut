@@ -37,6 +37,26 @@ $ _SCRUT_COMPLETE=fish_source "${SCRUT_BIN}" | grep "^complete -c scrut" | head 
 complete -c scrut * (glob+)
 ```
 
+## PowerShell completions include Register-ArgumentCompleter and subcommands
+
+```scrut
+$ _SCRUT_COMPLETE=powershell_source "${SCRUT_BIN}" | grep -E "Register-ArgumentCompleter|CompletionResult.*'(create|test|update)'" | head -4
+Register-ArgumentCompleter -Native -CommandName 'scrut' -ScriptBlock {
+            [CompletionResult]::new('create', 'create', [CompletionResultType]::ParameterValue, 'Create tests from provided shell expression')
+            [CompletionResult]::new('test', 'test', [CompletionResultType]::ParameterValue, 'Run tests from files or directories')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Re-run all testcases in given file(s) and update the output expectations')
+```
+
+## Elvish completions include edit:completion setup and subcommands
+
+```scrut
+$ _SCRUT_COMPLETE=elvish_source "${SCRUT_BIN}" | grep -E "edit:completion:arg-completer|cand (create|test|update)" | head -4
+set edit:completion:arg-completer[scrut] = {|@words|
+            cand create 'Create tests from provided shell expression'
+            cand test 'Run tests from files or directories'
+            cand update 'Re-run all testcases in given file(s) and update the output expectations'
+```
+
 ## Invalid completion value shows error
 
 ```scrut

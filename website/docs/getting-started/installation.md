@@ -84,12 +84,22 @@ Scrut can generate shell completions for Bash, Zsh, Fish, PowerShell, and Elvish
 $ _SCRUT_COMPLETE=bash_source scrut > /usr/local/etc/bash_completion.d/scrut
 ```
 
-```bash title="Zsh"
+```zsh title="Zsh"
 $ _SCRUT_COMPLETE=zsh_source scrut > /usr/local/share/zsh/site-functions/_scrut
 ```
 
-```bash title="Fish"
+```fish title="Fish"
 $ _SCRUT_COMPLETE=fish_source scrut > /etc/fish/completions/scrut.fish
 ```
 
-Valid values for `_SCRUT_COMPLETE` are: `bash_source`, `zsh_source`, `fish_source`, `powershell_source`, `elvish_source`.
+```powershell title="PowerShell"
+# Add to your PowerShell profile (run `echo $PROFILE` to find it)
+$env:_SCRUT_COMPLETE = "powershell_source"; scrut | Out-String | Invoke-Expression
+```
+
+```elvish title="Elvish"
+# Add to ~/.config/elvish/rc.elv
+eval (E:_SCRUT_COMPLETE=elvish_source scrut | slurp)
+```
+
+Valid values for `_SCRUT_COMPLETE` are: `bash_source`, `elvish_source`, `fish_source`, `powershell_source`, `zsh_source`.
