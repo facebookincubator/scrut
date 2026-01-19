@@ -20,6 +20,7 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.42", features = ["derive", "env", "string", "unicode", "wrap_help"] }
+clap_complete = "4.5"
 console = "0.15.7"
 derivative = "2.2"
 derive_builder = { version = "0.20.2", features = ["alloc"] }
