@@ -505,7 +505,7 @@ mod tests {
             } else {
                 let file_name = Path::new(&work_dir)
                     .components()
-                    .last()
+                    .next_back()
                     .map(|d| d.as_os_str().to_string_lossy().to_string());
                 assert_eq!(
                     file_name,
