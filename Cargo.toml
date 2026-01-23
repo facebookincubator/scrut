@@ -23,7 +23,7 @@ clap = { version = "4.5.42", features = ["derive", "env", "string", "unicode", "
 console = "0.15.7"
 derivative = "2.2"
 derive_builder = { version = "0.20.2", features = ["alloc"] }
-dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }
+dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 dunce = "1.0.5"
 globset = { version = "0.4.13", features = ["serde1"] }
 humantime = "2.1"
