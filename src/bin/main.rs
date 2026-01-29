@@ -13,7 +13,10 @@ mod utils;
 use std::env;
 use std::process::ExitCode;
 
+use clap::CommandFactory;
 use clap::Parser;
+use clap_complete::aot::generate;
+use clap_complete::aot::Shell;
 use commands::root::Commands;
 use commands::root::GlobalParameters;
 use commands::test::ValidationFailedError;
@@ -31,7 +34,33 @@ struct Args {
     global: GlobalParameters,
 }
 
+fn generate_completion(completion_value: &str) -> ExitCode {
+    let shell = match completion_value {
+        "bash_source" => Shell::Bash,
+        "elvish_source" => Shell::Elvish,
+        "fish_source" => Shell::Fish,
+        "powershell_source" => Shell::PowerShell,
+        "zsh_source" => Shell::Zsh,
+        _ => {
+            eprintln!(
+                "Error: Invalid value for _SCRUT_COMPLETE: '{}'\n\
+                Valid values: bash_source, elvish_source, fish_source, powershell_source, zsh_source",
+                completion_value
+            );
+            return 1.into();
+        }
+    };
+
+    let mut command = Args::command();
+    generate(shell, &mut command, "scrut", &mut std::io::stdout());
+    ExitCode::SUCCESS
+}
+
 pub fn main() -> ExitCode {
+    if let Ok(completion_value) = env::var("_SCRUT_COMPLETE") {
+        return generate_completion(&completion_value);
+    }
+
     // init_logging();
     let app = Args::parse();
 
