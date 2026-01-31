@@ -37,7 +37,7 @@ serde_json = { version = "1.0.140", features = ["alloc", "float_roundtrip", "raw
 serde_yaml = "0.9.25"
 shell-escape = "0.1.5"
 strip-ansi-escapes = "0.1.1"
-subprocess = "0.2.9"
+subprocess = "=0.2.11"
 tempfile = "3.22"
 thiserror = "2.0.12"
 tracing = { version = "0.1.41", features = ["attributes", "valuable"] }
