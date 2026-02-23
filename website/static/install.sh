@@ -11,7 +11,7 @@ get_local_bin() {
     [ -d "$HOME/bin" ] && echo "$HOME/bin" || echo "$HOME/.local/bin"
 }
 
-SCRUT_RELEASE_REPO=${SCRUT_RELEASE_REPO:-ukautz/scrut}
+SCRUT_RELEASE_REPO=${SCRUT_RELEASE_REPO:-facebookincubator/scrut}
 SCRUT_INSTALL_DIRECTORY=${SCRUT_INSTALL_DIRECTORY:-$(get_local_bin)}
 
 _TMP_DIR=$(mktemp -d)
@@ -58,7 +58,7 @@ get_latest_version() {
     curl -fsSL --proto '=https' --tlsv1.2 \
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
-        https://api.github.com/repos/ukautz/scrut/releases/latest |
+        https://api.github.com/repos/${SCRUT_RELEASE_REPO}/releases/latest |
         grep '"tag_name"' |
         sed -r 's/^.*: *"(..*)",/\1/'
 }
