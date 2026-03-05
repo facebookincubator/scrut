@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::io::ErrorKind;
 use std::io::Seek;
 use std::io::Write;
@@ -165,6 +166,7 @@ impl Runner for SubprocessRunner {
                 .into(),
             exit_code,
             detached_process: None,
+            captured_env: BTreeMap::new(),
         })
     }
 }

@@ -5,11 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use tracing::trace;
+use tracing::warn;
 
 use super::context::Context as ExecutionContext;
 use super::runner::Runner;
@@ -119,8 +122,34 @@ impl Runner for BashRunner {
         let mut testcase = testcase.clone();
         testcase.shell_expression = expression;
 
-        SubprocessRunner(shell).run(name, &testcase, context)
+        let mut output = SubprocessRunner(shell).run(name, &testcase, context)?;
+
+        // read captured environment variables for interpolation support
+        let env_path = self.state_directory.join("env");
+        if env_path.exists() {
+            output.captured_env = parse_env_file(&env_path)?;
+        }
+
+        Ok(output)
     }
+}
+
+/// Parse an env file (null-delimited KEY=VALUE entries) into a BTreeMap
+fn parse_env_file(path: &Path) -> Result<BTreeMap<String, String>> {
+    let content = fs::read(path)?;
+    let is_valid_key =
+        |s: &str| !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
+
+    let env = content
+        .split(|&b| b == 0)
+        .filter_map(|chunk| std::str::from_utf8(chunk).ok())
+        .filter(|entry| !entry.is_empty())
+        .filter_map(|entry| entry.split_once('='))
+        .filter(|(key, _)| is_valid_key(key))
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect();
+
+    Ok(env)
 }
 
 #[cfg(test)]
@@ -231,6 +260,44 @@ mod tests {
         assert!(
             !state_file.exists(),
             "state file was not created during execution"
+        );
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_captured_env_contains_exported_variable() {
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
+        let output = BashRunner {
+            shell: DEFAULT_SHELL.to_owned(),
+            state_directory: temp_dir.path().into(),
+        }
+        .run(
+            "name",
+            &TestCase::from_expression("export SCRUT_TEST_VAR=hello_world"),
+            &ExecutionContext::new_for_test(),
+        )
+        .expect("execute without error");
+        assert_eq!(
+            output.captured_env.get("SCRUT_TEST_VAR"),
+            Some(&"hello_world".to_string()),
+            "exported variable is captured in env"
+        );
+    }
+
+    #[test]
+    fn test_captured_env_is_empty_for_detached() {
+        let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
+        let mut testcase = TestCase::from_expression("export SCRUT_DETACH_VAR=test");
+        testcase.config.detached = Some(true);
+        let output = BashRunner {
+            shell: DEFAULT_SHELL.to_owned(),
+            state_directory: temp_dir.path().into(),
+        }
+        .run("name", &testcase, &ExecutionContext::new_for_test())
+        .expect("execute without error");
+        assert!(
+            output.captured_env.is_empty(),
+            "detached processes do not capture env"
         );
     }
 }

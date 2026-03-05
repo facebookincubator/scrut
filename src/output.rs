@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
@@ -29,7 +30,7 @@ pub struct DetachedProcess {
 }
 
 /// Product of a single execution that captures output and status
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct Output {
     /// The STDERR output of the execution
     pub stderr: OutputStream,
@@ -44,7 +45,22 @@ pub struct Output {
     /// The process PID and the configured kill signal, if the execution was
     /// intentionally detached.
     pub detached_process: Option<DetachedProcess>,
+
+    /// Environment variables captured from the shell after execution.
+    /// Used for interpolation of expectations.
+    pub captured_env: BTreeMap<String, String>,
 }
+
+impl PartialEq for Output {
+    fn eq(&self, other: &Self) -> bool {
+        self.stderr == other.stderr
+            && self.stdout == other.stdout
+            && self.exit_code == other.exit_code
+            && self.detached_process == other.detached_process
+    }
+}
+
+impl Eq for Output {}
 
 impl Output {
     pub fn to_error_string(&self, escaper: &Escaper) -> String {
@@ -84,6 +100,7 @@ impl Default for Output {
             stderr: vec![].into(),
             exit_code: ExitStatus::Unknown,
             detached_process: None,
+            captured_env: BTreeMap::new(),
         }
     }
 }
@@ -120,6 +137,7 @@ impl<T: ToString, U: ToString> From<(T, U, Option<i32>)> for Output {
                 Some(code) => ExitStatus::Code(code),
             },
             detached_process: None,
+            captured_env: BTreeMap::new(),
         }
     }
 }
@@ -137,6 +155,7 @@ impl From<Duration> for Output {
             stderr: vec![].into(),
             exit_code: ExitStatus::Timeout(timeout),
             detached_process: None,
+            captured_env: BTreeMap::new(),
         }
     }
 }
@@ -148,6 +167,7 @@ impl From<ExitStatus> for Output {
             stderr: vec![].into(),
             exit_code: status,
             detached_process: None,
+            captured_env: BTreeMap::new(),
         }
     }
 }

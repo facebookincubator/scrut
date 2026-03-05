@@ -18,6 +18,7 @@ pub mod escaping;
 pub mod executors;
 pub mod expectation;
 pub mod generators;
+pub mod interpolation;
 pub mod newline;
 pub mod outcome;
 pub mod output;

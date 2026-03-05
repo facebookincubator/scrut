@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -97,6 +98,7 @@ impl Executor for BashScriptExecutor {
                         stderr: remove_dividers_from_output(&output.stderr),
                         stdout: remove_dividers_from_output(&output.stdout),
                         detached_process: None,
+                        captured_env: BTreeMap::new(),
                     }],
                 ));
             }
@@ -120,6 +122,7 @@ impl Executor for BashScriptExecutor {
                     stdout: out.to_vec().into(),
                     exit_code: ExitStatus::Code(exit_code),
                     detached_process: None,
+                    captured_env: BTreeMap::new(),
                 });
                 Ok(())
             },

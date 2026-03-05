@@ -53,6 +53,9 @@ function __scrut_persist_state {
         printf "pushd %q >/dev/null 2>/dev/null\n" "${DIRSTACK[@]}" | sed '1!G;h;$!d' | tail -n +2
     ) > "$__SCRUT_TEMP_STATE_PATH/state"
 
+    # dump environment variables for interpolation support
+    env -0 > "$__SCRUT_TEMP_STATE_PATH/env"
+
     exit $code
 }
 
