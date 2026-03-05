@@ -128,16 +128,6 @@ impl<'a> FileParser<'a> {
             if !path.as_ref().exists() {
                 bail!("path `{}` does not exist", path.as_ref().display())
             }
-
-            if path.as_ref().is_file() && !self.accept(path.as_ref()) {
-                bail!(
-                    "file `{}` does not match any known test file extension (markdown: {}, cram: {})",
-                    path.as_ref().display(),
-                    self.match_markdown.glob().glob(),
-                    self.match_cram.glob().glob(),
-                )
-            }
-
             let contents = self
                 .read_test_contents(path)
                 .with_context(|| format!("scan provided path {}", path.as_ref().display()))?;
@@ -203,8 +193,6 @@ pub struct ParsedTestFile {
 mod tests {
     use std::path::Path;
 
-    use tempfile::TempDir;
-
     use super::FileParser;
 
     #[test]
@@ -226,54 +214,5 @@ mod tests {
                 .expect("generate parser");
             assert_eq!(expect, &format!("{}", parser_type));
         }
-    }
-
-    #[test]
-    fn test_find_all_test_files_accepts_known_extensions() {
-        let dir = TempDir::with_prefix("scrut-test.").expect("create temp dir");
-
-        let md_file = dir.path().join("test.md");
-        std::fs::write(&md_file, "# Test\n\n```scrut\n$ echo hi\nhi\n```\n")
-            .expect("write md file");
-
-        let cram_file = dir.path().join("test.t");
-        std::fs::write(&cram_file, "  $ echo hi\n  hi\n").expect("write cram file");
-
-        let provider = FileParser::new("*.{md,markdown,scrut}", "*.{t,cram}", &["scrut"])
-            .expect("create parser provider");
-
-        let result = provider.find_all_test_files(&[&md_file]);
-        assert!(result.is_ok(), "should accept .md file: {:?}", result.err());
-
-        let result = provider.find_all_test_files(&[&cram_file]);
-        assert!(result.is_ok(), "should accept .t file: {:?}", result.err());
-    }
-
-    #[test]
-    fn test_find_all_test_files_rejects_unknown_in_directory() {
-        let dir = TempDir::with_prefix("scrut-test.").expect("create temp dir");
-
-        let md_file = dir.path().join("test.md");
-        std::fs::write(&md_file, "# Test\n\n```scrut\n$ echo hi\nhi\n```\n")
-            .expect("write md file");
-
-        let txt_file = dir.path().join("readme.txt");
-        std::fs::write(&txt_file, "not a test").expect("write txt file");
-
-        let no_ext_file = dir.path().join("no_ext");
-        std::fs::write(&no_ext_file, "file with no extension").expect("write file");
-
-        let provider = FileParser::new("*.{md,markdown,scrut}", "*.{t,cram}", &["scrut"])
-            .expect("create parser provider");
-
-        let result = provider
-            .find_all_test_files(&[dir.path()])
-            .expect("should succeed when scanning directory");
-        assert_eq!(
-            result.len(),
-            1,
-            "should find only the .md file, not the .txt file",
-        );
-        assert_eq!(result[0].0, md_file);
     }
 }
