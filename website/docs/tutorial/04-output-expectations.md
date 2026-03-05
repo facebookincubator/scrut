@@ -220,3 +220,30 @@ Scrut currently understands three quantifiers:
 More detail in [Reference > Fundamentals > Output Expectations > Quantifiers](/docs/reference/fundamentals/output-expectations/#quantifiers).
 
 :::
+
+### Variable Interpolation
+
+Output expectations can reference environment variables when the test case is configured with `{interpolated: true}`. This is useful when a previous test case exports a variable and a subsequent test's output includes that variable's value.
+
+````markdown
+Export a variable
+
+```scrut
+$ export MY_VERSION="1.2.3"
+```
+
+Use it in expectations
+
+```scrut {interpolated: true}
+$ echo "Version: $MY_VERSION"
+Version: $MY_VERSION
+```
+````
+
+The `$MY_VERSION` in the expectation is replaced with its value (`1.2.3`) before matching. This supports `$VAR` and `${VAR}` syntax. Use `$$` for a literal dollar sign.
+
+:::info
+
+Learn more about interpolation in [Reference > Fundamentals > Inline Configuration > `interpolated`](/docs/reference/fundamentals/inline-configuration/#interpolated).
+
+:::

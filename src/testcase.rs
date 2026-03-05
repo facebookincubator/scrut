@@ -68,7 +68,16 @@ impl TestCase {
                 });
             }
         }
-        let diff_tool = DiffTool::new(self.expectations.clone());
+        let expectations = if self.config.interpolated == Some(true) {
+            self.expectations
+                .iter()
+                .map(|e| crate::interpolation::interpolate_expectation(e, &output.captured_env))
+                .collect::<anyhow::Result<Vec<_>>>()
+                .map_err(TestCaseError::InternalError)?
+        } else {
+            self.expectations.clone()
+        };
+        let diff_tool = DiffTool::new(expectations);
         let stream = if self.config.output_stream == Some(OutputStreamControl::Stderr) {
             &output.stderr
         } else {
@@ -254,6 +263,7 @@ mod tests {
     use crate::diff::Diff;
     use crate::diff::DiffLine;
     use crate::lossy_string;
+    use crate::output::Output;
     use crate::test_expectation;
 
     #[test]
@@ -408,5 +418,67 @@ mod tests {
                 *strip_ansi_escaping
             );
         }
+    }
+
+    #[test]
+    fn test_validate_with_interpolated_expectations() {
+        let testcase = TestCase {
+            title: "interpolated test".to_string(),
+            shell_expression: "echo Hello world".to_string(),
+            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            exit_code: Some(0),
+            line_number: 1,
+            config: TestCaseConfig {
+                interpolated: Some(true),
+                ..Default::default()
+            },
+        };
+        let mut output: Output = ("Hello world\n", "").into();
+        output.captured_env =
+            std::collections::BTreeMap::from([("FOOBAR".to_string(), "world".to_string())]);
+        testcase
+            .validate(&output)
+            .expect("interpolated expectation should match");
+    }
+
+    #[test]
+    fn test_validate_interpolated_no_match() {
+        let testcase = TestCase {
+            title: "interpolated mismatch".to_string(),
+            shell_expression: "echo Hello other".to_string(),
+            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            exit_code: Some(0),
+            line_number: 1,
+            config: TestCaseConfig {
+                interpolated: Some(true),
+                ..Default::default()
+            },
+        };
+        let mut output: Output = ("Hello other\n", "").into();
+        output.captured_env =
+            std::collections::BTreeMap::from([("FOOBAR".to_string(), "world".to_string())]);
+        match testcase.validate(&output) {
+            Err(TestCaseError::MalformedOutput(_)) => {}
+            other => panic!("expected MalformedOutput, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_validate_interpolated_disabled() {
+        let testcase = TestCase {
+            title: "not interpolated".to_string(),
+            shell_expression: "echo literal".to_string(),
+            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            exit_code: Some(0),
+            line_number: 1,
+            config: TestCaseConfig::default(),
+        };
+        // With interpolation disabled, `$FOOBAR` is matched literally
+        let mut output: Output = ("Hello $FOOBAR\n", "").into();
+        output.captured_env =
+            std::collections::BTreeMap::from([("FOOBAR".to_string(), "world".to_string())]);
+        testcase
+            .validate(&output)
+            .expect("literal match should succeed when interpolation is disabled");
     }
 }

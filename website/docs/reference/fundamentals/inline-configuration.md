@@ -275,6 +275,39 @@ bar
 ```
 ````
 
+### `interpolated`
+
+- Type: **boolean**
+- Command Line Parameter: **n/a**
+- Default: **`false`**
+
+When set to `true`, environment variables referenced in output expectations are interpolated (replaced with their values) before matching against actual output. This supports `$VAR` and `${VAR}` syntax. Use `$$` for a literal dollar sign.
+
+Variables are resolved from the shell environment at the time of test execution, including variables exported in prior test cases.
+
+**Example:**
+
+````markdown showLineNumbers
+Export a variable
+
+```scrut
+$ export GREETING="Hello World"
+```
+
+Use it in expectations
+
+```scrut {interpolated: true}
+$ echo $GREETING
+$GREETING
+```
+````
+
+:::warning
+
+`scrut update` does not preserve variable references in interpolated expectations. Updated expectations will contain literal values. You will need to manually restore `$VAR` references after updating.
+
+:::
+
 ### `keep_crlf`
 
 - Type: **boolean**
