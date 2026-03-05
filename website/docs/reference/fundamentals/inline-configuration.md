@@ -41,6 +41,16 @@ Hello Two
 ```
 
 The above test contains per-test configuration
+
+The same configuration can also be expressed in multi-line syntax using `%` prefixed lines before the shell expression:
+
+```scrut
+% timeout: 10s
+$ echo Hello Two
+Hello Two
+```
+
+Both syntaxes are equivalent and can be used interchangeably.
 ````
 
 Some inline-configuration attribute can overwritten by parameters provided on the command-line (see below). The order of precedence is:
@@ -156,6 +166,25 @@ total_timeout: "30m"
 
 All configuration that can be applied *per test case* in Markdown test documents.
 
+Per-test-case configuration can be provided in two ways:
+
+1. **Inline syntax** — a single-line YAML flow mapping in curly braces on the opening fence line:
+   ````markdown
+   ```scrut {timeout: 10s, environment: {"FOO": "bar"}}
+   $ the-command
+   ````
+
+2. **Multiline syntax** — YAML lines prefixed with `% ` before the shell expression inside the code block:
+   ````markdown
+   ```scrut
+   % timeout: 10s
+   % environment:
+   %   FOO: bar
+   $ the-command
+   ````
+
+Both syntaxes are YAML and produce the same result. The multiline syntax is especially useful when configuration is long or contains nested structures, improving readability.
+
 :::note
 
 Mind that [Cram](/docs/reference/formats/cram-format/) does not support per-test-case configuration and that defaults for [Markdown](/docs/reference/formats/markdown-format/) and Cram have slightly different default values. If they differ then *Markdown Default* and *Cram Default* are provided below, if they are the same then only *Default* is mentioned.
@@ -230,6 +259,17 @@ This configuration allows you to set environment variables for the test case. Th
 
 ````markdown
 ```scrut {environment: {"FOO": "bar"}}
+$ echo $FOO
+bar
+```
+````
+
+Or equivalently, using multiline syntax:
+
+````markdown
+```scrut
+% environment:
+%   FOO: bar
 $ echo $FOO
 bar
 ```

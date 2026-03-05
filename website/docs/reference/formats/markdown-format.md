@@ -31,6 +31,7 @@ A [test case](/docs/reference/fundamentals/test-case/) in Markdown is structured
   - The first line of a [shell expressions](/docs/reference/fundamentals/shell-expression/) must start with `$ ` (dollar, sign followed by a space), any subsequent with `> ` (closing angle bracket / chevron, followed by a space)
   - All other lines in the code block (including empty ones) that follow the [shell expression](/docs/reference/fundamentals/shell-expression/) are considered [output expectations](/docs/reference/fundamentals/output-expectations/)
   - Lines starting with `#` that precede the [shell expression](/docs/reference/fundamentals/shell-expression/) are ignored (comments)
+  - Lines starting with `% ` that precede the [shell expression](/docs/reference/fundamentals/shell-expression/) are [per-testcase configuration](/docs/reference/fundamentals/inline-configuration/) in YAML format
   - If an [exit code](/docs/reference/behavior/exit-codes/) other than `0` is expected, it can be denoted in square brackets `[123]` once per [test case](/docs/reference/fundamentals/test-case/)
 - The first line before the code block that is either a paragraph or a header will be used as the *title* of the [test case](/docs/reference/fundamentals/test-case/)
 
@@ -40,6 +41,7 @@ Here an example:
 This is the title
 
 ```scrut
+% timeout: 10s
 $ command | \
 >   other-command
 expected output line

@@ -28,10 +28,21 @@ lazy_static! {
 }
 
 pub(super) enum CodeType {
+    Config,
+    Comment,
     CommandStart,
     CommandContinue,
     Expectation,
     ExitCode,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+pub(super) enum LineParserPosition {
+    Start = 0,
+    Config = 1,
+    PreCommand = 2,
+    Command = 3,
+    Body = 4,
 }
 
 /// A meta parser engine, that can be used for any line-by-line test file format
@@ -47,65 +58,94 @@ pub(super) struct LineParser {
     pub(super) testcases: Vec<TestCase>,
     expectation_maker: Arc<ExpectationMaker>,
     title: Option<String>,
-    command: Vec<String>,
+    command_lines: Vec<String>,
+    config_lines: Vec<String>,
     exit_code: Option<i32>,
     expectations: Vec<Expectation>,
-    in_command: bool,
+    position: LineParserPosition,
     allow_multiple_commands: bool,
+    allow_multiline_config: bool,
     output_start_index: Option<usize>,
+    default_config: TestCaseConfig,
     config: Option<TestCaseConfig>,
 }
 
 impl LineParser {
     pub(super) fn new(
         expectation_maker: Arc<ExpectationMaker>,
+        default_config: TestCaseConfig,
         allow_multiple_commands: bool,
+        allow_multiline_config: bool,
     ) -> Self {
         Self {
             expectation_maker,
             title: None,
-            command: vec![],
+            command_lines: vec![],
+            config_lines: vec![],
             expectations: vec![],
             exit_code: None,
             testcases: vec![],
-            in_command: false,
+            position: LineParserPosition::Start,
             allow_multiple_commands,
+            allow_multiline_config,
             output_start_index: None,
+            default_config,
             config: None,
         }
     }
 
     /// Add a line that is either a command or an expectation
     pub(super) fn add_testcase_body(&mut self, line: &str, index: usize) -> Result<CodeType> {
+        // comments within / between config or commands, before body
+        if self.position < LineParserPosition::Command && is_comment(line) {
+            return Ok(CodeType::Comment);
+        }
+
+        // config preceding command
+        if self.allow_multiline_config && self.position <= LineParserPosition::Config {
+            if let Some(line) = line.strip_prefix("% ") {
+                self.config_lines.push(line.into());
+                self.position = LineParserPosition::Config;
+                return Ok(CodeType::Config);
+            }
+            self.position = LineParserPosition::PreCommand;
+        }
+
         // start of command
-        if self.allow_multiple_commands || self.command.is_empty() {
+        if self.allow_multiple_commands || self.command_lines.is_empty() {
             if let Some(line) = line.strip_prefix("$ ") {
-                self.in_command = true;
-                if !self.command.is_empty() {
+                // wrap up previous command, if given
+                if !self.command_lines.is_empty() {
                     self.end_testcase(index)?;
                 }
-                if self.output_start_index.is_none() {
-                    self.output_start_index = Some(index);
-                }
-                self.command.push(line.into());
+
+                // ensure command can be continued on multiple liens
+                self.position = LineParserPosition::Command;
+
+                // mark the starting index and store the command line
+                self.output_start_index = Some(index);
+                self.command_lines.push(line.into());
                 return Ok(CodeType::CommandStart);
             }
         }
 
         // continuation of command
-        if self.in_command && (line == ">" || line.starts_with("> ")) {
-            if self.command.is_empty() {
+        if self.position == LineParserPosition::Command && (line == ">" || line.starts_with("> ")) {
+            if self.command_lines.is_empty() {
                 bail!(
                     "line {}: command extender '>' requires previous command start '$' which is not given",
                     index + 1
                 );
             }
-            self.command
+            self.command_lines
                 .push(line.strip_prefix("> ").unwrap_or_default().into());
             return Ok(CodeType::CommandContinue);
         }
 
-        self.in_command = false;
+        // body part, where output expectations etc are
+        self.position = LineParserPosition::Body;
+
+        // exit code notation
         if let Some(exit_code) = extract_exit_code(line) {
             if self.exit_code.is_some() {
                 bail!("line {}: exit code provided multiple times", index + 1)
@@ -114,6 +154,7 @@ impl LineParser {
             return Ok(CodeType::ExitCode);
         }
 
+        // anything else: output expectation
         self.expectations.push(
             self.expectation_maker
                 .parse(line)
@@ -136,10 +177,8 @@ impl LineParser {
     /// validity of the testcase, add it to the stack and flush the state
     /// so that the next testcase(s) can be processed.
     pub(super) fn end_testcase(&mut self, line_index: usize) -> Result<()> {
-        let (has_commands, has_expectations) =
-            (!self.command.is_empty(), !self.expectations.is_empty());
-        if !has_commands {
-            if has_expectations {
+        if self.command_lines.is_empty() {
+            if !self.expectations.is_empty() {
                 bail!(
                     "line {}: testcase output expectation(s) given, but no shell expression specified. Did you forget to prefix the command with '$'?",
                     line_index + 1
@@ -147,13 +186,27 @@ impl LineParser {
             }
             return Ok(());
         }
+
+        if !self.config_lines.is_empty() {
+            let config: TestCaseConfig = serde_yaml::from_str(&self.config_lines.join("\n"))
+                .context("parse testcase config lines")?;
+            let from = self
+                .config
+                .clone()
+                .unwrap_or_else(|| self.default_config.clone());
+            self.config = Some(config.with_defaults_from(&from));
+        }
+
         self.testcases.push(TestCase {
             title: self.title.to_owned().unwrap_or_default(),
-            shell_expression: self.command.join("\n"),
+            shell_expression: self.command_lines.join("\n"),
             exit_code: self.exit_code,
             expectations: self.expectations.clone(),
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
-            config: self.config.clone().unwrap_or_default(),
+            config: self
+                .config
+                .clone()
+                .unwrap_or_else(|| self.default_config.clone()),
         });
         self.flush();
         Ok(())
@@ -161,12 +214,14 @@ impl LineParser {
 
     // whether shell expression(s) or expectation(s) are given
     pub(super) fn has_testcase_body(&self) -> bool {
-        !self.command.is_empty() || !self.expectations.is_empty()
+        !self.command_lines.is_empty() || !self.expectations.is_empty()
     }
 
     fn flush(&mut self) {
         self.title = None;
-        self.command = vec![];
+        self.command_lines = vec![];
+        self.config_lines = vec![];
+        self.position = LineParserPosition::Start;
         self.expectations = vec![];
         self.exit_code = None;
         self.output_start_index = None;
@@ -196,22 +251,33 @@ pub(super) fn is_comment(line: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use std::sync::Arc;
 
     use super::LineParser;
     use super::extract_exit_code;
+    use crate::config::TestCaseConfig;
     use crate::expectation::tests::expectation_maker;
     use crate::test_expectation;
     use crate::testcase::TestCase;
 
-    fn engine(allow_multiple_commands: bool) -> LineParser {
+    fn engine(
+        allow_multiple_commands: bool,
+        allow_multiline_config: bool,
+        config: Option<TestCaseConfig>,
+    ) -> LineParser {
         let maker = expectation_maker();
-        LineParser::new(Arc::new(maker), allow_multiple_commands)
+        LineParser::new(
+            Arc::new(maker),
+            TestCaseConfig::empty(),
+            allow_multiple_commands,
+            allow_multiline_config,
+        )
     }
 
     #[test]
     fn test_testcase_is_combined() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine.set_testcase_title("foo");
         engine.add_testcase_body("$ bar", 1).expect("add command");
         engine.add_testcase_body("baz", 2).expect("add expectation");
@@ -232,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_last_title_is_used() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine.set_testcase_title("foo1");
         engine.set_testcase_title("foo2");
         engine.set_testcase_title("foo3");
@@ -255,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_command_is_combined() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine.set_testcase_title("foo");
         engine.add_testcase_body("$ bar1", 1).expect("add command");
         engine.add_testcase_body(">", 1).expect("add command");
@@ -279,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_expectations_are_stacked() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine.set_testcase_title("foo");
         engine.add_testcase_body("$ bar", 1).expect("add command");
         engine
@@ -312,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_multiple_commands_in_block() {
-        let mut engine = engine(true);
+        let mut engine = engine(true, false, None);
         engine
             .add_testcase_body("$ foo1", 1)
             .expect("add 1st command");
@@ -356,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_single_command_in_block() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine
             .add_testcase_body("$ foo1", 1)
             .expect("add 1st command");
@@ -384,8 +450,34 @@ mod tests {
     }
 
     #[test]
+    fn test_multi_line_command() {
+        let mut engine = engine(false, false, None);
+        engine
+            .add_testcase_body("$ foo1", 1)
+            .expect("add 1st command line");
+        engine
+            .add_testcase_body("> foo2", 2)
+            .expect("add 2nd command line");
+        engine
+            .add_testcase_body("> foo3", 3)
+            .expect("add 3rd command line");
+        engine.end_testcase(4).expect("testcase ending");
+        assert_eq!(
+            vec![TestCase {
+                title: "".to_string(),
+                exit_code: None,
+                expectations: vec![],
+                shell_expression: "foo1\nfoo2\nfoo3".to_string(),
+                line_number: 2,
+                ..Default::default()
+            },],
+            engine.testcases,
+        )
+    }
+
+    #[test]
     fn test_testcases_stack() {
-        let mut engine = engine(false);
+        let mut engine = engine(false, false, None);
         engine.set_testcase_title("foo1");
         engine.add_testcase_body("$ bar1", 1).expect("add command1");
         engine
@@ -441,7 +533,7 @@ mod tests {
     #[test]
     fn test_exit_code_provided_is_remembered() {
         for provided in [true, false] {
-            let mut engine = engine(false);
+            let mut engine = engine(false, false, None);
             engine.set_testcase_title("foo1");
             engine.add_testcase_body("$ bar", 1).expect("add command");
             if provided {
@@ -477,5 +569,43 @@ mod tests {
             let result = extract_exit_code(line);
             assert_eq!(*expect, result, "parsed '{}'", line);
         });
+    }
+
+    #[test]
+    fn test_multiline_config_preceding_command() {
+        let mut engine = engine(false, true, None);
+        engine.set_testcase_title("foo");
+        engine
+            .add_testcase_body("% timeout: 99s", 1)
+            .expect("add config 1");
+        engine
+            .add_testcase_body("% environment:", 2)
+            .expect("add config 2");
+        engine
+            .add_testcase_body("%   BLA: BLUB", 3)
+            .expect("add config 3");
+        engine
+            .add_testcase_body("%   THIS: THAT", 4)
+            .expect("add config 4");
+        engine.add_testcase_body("$ bar", 5).expect("add command");
+        engine.end_testcase(6).expect("testcase ending");
+        let config = TestCaseConfig {
+            timeout: Some(std::time::Duration::from_secs(99)),
+            environment: BTreeMap::from_iter([
+                ("BLA".to_string(), "BLUB".to_string()),
+                ("THIS".to_string(), "THAT".to_string()),
+            ]),
+            ..Default::default()
+        };
+        assert_eq!(
+            vec![TestCase {
+                title: "foo".to_string(),
+                shell_expression: "bar".to_string(),
+                line_number: 6,
+                config,
+                ..Default::default()
+            },],
+            engine.testcases,
+        )
     }
 }

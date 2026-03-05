@@ -51,7 +51,12 @@ impl CramParser {
 impl Parser for CramParser {
     /// See [`super::parser::Parser::parse`]
     fn parse(&self, text: &str) -> Result<(DocumentConfig, Vec<TestCase>)> {
-        let mut engine = LineParser::new(self.expectation_maker.clone(), true);
+        let mut engine = LineParser::new(
+            self.expectation_maker.clone(),
+            TestCaseConfig::default_cram(),
+            true,
+            false,
+        );
         let lines = text.lines().collect::<Vec<_>>();
         let indent = " ".repeat(self.indention);
         debug!("parsing {} lines of cram file", lines.len());
@@ -73,7 +78,6 @@ impl Parser for CramParser {
             // shell expression or testcase output expectations:
             if let Some(line) = line.strip_prefix(&indent) {
                 engine.add_testcase_body(line, index)?;
-                engine.set_testcase_config(TestCaseConfig::default_cram());
                 continue;
             }
 
@@ -85,7 +89,6 @@ impl Parser for CramParser {
         }
 
         if engine.has_testcase_body() {
-            engine.set_testcase_config(TestCaseConfig::default_cram());
             engine.end_testcase(lines.len())?
         }
         debug!("found {} testcases in cram file", engine.testcases.len());

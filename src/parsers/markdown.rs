@@ -80,7 +80,12 @@ impl Parser for MarkdownParser {
 
         let languages: &[&str] = &self.languages.iter().map(|s| s as &str).collect::<Vec<_>>();
         let iterator = MarkdownIterator::new(languages, text.lines());
-        let mut line_parser = LineParser::new(self.expectation_maker.clone(), false);
+        let mut line_parser = LineParser::new(
+            self.expectation_maker.clone(),
+            TestCaseConfig::default_markdown(),
+            false,
+            true,
+        );
         let mut title_paragraph = vec![];
         let mut config = DocumentConfig::default_markdown();
 
@@ -127,14 +132,14 @@ impl Parser for MarkdownParser {
                         serde_yaml::from_str(&format!("{{{}}}", config_lines.join_newline()))
                             .context("parse testcase config")?
                     };
+                    for (index, line) in &code_lines {
+                        line_parser.add_testcase_body(line, *index)?;
+                    }
                     line_parser.set_testcase_config(
                         parsed_config
                             .with_defaults_from(&config.defaults)
                             .with_defaults_from(&self.base_testcase_config),
                     );
-                    for (index, line) in &code_lines {
-                        line_parser.add_testcase_body(line, *index)?;
-                    }
                     line_parser.end_testcase(code_lines[code_lines.len() - 1].0)?;
                     title_paragraph.clear();
                 }
@@ -354,7 +359,7 @@ pub(crate) fn extract_code_block_start(line: &str) -> Option<(&str, &str, &str)>
     }
 
     let mut language_start = None;
-    for (index, ch) in line.chars().enumerate() {
+    for (index, ch) in line.char_indices() {
         if let Some(language_start) = language_start {
             if ch == '{' {
                 return Some((
