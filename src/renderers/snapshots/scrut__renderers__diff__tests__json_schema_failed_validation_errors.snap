@@ -1,0 +1,17 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 739
+expression: rendered
+---
+--- the location
++++ the location.new
+# ---- JSON SCHEMA VALIDATION FAILED ----
+# PATH:  the location
+# TITLE: the title
+# KIND:  ValidationErrors
+# ERROR: "other" is a required property
+# ERROR: "foo" is not of type "integer"
+# OUTPUT:
+# {"foo": "bar"}
+# ---- JSON SCHEMA VALIDATION FAILED ----
+

@@ -21,6 +21,8 @@ use crate::newline::BytesNewline;
 use crate::newline::StringNewline;
 use crate::outcome::Outcome;
 use crate::testcase::TestCaseError;
+use crate::validation::JsonSchemaFailure;
+use crate::validation::JsonSchemaFailureKind;
 
 pub const DEFAULT_SURROUNDING_LINES: usize = 5;
 pub const DEFAULT_ABSOLUTE_LINE_NUMBERS: bool = false;
@@ -360,6 +362,45 @@ impl ErrorRenderer for PrettyColorRenderer {
     fn render_skipped(&self, _outcome: &Outcome) -> Result<String> {
         Ok("".into())
     }
+
+    fn render_json_schema_failed(
+        &self,
+        _outcome: &Outcome,
+        failure: &JsonSchemaFailure,
+    ) -> Result<String> {
+        let kind_str = match failure.kind {
+            JsonSchemaFailureKind::InvalidSchema => "invalid schema",
+            JsonSchemaFailureKind::InvalidJson => "invalid JSON output",
+            JsonSchemaFailureKind::ValidationErrors => "schema validation errors",
+        };
+
+        let mut out = String::new();
+        out.push_str(&formatln!(
+            "{}",
+            style(format!("JSON Schema validation failed: {}", kind_str))
+                .red()
+                .bold()
+        ));
+        out.push_str(&formatln!(""));
+
+        for error in &failure.errors {
+            out.push_str(&formatln!(
+                "  {} {}",
+                style("-").red().bold(),
+                style(error).red()
+            ));
+        }
+
+        if !failure.output.is_empty() {
+            out.push_str(&formatln!(""));
+            out.push_str(&formatln!("{}", style("actual output:").underlined()));
+            for line in failure.output.lines() {
+                out.push_str(&formatln!("  {}", line));
+            }
+        }
+
+        Ok(out)
+    }
 }
 
 trait TailingSpacesHighlighter {
@@ -476,6 +517,8 @@ mod tests {
     use crate::test_expectation;
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
+    use crate::validation::JsonSchemaFailure;
+    use crate::validation::JsonSchemaFailureKind;
     use crate::validation::OutputBody;
     use crate::validation::ValidationBody;
     use crate::validation::ValidationFailure;
@@ -1039,5 +1082,60 @@ mod tests {
                     rendered
                 );
             })
+    }
+
+    #[test]
+    fn test_render_json_schema_failed() {
+        let renderer = new_test_renderer();
+        let kinds = [
+            (
+                "invalid_schema",
+                JsonSchemaFailureKind::InvalidSchema,
+                vec!["failed to parse schema: invalid YAML".to_string()],
+            ),
+            (
+                "invalid_json",
+                JsonSchemaFailureKind::InvalidJson,
+                vec!["command output is not valid JSON: expected value".to_string()],
+            ),
+            (
+                "validation_errors",
+                JsonSchemaFailureKind::ValidationErrors,
+                vec![
+                    "\"other\" is a required property".to_string(),
+                    "\"foo\" is not of type \"integer\"".to_string(),
+                ],
+            ),
+        ];
+
+        for (name, kind, errors) in &kinds {
+            let rendered = renderer
+                .render(&[&Outcome {
+                    output: ("{\"foo\": \"bar\"}\n", "the stderr").into(),
+                    testcase: TestCase {
+                        title: "the title".to_string(),
+                        shell_expression: "the command".to_string(),
+                        body: ValidationBody::Output(OutputBody {
+                            expectations: vec![],
+                        }),
+                        exit_code: None,
+                        line_number: 10,
+                        ..Default::default()
+                    },
+                    location: Some("the location".into()),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::JsonSchemaFailed(JsonSchemaFailure {
+                            kind: kind.clone(),
+                            errors: errors.clone(),
+                            output: "{\"foo\": \"bar\"}".to_string(),
+                            schema_source: "type: object".to_string(),
+                        }),
+                    )),
+                    escaping: Escaper::default(),
+                    format: ParserType::Markdown,
+                }])
+                .expect("render succeeds");
+            insta::assert_snapshot!(format!("json_schema_failed_{name}"), rendered);
+        }
     }
 }

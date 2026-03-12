@@ -33,6 +33,10 @@ pub enum TestMode {
     /// against line-by-line expectations using rules (equal, glob, regex, etc.).
     /// This is the default mode.
     Output,
+    /// JSON Schema validation mode: execute command, parse output as JSON, and
+    /// validate it against a JSON Schema provided inline as YAML.
+    #[serde(rename = "jsonschema")]
+    JsonSchema,
 }
 
 /// The exit code that any test execution can return to skip all tests in one document
@@ -529,6 +533,7 @@ impl TestCaseConfig {
                 "mode: {}",
                 match mode {
                     TestMode::Output => "output",
+                    TestMode::JsonSchema => "jsonschema",
                 }
             ));
         }
@@ -542,6 +547,11 @@ impl TestCaseConfig {
 
     pub fn get_fail_fast(&self) -> bool {
         self.fail_fast.unwrap_or(false)
+    }
+
+    /// Returns true if this test case is configured for JSON Schema validation mode
+    pub fn is_json_schema(&self) -> bool {
+        matches!(self.mode, Some(TestMode::JsonSchema))
     }
 }
 

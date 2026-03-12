@@ -16,6 +16,7 @@ use crate::config::TestCaseConfig;
 use crate::expectation::Expectation;
 use crate::expectation::ExpectationMaker;
 use crate::testcase::TestCase;
+use crate::validation::JsonSchemaBody;
 use crate::validation::OutputBody;
 use crate::validation::ValidationBody;
 
@@ -70,6 +71,11 @@ pub(super) struct LineParser {
     output_start_index: Option<usize>,
     default_config: TestCaseConfig,
     config: Option<TestCaseConfig>,
+    /// Whether the current testcase is in JSON Schema mode, determined when
+    /// the `$` command line is encountered (from fence config or `%` config).
+    json_schema_mode: bool,
+    /// Accumulated body lines for JSON Schema mode.
+    json_schema_lines: Vec<String>,
 }
 
 impl LineParser {
@@ -93,6 +99,8 @@ impl LineParser {
             output_start_index: None,
             default_config,
             config: None,
+            json_schema_mode: false,
+            json_schema_lines: vec![],
         }
     }
 
@@ -124,6 +132,9 @@ impl LineParser {
                 // ensure command can be continued on multiple liens
                 self.position = LineParserPosition::Command;
 
+                // detect json schema mode from accumulated config lines and/or
+                // fence config set via set_testcase_config()
+                self.detect_json_schema_mode();
                 // mark the starting index and store the command line
                 self.output_start_index = Some(index);
                 self.command_lines.push(line.into());
@@ -154,6 +165,12 @@ impl LineParser {
             }
             self.exit_code = Some(exit_code);
             return Ok(CodeType::ExitCode);
+        }
+
+        // JSON Schema mode: collect all body lines verbatim
+        if self.json_schema_mode {
+            self.json_schema_lines.push(line.to_string());
+            return Ok(CodeType::Expectation);
         }
 
         // anything else: output expectation
@@ -203,9 +220,15 @@ impl LineParser {
             title: self.title.to_owned().unwrap_or_default(),
             shell_expression: self.command_lines.join("\n"),
             exit_code: self.exit_code,
-            body: ValidationBody::Output(OutputBody {
-                expectations: self.expectations.clone(),
-            }),
+            body: if self.json_schema_mode {
+                ValidationBody::JsonSchema(JsonSchemaBody {
+                    schema_source: self.json_schema_lines.join("\n"),
+                })
+            } else {
+                ValidationBody::Output(OutputBody {
+                    expectations: self.expectations.clone(),
+                })
+            },
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
             config: self
                 .config
@@ -221,6 +244,38 @@ impl LineParser {
         !self.command_lines.is_empty() || !self.expectations.is_empty()
     }
 
+    /// Detect whether the current testcase is in JSON Schema validation mode.
+    ///
+    /// Checks both the fence config (set via `set_testcase_config`) and any
+    /// accumulated `%` multiline config lines. Called when the `$` command line
+    /// is encountered, before body lines are processed.
+    fn detect_json_schema_mode(&mut self) {
+        // Check fence config first
+        if let Some(ref config) = self.config {
+            if config.is_json_schema() {
+                self.json_schema_mode = true;
+                return;
+            }
+        }
+
+        // Check accumulated % config lines for mode: jsonschema
+        if !self.config_lines.is_empty() {
+            if let Ok(config) =
+                serde_yaml::from_str::<TestCaseConfig>(&self.config_lines.join("\n"))
+            {
+                if config.is_json_schema() {
+                    self.json_schema_mode = true;
+                    return;
+                }
+            }
+        }
+
+        // Check default config
+        if self.default_config.is_json_schema() {
+            self.json_schema_mode = true;
+        }
+    }
+
     fn flush(&mut self) {
         self.title = None;
         self.command_lines = vec![];
@@ -230,6 +285,8 @@ impl LineParser {
         self.exit_code = None;
         self.output_start_index = None;
         self.config = None;
+        self.json_schema_mode = false;
+        self.json_schema_lines = vec![];
     }
 }
 
@@ -261,9 +318,11 @@ mod tests {
     use super::LineParser;
     use super::extract_exit_code;
     use crate::config::TestCaseConfig;
+    use crate::config::TestMode;
     use crate::expectation::tests::expectation_maker;
     use crate::test_expectation;
     use crate::testcase::TestCase;
+    use crate::validation::JsonSchemaBody;
     use crate::validation::OutputBody;
     use crate::validation::ValidationBody;
 
@@ -624,5 +683,70 @@ mod tests {
             },],
             engine.testcases,
         )
+    }
+
+    #[test]
+    fn test_json_schema_mode_collects_body_lines() {
+        let mut engine = engine(false, true, None);
+        engine.set_testcase_title("json schema test");
+        engine
+            .add_testcase_body("% mode: jsonschema", 1)
+            .expect("add config");
+        engine.add_testcase_body("$ cmd", 2).expect("add command");
+        engine.add_testcase_body("---", 3).expect("add schema line");
+        engine
+            .add_testcase_body("type: object", 4)
+            .expect("add schema line");
+        engine
+            .add_testcase_body("properties:", 5)
+            .expect("add schema line");
+        engine
+            .add_testcase_body("  foo:", 6)
+            .expect("add schema line");
+        engine
+            .add_testcase_body("    type: string", 7)
+            .expect("add schema line");
+        engine.end_testcase(8).expect("testcase ending");
+
+        assert_eq!(1, engine.testcases.len(), "should have one testcase");
+        let tc = &engine.testcases[0];
+        assert_eq!(
+            tc.body,
+            ValidationBody::JsonSchema(JsonSchemaBody {
+                schema_source: "---\ntype: object\nproperties:\n  foo:\n    type: string"
+                    .to_string(),
+            }),
+            "body should be JsonSchema with collected lines"
+        );
+        assert_eq!(
+            tc.config.mode,
+            Some(TestMode::JsonSchema),
+            "config mode should be JsonSchema"
+        );
+    }
+
+    #[test]
+    fn test_json_schema_mode_with_exit_code() {
+        let mut engine = engine(false, true, None);
+        engine
+            .add_testcase_body("% mode: jsonschema", 1)
+            .expect("add config");
+        engine.add_testcase_body("$ cmd", 2).expect("add command");
+        engine
+            .add_testcase_body("type: object", 3)
+            .expect("add schema line");
+        engine.add_testcase_body("[0]", 4).expect("add exit code");
+        engine.end_testcase(5).expect("testcase ending");
+
+        assert_eq!(1, engine.testcases.len(), "should have one testcase");
+        let tc = &engine.testcases[0];
+        assert_eq!(tc.exit_code, Some(0), "exit code should be captured");
+        assert_eq!(
+            tc.body,
+            ValidationBody::JsonSchema(JsonSchemaBody {
+                schema_source: "type: object".to_string(),
+            }),
+            "exit code line should not be in schema body"
+        );
     }
 }

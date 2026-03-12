@@ -1,0 +1,16 @@
+---
+source: src/renderers/diff.rs
+assertion_line: 739
+expression: rendered
+---
+--- the location
++++ the location.new
+# ---- JSON SCHEMA VALIDATION FAILED ----
+# PATH:  the location
+# TITLE: the title
+# KIND:  InvalidJson
+# ERROR: command output is not valid JSON: expected value
+# OUTPUT:
+# {"foo": "bar"}
+# ---- JSON SCHEMA VALIDATION FAILED ----
+

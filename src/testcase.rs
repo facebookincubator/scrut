@@ -24,6 +24,9 @@ use crate::expectation::Expectation;
 use crate::newline::replace_crlf;
 use crate::output::ExitStatus;
 use crate::output::Output;
+use crate::validation::JsonSchemaBody;
+use crate::validation::JsonSchemaFailure;
+use crate::validation::JsonSchemaFailureKind;
 use crate::validation::ValidationBody;
 use crate::validation::ValidationFailure;
 
@@ -102,6 +105,75 @@ impl TestCase {
                     Ok(())
                 }
             }
+            ValidationBody::JsonSchema(body) => self.validate_json_schema(body, output),
+        }
+    }
+
+    /// Validate command output against a JSON Schema.
+    fn validate_json_schema(&self, body: &JsonSchemaBody, output: &Output) -> Result<()> {
+        let stream = if self.config.output_stream == Some(OutputStreamControl::Stderr) {
+            &output.stderr
+        } else {
+            &output.stdout
+        };
+
+        let rendered = self
+            .render_output(stream.into())
+            .map_err(TestCaseError::InternalError)?;
+        let output_str = String::from_utf8_lossy(&rendered).to_string();
+
+        // Parse schema source as YAML -> serde_json::Value
+        let schema_value: serde_json::Value =
+            serde_yaml::from_str(&body.schema_source).map_err(|e| {
+                TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(
+                    JsonSchemaFailure {
+                        kind: JsonSchemaFailureKind::InvalidSchema,
+                        errors: vec![format!("failed to parse schema: {}", e)],
+                        output: output_str.clone(),
+                        schema_source: body.schema_source.clone(),
+                    },
+                ))
+            })?;
+
+        // Build validator
+        let compiled = jsonschema::JSONSchema::compile(&schema_value).map_err(|e| {
+            TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(
+                JsonSchemaFailure {
+                    kind: JsonSchemaFailureKind::InvalidSchema,
+                    errors: vec![format!("invalid JSON Schema: {}", e)],
+                    output: output_str.clone(),
+                    schema_source: body.schema_source.clone(),
+                },
+            ))
+        })?;
+
+        // Parse command output as JSON
+        let output_value: serde_json::Value =
+            serde_json::from_str(output_str.trim()).map_err(|e| {
+                TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(
+                    JsonSchemaFailure {
+                        kind: JsonSchemaFailureKind::InvalidJson,
+                        errors: vec![format!("command output is not valid JSON: {}", e)],
+                        output: output_str.clone(),
+                        schema_source: body.schema_source.clone(),
+                    },
+                ))
+            })?;
+
+        // Validate output against schema
+        match compiled.validate(&output_value) {
+            Ok(()) => Ok(()),
+            Err(error_iter) => {
+                let errors: Vec<String> = error_iter.map(|e| e.to_string()).collect();
+                Err(TestCaseError::ValidationFailed(
+                    ValidationFailure::JsonSchemaFailed(JsonSchemaFailure {
+                        kind: JsonSchemaFailureKind::ValidationErrors,
+                        errors,
+                        output: output_str,
+                        schema_source: body.schema_source.clone(),
+                    }),
+                ))
+            }
         }
     }
 
@@ -109,6 +181,7 @@ impl TestCase {
     pub fn expectations(&self) -> &[Expectation] {
         match &self.body {
             ValidationBody::Output(body) => &body.expectations,
+            ValidationBody::JsonSchema(_) => &[],
         }
     }
 
@@ -275,11 +348,14 @@ mod tests {
     use super::TestCase;
     use super::TestCaseError;
     use crate::config::TestCaseConfig;
+    use crate::config::TestMode;
     use crate::diff::Diff;
     use crate::diff::DiffLine;
     use crate::lossy_string;
     use crate::output::Output;
     use crate::test_expectation;
+    use crate::validation::JsonSchemaBody;
+    use crate::validation::JsonSchemaFailureKind;
     use crate::validation::OutputBody;
     use crate::validation::ValidationBody;
     use crate::validation::ValidationFailure;
@@ -522,5 +598,127 @@ mod tests {
         testcase
             .validate(&output)
             .expect("literal match should succeed when interpolation is disabled");
+    }
+
+    fn json_schema_testcase(schema_source: &str) -> TestCase {
+        TestCase {
+            title: "json schema test".to_string(),
+            shell_expression: "echo json".to_string(),
+            body: ValidationBody::JsonSchema(JsonSchemaBody {
+                schema_source: schema_source.to_string(),
+            }),
+            exit_code: Some(0),
+            line_number: 1,
+            config: TestCaseConfig {
+                mode: Some(TestMode::JsonSchema),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_validate_json_schema_valid() {
+        let schema = r#"
+type: object
+properties:
+  foo:
+    type: string
+  other:
+    type: integer
+required:
+- foo
+- other
+"#;
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("{\"foo\": \"bar\", \"other\": 123}\n", "").into();
+        testcase
+            .validate(&output)
+            .expect("valid JSON matching schema should pass");
+    }
+
+    #[test]
+    fn test_validate_json_schema_validation_errors() {
+        let schema = r#"
+type: object
+properties:
+  foo:
+    type: string
+  other:
+    type: integer
+required:
+- foo
+- other
+"#;
+        // missing required field "other"
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("{\"foo\": \"bar\"}\n", "").into();
+        match testcase.validate(&output) {
+            Err(TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(f))) => {
+                assert_eq!(
+                    f.kind,
+                    JsonSchemaFailureKind::ValidationErrors,
+                    "should be validation errors"
+                );
+                assert!(!f.errors.is_empty(), "should have at least one error");
+            }
+            other => panic!(
+                "expected JsonSchemaFailed(ValidationErrors), got {:?}",
+                other
+            ),
+        }
+    }
+
+    #[test]
+    fn test_validate_json_schema_invalid_json() {
+        let schema = r#"type: object"#;
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("not json at all\n", "").into();
+        match testcase.validate(&output) {
+            Err(TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(f))) => {
+                assert_eq!(
+                    f.kind,
+                    JsonSchemaFailureKind::InvalidJson,
+                    "should be invalid JSON"
+                );
+            }
+            other => panic!("expected JsonSchemaFailed(InvalidJson), got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_validate_json_schema_invalid_schema() {
+        // Invalid schema: "type" should be a string, not a list
+        let schema = "type:\n  - not\n  - valid\n  - schema: [";
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("{\"foo\": \"bar\"}\n", "").into();
+        match testcase.validate(&output) {
+            Err(TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(f))) => {
+                assert_eq!(
+                    f.kind,
+                    JsonSchemaFailureKind::InvalidSchema,
+                    "should be invalid schema"
+                );
+            }
+            other => panic!("expected JsonSchemaFailed(InvalidSchema), got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_validate_json_schema_yaml_with_document_start() {
+        // Schema with --- YAML document start marker
+        let schema = r#"---
+type: object
+properties:
+  name:
+    type: string
+required:
+- name
+"#;
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("{\"name\": \"test\"}\n", "").into();
+        testcase
+            .validate(&output)
+            .expect("YAML schema with --- prefix should parse correctly");
     }
 }

@@ -29,6 +29,7 @@ dunce = "1.0.5"
 globset = { version = "0.4.13", features = ["serde1"] }
 humantime = "2.1"
 indicatif = { version = "0.18.3", features = ["futures", "improved_unicode", "rayon", "tokio"] }
+jsonschema = "0.17.1"
 lazy_static = "1.5"
 rand = { version = "0.9", features = ["small_rng"] }
 regex = "1.12.2"

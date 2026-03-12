@@ -10,6 +10,7 @@ use anyhow::Result;
 use crate::diff::Diff;
 use crate::outcome::Outcome;
 use crate::testcase::TestCaseError;
+use crate::validation::JsonSchemaFailure;
 use crate::validation::ValidationFailure;
 
 /// Renderer translate errors from validating [`crate::testcase::TestCase`]s into
@@ -42,6 +43,9 @@ pub(super) trait ErrorRenderer: Renderer {
     ) -> Result<String> {
         match failure {
             ValidationFailure::MalformedOutput(diff) => self.render_malformed_output(outcome, diff),
+            ValidationFailure::JsonSchemaFailed(failure) => {
+                self.render_json_schema_failed(outcome, failure)
+            }
         }
     }
 
@@ -59,4 +63,10 @@ pub(super) trait ErrorRenderer: Renderer {
     fn render_timeout(&self, outcome: &Outcome) -> Result<String>;
 
     fn render_skipped(&self, outcome: &Outcome) -> Result<String>;
+
+    fn render_json_schema_failed(
+        &self,
+        outcome: &Outcome,
+        failure: &JsonSchemaFailure,
+    ) -> Result<String>;
 }

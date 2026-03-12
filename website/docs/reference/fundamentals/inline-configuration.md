@@ -326,6 +326,34 @@ Give CRLF\r (escape)
 ```
 ````
 
+### `mode`
+
+- Type: **enum(`output`, `jsonschema`)**
+- Command Line Parameter: **n/a**
+- Default: **`output`** (implicit)
+
+The `mode` configuration selects the [validation mode](/docs/reference/fundamentals/validation-modes/) for the test case. Each mode changes how scrut interprets the expectation body and validates command output.
+
+| Mode | Description |
+|------|-------------|
+| `output` | Line-by-line diff against output expectations (default) |
+| `jsonschema` | Validate JSON output against an inline YAML schema |
+
+See [Validation Modes](/docs/reference/fundamentals/validation-modes/) for full syntax and examples.
+
+**Example (JSON Schema mode):**
+
+````markdown showLineNumbers
+```scrut {mode: jsonschema}
+$ echo '{"count": 42}'
+---
+type: object
+properties:
+  count:
+    type: integer
+```
+````
+
 ### `output_stream`
 
 - Type: **enum(`stdout`, `stderr`, `combined`)**
