@@ -63,12 +63,33 @@ impl Executor for StatefulExecutor {
         testcases: &[&TestCase],
         context: &ExecutionContext,
     ) -> Result<Vec<Output>> {
-        // a temporary directory, that will be used to copy state in between the executions
         let state_directory = TempDir::with_prefix_in(".state.", &context.temp_directory)
             .context("generate temporary output directory")
             .map_err(|err| ExecutionError::aborted(err, None))?;
 
-        // prepare "global" timeout, if there is any
+        let mut session = ExecutionSession::new(&self.0, state_directory.path(), context);
+        session.run_all(testcases)
+    }
+}
+
+/// Drives sequential testcase execution, accumulating outputs.
+/// Created per `execute_all` call; borrows the runner factory and execution context.
+struct ExecutionSession<'a> {
+    runner_gen: &'a StatefulExecutorRunnerGenerator,
+    state_dir: &'a Path,
+    context: &'a ExecutionContext,
+    timeout_at: Option<Instant>,
+    timeout_duration: Duration,
+    outputs: Vec<Output>,
+    done: bool,
+}
+
+impl<'a> ExecutionSession<'a> {
+    fn new(
+        runner_gen: &'a StatefulExecutorRunnerGenerator,
+        state_dir: &'a Path,
+        context: &'a ExecutionContext,
+    ) -> Self {
         let timeout_duration = context
             .config
             .total_timeout
@@ -78,136 +99,175 @@ impl Executor for StatefulExecutor {
         } else {
             Some(Instant::now().add(timeout_duration))
         };
-        let timeout_left = || timeout_at.map(|at| at.duration_since(Instant::now()));
-        let runner_gen = &self.0;
 
-        // iterate all executions and run them in a bash process, then run
-        // the next execution using the state of the previous
-        let mut outputs = vec![];
+        Self {
+            runner_gen,
+            state_dir,
+            context,
+            timeout_at,
+            timeout_duration,
+            outputs: vec![],
+            done: false,
+        }
+    }
+
+    /// Main loop: prepare, run, check done.
+    fn run_all(&mut self, testcases: &[&TestCase]) -> Result<Vec<Output>> {
         for (index, testcase) in testcases.iter().enumerate() {
-            let name = format!("exec{}", index + 1);
-            let mut testcase = (*testcase).clone();
-
-            // apply document-wide testcase defaults
-            testcase.config = testcase.config.with_defaults_from(&context.config.defaults);
-
-            // timeout is whatever the lowest provided value of:
-            // - global (over all executions) timeout
-            // - local (per execution) timeout
-            let (is_global_timeout, timeout) = vec![
-                testcase.config.timeout.map(|d| Timeout {
-                    is_global: false,
-                    timeout: d,
-                }),
-                timeout_left().map(|d| Timeout {
-                    is_global: true,
-                    timeout: d,
-                }),
-            ]
-            .into_iter()
-            .filter(|item| item.is_some())
-            .min()
-            .unwrap_or_default()
-            .map_or((false, None), |t| (t.is_global, Some(t.timeout)));
-            let span = trace_span!("execution", expression = &testcase.shell_expression, timeout = ?&timeout);
-            let _enter = span.enter();
-
-            // waiting on previous execution
-            if let Some(ref wait) = testcase.config.wait {
-                debug!("waiting {}", wait);
-                if let Some(ref path) = wait.path {
-                    wait_until_path_or_time(&context.temp_directory.join(path), wait.timeout)
-                } else {
-                    sleep(wait.timeout);
-                }
+            let (testcase, is_global_timeout) = self.prepare(testcase, index);
+            self.run_output(&testcase, index, is_global_timeout, testcases.len())?;
+            if self.done {
+                break;
             }
+        }
+        Ok(std::mem::take(&mut self.outputs))
+    }
 
-            // set timeout and identifying environment variable
-            testcase.config.timeout = timeout;
-            testcase.config.environment.insert(
-                "SCRUT_TEST".into(),
-                format!(
-                    "{}:{}",
-                    context.file.to_string_lossy(),
-                    testcase.line_number
-                ),
-            );
+    /// Shared pre-execution: apply defaults, compute timeout, handle wait, set env.
+    /// Returns the prepared testcase and whether the effective timeout is global.
+    fn prepare(&self, testcase: &TestCase, index: usize) -> (TestCase, bool) {
+        let mut testcase = testcase.clone();
 
-            // run the execution, using the shared state directory
-            let context = context.to_owned();
+        // apply document-wide testcase defaults
+        testcase.config = testcase
+            .config
+            .with_defaults_from(&self.context.config.defaults);
 
-            trace!("effective testcase configuration: {}", &testcase.config);
-            let mut output = runner_gen(state_directory.path())
-                .run(&name, &testcase, context)
-                .map_err(|err| ExecutionError::failed(index, err))?;
-            trace!("{output:?}");
+        // timeout is whatever the lowest provided value of:
+        // - global (over all executions) timeout
+        // - local (per execution) timeout
+        let timeout_left = self.timeout_at.map(|at| at.duration_since(Instant::now()));
+        let (is_global_timeout, timeout) = vec![
+            testcase.config.timeout.map(|d| Timeout {
+                is_global: false,
+                timeout: d,
+            }),
+            timeout_left.map(|d| Timeout {
+                is_global: true,
+                timeout: d,
+            }),
+        ]
+        .into_iter()
+        .filter(|item| item.is_some())
+        .min()
+        .unwrap_or_default()
+        .map_or((false, None), |t| (t.is_global, Some(t.timeout)));
 
-            // handle exit code
-            let skip_document_code = testcase.config.get_skip_document_code();
-            match output.exit_code {
-                // having an actual numeric exit code ..
-                ExitStatus::Code(code) => {
-                    // .. ends collecting if user signals to skip
-                    if code == skip_document_code {
-                        return Err(ExecutionError::Skipped(index));
-                    }
+        let span = trace_span!("execution", expression = &testcase.shell_expression, timeout = ?&timeout, index);
+        let _enter = span.enter();
 
-                    // .. otherwise keep collecting output
-                    outputs.push(output);
-
-                    // check if fail_fast is enabled and validation fails
-                    if testcase.config.get_fail_fast() {
-                        if testcase.validate(outputs.last().unwrap()).is_err() {
-                            return Err(ExecutionError::Failed(index, outputs));
-                        }
-                    }
-                }
-
-                // running into a timeout ends all execution ..
-                ExitStatus::Timeout(_) => {
-                    // .. of the whole context? (global, timeout over all executions)
-                    if is_global_timeout {
-                        // ensure the original timeout is set here, because the global timeout is
-                        // per all tests in one document and the per-testcase-set timeout is the
-                        // remaining timeout, not the total.
-                        output.exit_code = ExitStatus::Timeout(timeout_duration);
-                        outputs.push(output);
-                        return Err(ExecutionError::Timeout(ExecutionTimeout::Total, outputs));
-                    }
-
-                    // .. or of only this particular execution
-                    outputs.push(output);
-                    return Err(ExecutionError::Timeout(
-                        ExecutionTimeout::Index(index),
-                        outputs,
-                    ));
-                }
-
-                // user triggered skip ends all execution
-                ExitStatus::Skipped => {
-                    return Err(ExecutionError::Skipped(index));
-                }
-
-                // user says the process is running detached and we should ignore it
-                ExitStatus::Detached => outputs.push(Output {
-                    exit_code: ExitStatus::Detached,
-                    detached_process: output.detached_process,
-                    ..Default::default()
-                }),
-
-                // undefined: things are hairy, better end
-                ExitStatus::Unknown => {
-                    outputs.push(output);
-                    outputs.extend((0..(testcases.len() - outputs.len())).map(|_| Output {
-                        exit_code: ExitStatus::Unknown,
-                        ..Default::default()
-                    }));
-                    break;
-                }
+        // waiting on previous execution
+        if let Some(ref wait) = testcase.config.wait {
+            debug!("waiting {}", wait);
+            if let Some(ref path) = wait.path {
+                wait_until_path_or_time(&self.context.temp_directory.join(path), wait.timeout)
+            } else {
+                sleep(wait.timeout);
             }
         }
 
-        Ok(outputs)
+        // set timeout and identifying environment variable
+        testcase.config.timeout = timeout;
+        testcase.config.environment.insert(
+            "SCRUT_TEST".into(),
+            format!(
+                "{}:{}",
+                self.context.file.to_string_lossy(),
+                testcase.line_number
+            ),
+        );
+
+        (testcase, is_global_timeout)
+    }
+
+    /// Standard output mode: BashRunner execution + exit status handling.
+    fn run_output(
+        &mut self,
+        testcase: &TestCase,
+        index: usize,
+        is_global_timeout: bool,
+        total: usize,
+    ) -> Result<()> {
+        let name = format!("exec{}", index + 1);
+        let context = self.context.to_owned();
+
+        trace!("effective testcase configuration: {}", &testcase.config);
+        let mut output = (self.runner_gen)(self.state_dir)
+            .run(&name, testcase, context)
+            .map_err(|err| ExecutionError::failed(index, err))?;
+        trace!("{output:?}");
+
+        // handle exit code
+        let skip_document_code = testcase.config.get_skip_document_code();
+        match output.exit_code {
+            // having an actual numeric exit code ..
+            ExitStatus::Code(code) => {
+                // .. ends collecting if user signals to skip
+                if code == skip_document_code {
+                    return Err(ExecutionError::Skipped(index));
+                }
+
+                // .. otherwise keep collecting output
+                self.outputs.push(output);
+
+                // check if fail_fast is enabled and validation fails
+                if testcase.config.get_fail_fast()
+                    && testcase.validate(self.outputs.last().unwrap()).is_err()
+                {
+                    return Err(ExecutionError::Failed(
+                        index,
+                        std::mem::take(&mut self.outputs),
+                    ));
+                }
+            }
+
+            // running into a timeout ends all execution ..
+            ExitStatus::Timeout(_) => {
+                if is_global_timeout {
+                    // ensure the original timeout is set here, because the global timeout is
+                    // per all tests in one document and the per-testcase-set timeout is the
+                    // remaining timeout, not the total.
+                    output.exit_code = ExitStatus::Timeout(self.timeout_duration);
+                    self.outputs.push(output);
+                    return Err(ExecutionError::Timeout(
+                        ExecutionTimeout::Total,
+                        std::mem::take(&mut self.outputs),
+                    ));
+                }
+
+                // .. or of only this particular execution
+                self.outputs.push(output);
+                return Err(ExecutionError::Timeout(
+                    ExecutionTimeout::Index(index),
+                    std::mem::take(&mut self.outputs),
+                ));
+            }
+
+            // user triggered skip ends all execution
+            ExitStatus::Skipped => {
+                return Err(ExecutionError::Skipped(index));
+            }
+
+            // user says the process is running detached and we should ignore it
+            ExitStatus::Detached => self.outputs.push(Output {
+                exit_code: ExitStatus::Detached,
+                detached_process: output.detached_process,
+                ..Default::default()
+            }),
+
+            // undefined: things are hairy, better end
+            ExitStatus::Unknown => {
+                self.outputs.push(output);
+                self.outputs
+                    .extend((0..(total - self.outputs.len())).map(|_| Output {
+                        exit_code: ExitStatus::Unknown,
+                        ..Default::default()
+                    }));
+                self.done = true;
+            }
+        }
+
+        Ok(())
     }
 }
 
