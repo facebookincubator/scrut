@@ -34,6 +34,7 @@ pub(super) mod tests {
     use crate::parsers::parser::ParserType;
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
+    use crate::validation::ValidationFailure;
 
     pub(crate) struct UpdateGeneratorTest<'a> {
         pub original_document: &'a str,
@@ -73,16 +74,17 @@ pub(super) mod tests {
                     testcase: TestCase {
                         title: "This is a test".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![],
                         exit_code: None,
                         line_number: 234,
                         ..Default::default()
                     },
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnexpectedLines {
-                            lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
-                        },
-                    ]))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
+                            },
+                        ])),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 },
@@ -95,16 +97,17 @@ pub(super) mod tests {
                     testcase: TestCase {
                         title: "This is a test".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![],
                         exit_code: None,
                         line_number: 234,
                         ..Default::default()
                     },
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnexpectedLines {
-                            lines: vec![(0, b"the output".to_vec())],
-                        },
-                    ]))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, b"the output".to_vec())],
+                            },
+                        ])),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 },
@@ -117,20 +120,21 @@ pub(super) mod tests {
                     testcase: TestCase {
                         title: "This is a test".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![],
                         exit_code: None,
                         line_number: 234,
                         ..Default::default()
                     },
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnexpectedLines {
-                            lines: vec![
-                                (0, formatln!("line 1").as_bytes().to_vec()),
-                                (1, formatln!("line 2").as_bytes().to_vec()),
-                                (2, b"line 3".to_vec()),
-                            ],
-                        },
-                    ]))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnexpectedLines {
+                                lines: vec![
+                                    (0, formatln!("line 1").as_bytes().to_vec()),
+                                    (1, formatln!("line 2").as_bytes().to_vec()),
+                                    (2, b"line 3".to_vec()),
+                                ],
+                            },
+                        ])),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 },
@@ -143,16 +147,17 @@ pub(super) mod tests {
                     testcase: TestCase {
                         title: "This is a test".to_string(),
                         shell_expression: "echo \\\nsomething".into(),
-                        expectations: vec![],
                         exit_code: None,
                         line_number: 234,
                         ..Default::default()
                     },
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnexpectedLines {
-                            lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
-                        },
-                    ]))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
+                            },
+                        ])),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 },
@@ -165,16 +170,17 @@ pub(super) mod tests {
                     testcase: TestCase {
                         title: "This is a test".to_string(),
                         shell_expression: "the command".into(),
-                        expectations: vec![],
                         exit_code: Some(123),
                         line_number: 234,
                         ..Default::default()
                     },
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnexpectedLines {
-                            lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
-                        },
-                    ]))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(vec![
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, formatln!("the output").as_bytes().to_vec())],
+                            },
+                        ])),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 },

@@ -77,6 +77,8 @@ mod tests {
     use crate::escaping::Escaper;
     use crate::parsers::parser::ParserType;
     use crate::testcase::TestCaseError;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
 
     #[test]
     fn test_serialize() {
@@ -92,7 +94,9 @@ mod tests {
                     testcase: TestCase {
                         title: "the title".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![test_expectation!("equal", "foo")],
+                        body: ValidationBody::Output(OutputBody {
+                            expectations: vec![test_expectation!("equal", "foo")],
+                        }),
                         exit_code: Some(234),
                         line_number: 234,
                         ..Default::default()
@@ -113,7 +117,9 @@ mod tests {
                     testcase: TestCase {
                         title: "the title".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![test_expectation!("equal", "foo")],
+                        body: ValidationBody::Output(OutputBody {
+                            expectations: vec![test_expectation!("equal", "foo")],
+                        }),
                         exit_code: Some(123),
                         line_number: 234,
                         ..Default::default()

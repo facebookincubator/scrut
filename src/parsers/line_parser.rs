@@ -16,6 +16,8 @@ use crate::config::TestCaseConfig;
 use crate::expectation::Expectation;
 use crate::expectation::ExpectationMaker;
 use crate::testcase::TestCase;
+use crate::validation::OutputBody;
+use crate::validation::ValidationBody;
 
 lazy_static! {
     /// Exit code expression matches an output line of the form:
@@ -142,7 +144,7 @@ impl LineParser {
             return Ok(CodeType::CommandContinue);
         }
 
-        // body part, where output expectations etc are
+        // body part, where output expectations are
         self.position = LineParserPosition::Body;
 
         // exit code notation
@@ -201,7 +203,9 @@ impl LineParser {
             title: self.title.to_owned().unwrap_or_default(),
             shell_expression: self.command_lines.join("\n"),
             exit_code: self.exit_code,
-            expectations: self.expectations.clone(),
+            body: ValidationBody::Output(OutputBody {
+                expectations: self.expectations.clone(),
+            }),
             line_number: self.output_start_index.unwrap_or(line_index) + 1,
             config: self
                 .config
@@ -260,11 +264,13 @@ mod tests {
     use crate::expectation::tests::expectation_maker;
     use crate::test_expectation;
     use crate::testcase::TestCase;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
 
     fn engine(
         allow_multiple_commands: bool,
         allow_multiline_config: bool,
-        config: Option<TestCaseConfig>,
+        _config: Option<TestCaseConfig>,
     ) -> LineParser {
         let maker = expectation_maker();
         LineParser::new(
@@ -287,7 +293,9 @@ mod tests {
             vec![TestCase {
                 title: "foo".to_string(),
                 exit_code: Some(5),
-                expectations: vec![test_expectation!("equal", "baz"),],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "baz")]
+                }),
                 shell_expression: "bar".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -310,7 +318,9 @@ mod tests {
             vec![TestCase {
                 title: "foo3".to_string(),
                 exit_code: Some(5),
-                expectations: vec![test_expectation!("equal", "baz"),],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "baz")]
+                }),
                 shell_expression: "bar".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -334,7 +344,9 @@ mod tests {
             vec![TestCase {
                 title: "foo".to_string(),
                 exit_code: Some(5),
-                expectations: vec![test_expectation!("equal", "baz"),],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "baz")]
+                }),
                 shell_expression: "bar1\n\nbar2\nbar3".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -363,11 +375,13 @@ mod tests {
             vec![TestCase {
                 title: "foo".to_string(),
                 exit_code: Some(5),
-                expectations: vec![
-                    test_expectation!("equal", "baz1"),
-                    test_expectation!("equal", "baz2"),
-                    test_expectation!("equal", "baz3"),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "baz1"),
+                        test_expectation!("equal", "baz2"),
+                        test_expectation!("equal", "baz3"),
+                    ]
+                }),
                 shell_expression: "bar".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -394,7 +408,6 @@ mod tests {
                 TestCase {
                     title: "".to_string(),
                     exit_code: None,
-                    expectations: vec![],
                     shell_expression: "foo1".to_string(),
                     line_number: 2,
                     ..Default::default()
@@ -402,7 +415,6 @@ mod tests {
                 TestCase {
                     title: "".to_string(),
                     exit_code: None,
-                    expectations: vec![],
                     shell_expression: "foo2".to_string(),
                     line_number: 3,
                     ..Default::default()
@@ -410,7 +422,6 @@ mod tests {
                 TestCase {
                     title: "".to_string(),
                     exit_code: None,
-                    expectations: vec![],
                     shell_expression: "foo3".to_string(),
                     line_number: 4,
                     ..Default::default()
@@ -437,10 +448,12 @@ mod tests {
             vec![TestCase {
                 title: "".to_string(),
                 exit_code: None,
-                expectations: vec![
-                    test_expectation!("equal", "$ foo2"),
-                    test_expectation!("equal", "$ foo3"),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "$ foo2"),
+                        test_expectation!("equal", "$ foo3"),
+                    ]
+                }),
                 shell_expression: "foo1".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -466,7 +479,6 @@ mod tests {
             vec![TestCase {
                 title: "".to_string(),
                 exit_code: None,
-                expectations: vec![],
                 shell_expression: "foo1\nfoo2\nfoo3".to_string(),
                 line_number: 2,
                 ..Default::default()
@@ -504,7 +516,9 @@ mod tests {
                 TestCase {
                     title: "foo1".to_string(),
                     exit_code: Some(1),
-                    expectations: vec![test_expectation!("equal", "baz1"),],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![test_expectation!("equal", "baz1")]
+                    }),
                     shell_expression: "bar1".to_string(),
                     line_number: 2,
                     ..Default::default()
@@ -512,7 +526,9 @@ mod tests {
                 TestCase {
                     title: "foo2".to_string(),
                     exit_code: Some(2),
-                    expectations: vec![test_expectation!("equal", "baz2"),],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![test_expectation!("equal", "baz2")]
+                    }),
                     shell_expression: "bar2".to_string(),
                     line_number: 5,
                     ..Default::default()
@@ -520,7 +536,9 @@ mod tests {
                 TestCase {
                     title: "foo3".to_string(),
                     exit_code: Some(3),
-                    expectations: vec![test_expectation!("equal", "baz3"),],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![test_expectation!("equal", "baz3")]
+                    }),
                     shell_expression: "bar3".to_string(),
                     line_number: 8,
                     ..Default::default()
@@ -544,7 +562,6 @@ mod tests {
                 vec![TestCase {
                     title: "foo1".to_string(),
                     exit_code: if provided { Some(0) } else { None },
-                    expectations: vec![],
                     shell_expression: "bar".to_string(),
                     line_number: 2,
                     ..Default::default()

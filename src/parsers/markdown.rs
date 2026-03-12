@@ -408,6 +408,8 @@ mod tests {
     use crate::parsers::parser::Parser;
     use crate::test_expectation;
     use crate::testcase::TestCase;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
 
     fn parser() -> MarkdownParser {
         let maker = expectation_maker();
@@ -435,11 +437,14 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -475,11 +480,14 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 10,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -506,7 +514,9 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
@@ -517,7 +527,8 @@ hello
                         path: None,
                     }),
                     ..TestCaseConfig::default_markdown()
-                })
+                }),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -543,11 +554,14 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 9,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -573,12 +587,15 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title\nThis is still part of it\nAnd another part of the title"
                     .to_string(),
                 exit_code: None,
                 line_number: 9,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -602,11 +619,14 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -630,11 +650,14 @@ hello
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -677,22 +700,28 @@ world
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 12,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
         assert_eq!(
             TestCase {
                 shell_expression: "echo world".to_string(),
-                expectations: vec![test_expectation!("equal", "world", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "world", false, false)]
+                }),
                 title: "This is another title".to_string(),
                 exit_code: None,
                 line_number: 26,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[1]
         );
@@ -719,15 +748,18 @@ i am output 3
         assert_eq!(
             TestCase {
                 shell_expression: "i am command 1\ni am command 2".into(),
-                expectations: vec![
-                    test_expectation!("equal", "i am output 1", false, false),
-                    test_expectation!("equal", "> i am output 2", false, false),
-                    test_expectation!("equal", "i am output 3", false, false),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "i am output 1", false, false),
+                        test_expectation!("equal", "> i am output 2", false, false),
+                        test_expectation!("equal", "i am output 3", false, false),
+                    ]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -766,31 +798,37 @@ Hello World
             vec![
                 TestCase {
                     shell_expression: "echo hello".to_string(),
-                    expectations: vec![
-                        test_expectation!("equal", "```scrut"),
-                        test_expectation!("equal", "inner"),
-                        test_expectation!("equal", "```"),
-                        test_expectation!("equal", "text"),
-                    ],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![
+                            test_expectation!("equal", "```scrut"),
+                            test_expectation!("equal", "inner"),
+                            test_expectation!("equal", "```"),
+                            test_expectation!("equal", "text"),
+                        ]
+                    }),
                     title: "This is a title".to_string(),
                     exit_code: None,
                     line_number: 5,
                     config: TestCaseConfig::default_markdown(),
+                    ..Default::default()
                 },
                 TestCase {
                     shell_expression: "cat test.md".to_string(),
-                    expectations: vec![
-                        test_expectation!("equal", "# Command executes successfully"),
-                        test_expectation!("equal", ""),
-                        test_expectation!("equal", "```scrut"),
-                        test_expectation!("equal", "$ echo Hello World"),
-                        test_expectation!("equal", "Hello World"),
-                        test_expectation!("equal", "```"),
-                    ],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![
+                            test_expectation!("equal", "# Command executes successfully"),
+                            test_expectation!("equal", ""),
+                            test_expectation!("equal", "```scrut"),
+                            test_expectation!("equal", "$ echo Hello World"),
+                            test_expectation!("equal", "Hello World"),
+                            test_expectation!("equal", "```"),
+                        ]
+                    }),
                     title: "And another title".to_string(),
                     exit_code: None,
                     line_number: 15,
                     config: TestCaseConfig::default_markdown(),
+                    ..Default::default()
                 },
             ],
             testcases
@@ -814,14 +852,17 @@ world
         assert_eq!(
             vec![TestCase {
                 shell_expression: "echo -e '$ hello\\nworld'".to_string(),
-                expectations: vec![
-                    test_expectation!("equal", "$ hello"),
-                    test_expectation!("equal", "world"),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "$ hello"),
+                        test_expectation!("equal", "world"),
+                    ]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 5,
                 config: TestCaseConfig::default_markdown(),
+                ..Default::default()
             },],
             testcases
         );

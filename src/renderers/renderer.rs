@@ -10,6 +10,7 @@ use anyhow::Result;
 use crate::diff::Diff;
 use crate::outcome::Outcome;
 use crate::testcase::TestCaseError;
+use crate::validation::ValidationFailure;
 
 /// Renderer translate errors from validating [`crate::testcase::TestCase`]s into
 /// text that allows humans to understand how the actual output is different
@@ -22,13 +23,25 @@ pub trait Renderer {
 pub(super) trait ErrorRenderer: Renderer {
     fn render_error(&self, err: &TestCaseError, outcome: &Outcome) -> Result<String> {
         match err {
-            TestCaseError::MalformedOutput(diff) => self.render_malformed_output(outcome, diff),
+            TestCaseError::ValidationFailed(failure) => {
+                self.render_validation_failed(outcome, failure)
+            }
             TestCaseError::InvalidExitCode { actual, expected } => {
                 self.render_invalid_exit_code(outcome, *actual, *expected)
             }
             TestCaseError::InternalError(err) => self.render_delegated_error(outcome, err),
             TestCaseError::Timeout => self.render_timeout(outcome),
             TestCaseError::Skipped => self.render_skipped(outcome),
+        }
+    }
+
+    fn render_validation_failed(
+        &self,
+        outcome: &Outcome,
+        failure: &ValidationFailure,
+    ) -> Result<String> {
+        match failure {
+            ValidationFailure::MalformedOutput(diff) => self.render_malformed_output(outcome, diff),
         }
     }
 

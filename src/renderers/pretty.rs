@@ -158,7 +158,7 @@ impl ErrorRenderer for PrettyColorRenderer {
             line_base
                 + diff
                     .count_output_lines
-                    .max(outcome.testcase.expectations.len()),
+                    .max(outcome.testcase.expectations().len()),
         );
         let mut last_error_index = None;
         let next_error_index = |index: usize| {
@@ -476,6 +476,9 @@ mod tests {
     use crate::test_expectation;
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
+    use crate::validation::ValidationFailure;
 
     fn new_test_renderer() -> PrettyMonochromeRenderer {
         PrettyMonochromeRenderer::new(PrettyColorRenderer {
@@ -495,7 +498,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".to_string(),
                     shell_expression: "the command".to_string(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -522,7 +527,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title \\\nnext line \\\nlast line".into(),
                     shell_expression: "the command \\\nnext line \\\nlast line".into(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -548,7 +555,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".to_string(),
                     shell_expression: "the \x1b[1mcommand\x1b[0m 🥳".to_string(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -602,7 +611,9 @@ mod tests {
                     testcase: TestCase {
                         title: "the title".to_string(),
                         shell_expression: "the command".to_string(),
-                        expectations: vec![],
+                        body: ValidationBody::Output(OutputBody {
+                            expectations: vec![],
+                        }),
                         exit_code: None,
                         line_number: 234,
                         ..Default::default()
@@ -637,7 +648,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".to_string(),
                     shell_expression: "the command".to_string(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -656,12 +669,14 @@ mod tests {
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
-            expectations: vec![
-                test_expectation!("equal", "matched", false, false),
-                test_expectation!("equal", "unmatched", false, false),
-                test_expectation!("equal", "unused1", false, false),
-                test_expectation!("equal", "unused2", false, false),
-            ],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![
+                    test_expectation!("equal", "matched", false, false),
+                    test_expectation!("equal", "unmatched", false, false),
+                    test_expectation!("equal", "unused1", false, false),
+                    test_expectation!("equal", "unused2", false, false),
+                ],
+            }),
             exit_code: None,
             line_number: 234,
             ..Default::default()
@@ -671,20 +686,25 @@ mod tests {
                 location: None,
                 output: ("matched\nno match 1\nno match 2\n", "", Some(123)).into(),
                 testcase: testcase.clone(),
-                result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                    DiffLine::MatchedExpectation {
-                        index: 0,
-                        expectation: testcase.expectations[0].clone(),
-                        lines: vec![(0, bformatln!("matched"))],
-                    },
-                    DiffLine::UnmatchedExpectation {
-                        index: 1,
-                        expectation: testcase.expectations[1].clone(),
-                    },
-                    DiffLine::UnexpectedLines {
-                        lines: vec![(1, bformatln!("no match 1")), (2, bformatln!("no match 2"))],
-                    },
-                ]))),
+                result: Err(TestCaseError::ValidationFailed(
+                    ValidationFailure::MalformedOutput(Diff::new(vec![
+                        DiffLine::MatchedExpectation {
+                            index: 0,
+                            expectation: testcase.expectations()[0].clone(),
+                            lines: vec![(0, bformatln!("matched"))],
+                        },
+                        DiffLine::UnmatchedExpectation {
+                            index: 1,
+                            expectation: testcase.expectations()[1].clone(),
+                        },
+                        DiffLine::UnexpectedLines {
+                            lines: vec![
+                                (1, bformatln!("no match 1")),
+                                (2, bformatln!("no match 2")),
+                            ],
+                        },
+                    ])),
+                )),
                 escaping: Escaper::default(),
                 format: ParserType::Markdown,
             }])
@@ -703,11 +723,13 @@ mod tests {
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
-            expectations: vec![
-                test_expectation!("equal", "foo", false, true),
-                test_expectation!("equal", "bar", false, false),
-                test_expectation!("equal", "baz", false, false),
-            ],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![
+                    test_expectation!("equal", "foo", false, true),
+                    test_expectation!("equal", "bar", false, false),
+                    test_expectation!("equal", "baz", false, false),
+                ],
+            }),
             exit_code: None,
             line_number: 234,
             ..Default::default()
@@ -717,26 +739,28 @@ mod tests {
                 location: None,
                 output: ("foo\nfoo\nfoo\nbar\n", "").into(),
                 testcase: testcase.clone(),
-                result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                    DiffLine::MatchedExpectation {
-                        index: 0,
-                        expectation: testcase.expectations[0].clone(),
-                        lines: vec![
-                            (0, bformatln!("foo")),
-                            (1, bformatln!("foo")),
-                            (2, bformatln!("foo")),
-                        ],
-                    },
-                    DiffLine::MatchedExpectation {
-                        index: 1,
-                        expectation: testcase.expectations[1].clone(),
-                        lines: vec![(3, bformatln!("bar"))],
-                    },
-                    DiffLine::UnmatchedExpectation {
-                        index: 2,
-                        expectation: testcase.expectations[2].clone(),
-                    },
-                ]))),
+                result: Err(TestCaseError::ValidationFailed(
+                    ValidationFailure::MalformedOutput(Diff::new(vec![
+                        DiffLine::MatchedExpectation {
+                            index: 0,
+                            expectation: testcase.expectations()[0].clone(),
+                            lines: vec![
+                                (0, bformatln!("foo")),
+                                (1, bformatln!("foo")),
+                                (2, bformatln!("foo")),
+                            ],
+                        },
+                        DiffLine::MatchedExpectation {
+                            index: 1,
+                            expectation: testcase.expectations()[1].clone(),
+                            lines: vec![(3, bformatln!("bar"))],
+                        },
+                        DiffLine::UnmatchedExpectation {
+                            index: 2,
+                            expectation: testcase.expectations()[2].clone(),
+                        },
+                    ])),
+                )),
                 escaping: Escaper::default(),
                 format: ParserType::Markdown,
             }])
@@ -818,7 +842,9 @@ mod tests {
             let testcase = TestCase {
                 title: "the title".to_string(),
                 shell_expression: "the command".to_string(),
-                expectations: expectations.clone(),
+                body: ValidationBody::Output(OutputBody {
+                    expectations: expectations.clone(),
+                }),
                 exit_code: None,
                 line_number: 234,
                 ..Default::default()
@@ -829,7 +855,9 @@ mod tests {
                     location: None,
                     output: ("matched\nno match 1\nno match 2\n", "", Some(123)).into(),
                     testcase,
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(diff.clone()))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(diff.clone())),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 }])
@@ -847,7 +875,9 @@ mod tests {
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
-            expectations: vec![],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![],
+            }),
             exit_code: None,
             line_number: 234,
             ..Default::default()
@@ -865,13 +895,15 @@ mod tests {
                 )
                     .into(),
                 testcase,
-                result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                    DiffLine::UnexpectedLines {
-                        lines: (0..=10)
-                            .map(|index| (index, bformatln!("no match {}", index + 1)))
-                            .collect(),
-                    },
-                ]))),
+                result: Err(TestCaseError::ValidationFailed(
+                    ValidationFailure::MalformedOutput(Diff::new(vec![
+                        DiffLine::UnexpectedLines {
+                            lines: (0..=10)
+                                .map(|index| (index, bformatln!("no match {}", index + 1)))
+                                .collect(),
+                        },
+                    ])),
+                )),
                 escaping: Escaper::default(),
                 format: ParserType::Markdown,
             }])
@@ -917,7 +949,7 @@ mod tests {
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
-            expectations,
+            body: ValidationBody::Output(OutputBody { expectations }),
             exit_code: None,
             line_number: 90,
             ..Default::default()
@@ -935,7 +967,9 @@ mod tests {
                     location: None,
                     output: ("matched\nno match 1\nno match 2\n", "", Some(123)).into(),
                     testcase: testcase.clone(),
-                    result: Err(TestCaseError::MalformedOutput(Diff::new(lines.clone()))),
+                    result: Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(Diff::new(lines.clone())),
+                    )),
                     escaping: Escaper::default(),
                     format: ParserType::Markdown,
                 }])
@@ -970,7 +1004,7 @@ mod tests {
         let testcase = TestCase {
             title: "the title".to_string(),
             shell_expression: "the command".to_string(),
-            expectations,
+            body: ValidationBody::Output(OutputBody { expectations }),
             exit_code: None,
             line_number: 10,
             ..Default::default()
@@ -990,7 +1024,9 @@ mod tests {
                         location: None,
                         output: (&output, "", Some(123)).into(),
                         testcase: testcase.clone(),
-                        result: Err(TestCaseError::MalformedOutput(Diff::new(lines.clone()))),
+                        result: Err(TestCaseError::ValidationFailed(
+                            ValidationFailure::MalformedOutput(Diff::new(lines.clone())),
+                        )),
                         escaping: Escaper::default(),
                         format: ParserType::Markdown,
                     }])

@@ -17,6 +17,7 @@ use crate::newline::StringNewline;
 use crate::outcome::Outcome;
 use crate::output::ExitStatus;
 use crate::testcase::TestCaseError;
+use crate::validation::ValidationFailure;
 
 pub(super) trait OutcomeTestGenerator {
     fn generate_testcase(&self) -> Result<String>;
@@ -50,7 +51,7 @@ impl OutcomeTestGenerator for Outcome {
         match &self.result {
             Ok(_) => {
                 let mut generated = self.generate_testcase_expression();
-                self.testcase.expectations.iter().for_each(|expectation| {
+                self.testcase.expectations().iter().for_each(|expectation| {
                     generated.push_str(&expectation.original_string().assure_newline())
                 });
                 if let Some(exit_code) = self.generate_testcase_exit_code() {
@@ -59,43 +60,44 @@ impl OutcomeTestGenerator for Outcome {
                 Ok(generated)
             }
             Err(err) => match err {
-                TestCaseError::MalformedOutput(diff) => {
-                    let mut generated = self.generate_testcase_expression();
+                TestCaseError::ValidationFailed(failure) => match failure {
+                    ValidationFailure::MalformedOutput(diff) => {
+                        let mut generated = self.generate_testcase_expression();
 
-                    // output the actual recorded output lines
-                    for diff_line in diff.lines.iter() {
-                        match diff_line {
-                            DiffLine::MatchedExpectation {
-                                index: _,
-                                expectation,
-                                lines: _,
-                            } => {
-                                generated.push_str(&expectation.original_string().assure_newline())
-                            }
-                            DiffLine::UnexpectedLines { lines } => {
-                                for (_, line) in lines {
-                                    let suffix = if line.ends_with(b"\n") {
-                                        ""
-                                    } else {
-                                        " (no-eol)"
-                                    };
-                                    let line = formatln!(
-                                        "{}{}",
-                                        self.escaping
-                                            .escaped_expectation((&line[..]).trim_newlines()),
-                                        suffix
-                                    );
-                                    generated.push_str(&line)
+                        // output the actual recorded output lines
+                        for diff_line in diff.lines.iter() {
+                            match diff_line {
+                                DiffLine::MatchedExpectation {
+                                    index: _,
+                                    expectation,
+                                    lines: _,
+                                } => generated
+                                    .push_str(&expectation.original_string().assure_newline()),
+                                DiffLine::UnexpectedLines { lines } => {
+                                    for (_, line) in lines {
+                                        let suffix = if line.ends_with(b"\n") {
+                                            ""
+                                        } else {
+                                            " (no-eol)"
+                                        };
+                                        let line = formatln!(
+                                            "{}{}",
+                                            self.escaping
+                                                .escaped_expectation((&line[..]).trim_newlines()),
+                                            suffix
+                                        );
+                                        generated.push_str(&line)
+                                    }
                                 }
+                                _ => continue,
                             }
-                            _ => continue,
                         }
+                        if let Some(exit_code) = self.generate_testcase_exit_code() {
+                            generated.push_str(&exit_code)
+                        }
+                        Ok(generated)
                     }
-                    if let Some(exit_code) = self.generate_testcase_exit_code() {
-                        generated.push_str(&exit_code)
-                    }
-                    Ok(generated)
-                }
+                },
                 TestCaseError::InvalidExitCode {
                     actual,
                     expected: _,

@@ -128,6 +128,9 @@ mod tests {
     use crate::test_expectation;
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
+    use crate::validation::ValidationFailure;
 
     #[test]
     fn test_update_generator() {
@@ -141,16 +144,19 @@ mod tests {
                         testcase: TestCase {
                             title: "This is a test".to_string(),
                             shell_expression: "the command".to_string(),
-                            expectations: vec![test_expectation!(
-                                "equal",
-                                "an expectation",
-                                false,
-                                false,
-                                "an expectation"
-                            )],
+                            body: ValidationBody::Output(OutputBody {
+                                expectations: vec![test_expectation!(
+                                    "equal",
+                                    "an expectation",
+                                    false,
+                                    false,
+                                    "an expectation"
+                                )],
+                            }),
                             exit_code: None,
                             line_number: 234,
                             config: Default::default(),
+                            ..Default::default()
                         },
                         output: ("an expectation\n", "").into(),
                         result: Ok(()),
@@ -167,13 +173,15 @@ mod tests {
                         testcase: TestCase {
                             title: "This is a test".to_string(),
                             shell_expression: "the command".to_string(),
-                            expectations: vec![test_expectation!(
-                                "glob",
-                                "line *",
-                                false,
-                                true,
-                                "line * (glob+)"
-                            )],
+                            body: ValidationBody::Output(OutputBody {
+                                expectations: vec![test_expectation!(
+                                    "glob",
+                                    "line *",
+                                    false,
+                                    true,
+                                    "line * (glob+)"
+                                )],
+                            }),
                             exit_code: None,
                             line_number: 234,
                             ..Default::default()
@@ -194,21 +202,25 @@ mod tests {
                         testcase: TestCase {
                             title: "This is a test".to_string(),
                             shell_expression: "the command".to_string(),
-                            expectations: vec![test_expectation!("equal", "an expectation")],
+                            body: ValidationBody::Output(OutputBody {
+                                expectations: vec![test_expectation!("equal", "an expectation")],
+                            }),
                             exit_code: None,
                             line_number: 234,
                             ..Default::default()
                         },
                         output: ("new output\n", "").into(),
-                        result: Err(TestCaseError::MalformedOutput(Diff::new(vec![
-                            DiffLine::UnmatchedExpectation {
-                                index: 0,
-                                expectation: test_expectation!("equal", "an expectation"),
-                            },
-                            DiffLine::UnexpectedLines {
-                                lines: vec![(0, formatln!("new output").as_bytes().to_vec())],
-                            },
-                        ]))),
+                        result: Err(TestCaseError::ValidationFailed(
+                            ValidationFailure::MalformedOutput(Diff::new(vec![
+                                DiffLine::UnmatchedExpectation {
+                                    index: 0,
+                                    expectation: test_expectation!("equal", "an expectation"),
+                                },
+                                DiffLine::UnexpectedLines {
+                                    lines: vec![(0, formatln!("new output").as_bytes().to_vec())],
+                                },
+                            ])),
+                        )),
                         location: None,
                         escaping: Escaper::default(),
                         format: ParserType::Cram,

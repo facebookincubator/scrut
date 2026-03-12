@@ -139,7 +139,7 @@ impl Args {
         let testcase = TestCase {
             title: self.title.clone(),
             shell_expression: expression,
-            expectations: vec![],
+            body: Default::default(),
             exit_code: None,
             line_number: 0,
             config: testcase_config.without_environment(&env_vars),

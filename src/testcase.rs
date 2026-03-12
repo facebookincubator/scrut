@@ -18,13 +18,14 @@ use serde_json::json;
 
 use crate::config::OutputStreamControl;
 use crate::config::TestCaseConfig;
-use crate::diff::Diff;
 use crate::diff::DiffTool;
 use crate::escaping::strip_colors_bytes;
 use crate::expectation::Expectation;
 use crate::newline::replace_crlf;
 use crate::output::ExitStatus;
 use crate::output::Output;
+use crate::validation::ValidationBody;
+use crate::validation::ValidationFailure;
 
 pub type Result<T> = anyhow::Result<T, TestCaseError>;
 
@@ -39,8 +40,9 @@ pub struct TestCase {
     /// The valid shell expression that is to be executed
     pub shell_expression: String,
 
-    /// The expectations that describe the output of the execution
-    pub expectations: Vec<Expectation>,
+    /// Mode-specific test body: output expectations or interactive directives.
+    #[serde(rename = "expectations")]
+    pub body: ValidationBody,
 
     /// The expected exit code of the execution
     #[serde(serialize_with = "serialize_always_as_value")]
@@ -68,28 +70,45 @@ impl TestCase {
                 });
             }
         }
-        let expectations = if self.config.interpolated == Some(true) {
-            self.expectations
-                .iter()
-                .map(|e| crate::interpolation::interpolate_expectation(e, &output.captured_env))
-                .collect::<anyhow::Result<Vec<_>>>()
-                .map_err(TestCaseError::InternalError)?
-        } else {
-            self.expectations.clone()
-        };
-        let diff_tool = DiffTool::new(expectations);
-        let stream = if self.config.output_stream == Some(OutputStreamControl::Stderr) {
-            &output.stderr
-        } else {
-            &output.stdout
-        };
-        let diff = diff_tool
-            .diff(stream.into())
-            .map_err(TestCaseError::InternalError)?;
-        if diff.has_differences() {
-            Err(TestCaseError::MalformedOutput(diff))
-        } else {
-            Ok(())
+
+        match &self.body {
+            ValidationBody::Output(body) => {
+                let expectations = if self.config.interpolated == Some(true) {
+                    body.expectations
+                        .iter()
+                        .map(|e| {
+                            crate::interpolation::interpolate_expectation(e, &output.captured_env)
+                        })
+                        .collect::<anyhow::Result<Vec<_>>>()
+                        .map_err(TestCaseError::InternalError)?
+                } else {
+                    body.expectations.clone()
+                };
+
+                let diff_tool = DiffTool::new(expectations);
+                let stream = if self.config.output_stream == Some(OutputStreamControl::Stderr) {
+                    &output.stderr
+                } else {
+                    &output.stdout
+                };
+                let diff = diff_tool
+                    .diff(stream.into())
+                    .map_err(TestCaseError::InternalError)?;
+                if diff.has_differences() {
+                    Err(TestCaseError::ValidationFailed(
+                        ValidationFailure::MalformedOutput(diff),
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    /// Returns the output expectations for this test case.
+    pub fn expectations(&self) -> &[Expectation] {
+        match &self.body {
+            ValidationBody::Output(body) => &body.expectations,
         }
     }
 
@@ -137,7 +156,7 @@ impl TestCase {
     }
 
     pub(crate) fn expectations_lines(&self) -> usize {
-        self.expectations.len()
+        self.expectations().len()
     }
 }
 
@@ -146,7 +165,7 @@ impl Display for TestCase {
         let map = json!({
             "title": self.title.clone(),
             "shell_expression": self.shell_expression.clone(),
-            "expectations": self.expectations
+            "expectations": self.expectations()
                 .iter()
                 .map(|e| Value::String(e.to_expression_string(&Default::default())))
                 .collect::<Vec<_>>(),
@@ -181,7 +200,8 @@ where
 #[derive(Debug)]
 pub enum TestCaseError {
     /// The validation of the expectation for the given line failed (invalid input)
-    MalformedOutput(Diff),
+    /// or an interactive directive failed during execution.
+    ValidationFailed(ValidationFailure),
 
     /// An execution ends in an unexpected exit code
     InvalidExitCode { actual: i32, expected: i32 },
@@ -199,7 +219,7 @@ pub enum TestCaseError {
 impl PartialEq for TestCaseError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::MalformedOutput(l0), Self::MalformedOutput(r0)) => l0 == r0,
+            (Self::ValidationFailed(l0), Self::ValidationFailed(r0)) => l0 == r0,
             (
                 Self::InvalidExitCode {
                     actual: l_actual,
@@ -222,12 +242,7 @@ impl Serialize for TestCaseError {
         S: serde::Serializer,
     {
         match self {
-            Self::MalformedOutput(diff) => {
-                let mut variant = serializer.serialize_map(Some(2))?;
-                variant.serialize_entry("kind", "malformed_output")?;
-                variant.serialize_entry("diff", &diff.lines)?;
-                variant.end()
-            }
+            Self::ValidationFailed(failure) => failure.serialize(serializer),
             Self::InvalidExitCode { actual, expected } => {
                 let mut variant = serializer.serialize_map(Some(3))?;
                 variant.serialize_entry("kind", "invalid_exit_code")?;
@@ -265,13 +280,18 @@ mod tests {
     use crate::lossy_string;
     use crate::output::Output;
     use crate::test_expectation;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
+    use crate::validation::ValidationFailure;
 
     #[test]
     fn test_validate_succeeds_on_valid() {
         let testcase = TestCase {
             title: "an testcase".to_string(),
             shell_expression: "a command".to_string(),
-            expectations: vec![test_expectation!("no-eol", "the stdout")],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![test_expectation!("no-eol", "the stdout")],
+            }),
             exit_code: Some(123),
             line_number: 234,
             ..Default::default()
@@ -286,7 +306,9 @@ mod tests {
         let testcase = TestCase {
             title: "an testcase".to_string(),
             shell_expression: "a command".to_string(),
-            expectations: vec![test_expectation!("no-eol", "the stdout", false, false)],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![test_expectation!("no-eol", "the stdout", false, false)],
+            }),
             exit_code: Some(234),
             line_number: 123,
             ..Default::default()
@@ -311,15 +333,18 @@ mod tests {
 
     #[test]
     fn test_validate_fails_on_malformed_output() {
+        let expectations = vec![test_expectation!(
+            "no-eol",
+            "something not matching",
+            false,
+            false
+        )];
         let testcase = TestCase {
             title: "an testcase".to_string(),
             shell_expression: "a command".to_string(),
-            expectations: vec![test_expectation!(
-                "no-eol",
-                "something not matching",
-                false,
-                false
-            )],
+            body: ValidationBody::Output(OutputBody {
+                expectations: expectations.clone(),
+            }),
             exit_code: Some(123),
             line_number: 234,
             ..Default::default()
@@ -330,15 +355,17 @@ mod tests {
             Ok(_) => panic!("assertion should have failed"),
             Err(err) => {
                 assert_eq!(
-                    TestCaseError::MalformedOutput(Diff::new(vec![
-                        DiffLine::UnmatchedExpectation {
-                            index: 0,
-                            expectation: testcase.expectations[0].clone()
-                        },
-                        DiffLine::UnexpectedLines {
-                            lines: vec![(0, b"the stdout".to_vec())]
-                        },
-                    ])),
+                    TestCaseError::ValidationFailed(ValidationFailure::MalformedOutput(Diff::new(
+                        vec![
+                            DiffLine::UnmatchedExpectation {
+                                index: 0,
+                                expectation: expectations[0].clone()
+                            },
+                            DiffLine::UnexpectedLines {
+                                lines: vec![(0, b"the stdout".to_vec())]
+                            },
+                        ]
+                    ))),
                     err,
                     "expected exit code is delegated"
                 );
@@ -360,13 +387,16 @@ mod tests {
             let tc = TestCase {
                 title: "an testcase".to_string(),
                 shell_expression: "a command".to_string(),
-                expectations: vec![test_expectation!("no-eol", "the stdout")],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("no-eol", "the stdout")],
+                }),
                 exit_code: Some(123),
                 line_number: 234,
                 config: TestCaseConfig {
                     keep_crlf: Some(*crlf_support),
                     ..Default::default()
                 },
+                ..Default::default()
             };
             let output = tc
                 .render_output(from.as_bytes())
@@ -399,13 +429,16 @@ mod tests {
             let tc = TestCase {
                 title: "an testcase".to_string(),
                 shell_expression: "a command".to_string(),
-                expectations: vec![test_expectation!("no-eol", "the stdout")],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("no-eol", "the stdout")],
+                }),
                 exit_code: Some(123),
                 line_number: 234,
                 config: TestCaseConfig {
                     strip_ansi_escaping: Some(*strip_ansi_escaping),
                     ..Default::default()
                 },
+                ..Default::default()
             };
             let output = tc
                 .render_output(from.as_bytes())
@@ -425,13 +458,16 @@ mod tests {
         let testcase = TestCase {
             title: "interpolated test".to_string(),
             shell_expression: "echo Hello world".to_string(),
-            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            }),
             exit_code: Some(0),
             line_number: 1,
             config: TestCaseConfig {
                 interpolated: Some(true),
                 ..Default::default()
             },
+            ..Default::default()
         };
         let mut output: Output = ("Hello world\n", "").into();
         output.captured_env =
@@ -446,19 +482,22 @@ mod tests {
         let testcase = TestCase {
             title: "interpolated mismatch".to_string(),
             shell_expression: "echo Hello other".to_string(),
-            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            }),
             exit_code: Some(0),
             line_number: 1,
             config: TestCaseConfig {
                 interpolated: Some(true),
                 ..Default::default()
             },
+            ..Default::default()
         };
         let mut output: Output = ("Hello other\n", "").into();
         output.captured_env =
             std::collections::BTreeMap::from([("FOOBAR".to_string(), "world".to_string())]);
         match testcase.validate(&output) {
-            Err(TestCaseError::MalformedOutput(_)) => {}
+            Err(TestCaseError::ValidationFailed(ValidationFailure::MalformedOutput(_))) => {}
             other => panic!("expected MalformedOutput, got {:?}", other),
         }
     }
@@ -468,10 +507,13 @@ mod tests {
         let testcase = TestCase {
             title: "not interpolated".to_string(),
             shell_expression: "echo literal".to_string(),
-            expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![test_expectation!("equal", "Hello $FOOBAR")],
+            }),
             exit_code: Some(0),
             line_number: 1,
             config: TestCaseConfig::default(),
+            ..Default::default()
         };
         // With interpolation disabled, `$FOOBAR` is matched literally
         let mut output: Output = ("Hello $FOOBAR\n", "").into();

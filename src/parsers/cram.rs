@@ -108,6 +108,8 @@ mod tests {
     use crate::parsers::parser::Parser;
     use crate::test_expectation;
     use crate::testcase::TestCase;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
 
     fn parser() -> CramParser {
         let maker = expectation_maker();
@@ -126,11 +128,14 @@ mod tests {
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 2,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -155,11 +160,14 @@ This is a title
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 7,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -185,11 +193,14 @@ Title 2
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "Title 2".to_string(),
                 exit_code: None,
                 line_number: 8,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -217,11 +228,14 @@ This is the yet more title
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![test_expectation!("equal", "hello", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "hello", false, false)]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 3,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0],
             "testcase 1",
@@ -229,11 +243,14 @@ This is the yet more title
         assert_eq!(
             TestCase {
                 shell_expression: "echo something".to_string(),
-                expectations: vec![test_expectation!("equal", "something", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "something", false, false)]
+                }),
                 title: "This is the next title".to_string(),
                 exit_code: None,
                 line_number: 9,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[1],
             "testcase 2",
@@ -241,11 +258,14 @@ This is the yet more title
         assert_eq!(
             TestCase {
                 shell_expression: "echo lastly".to_string(),
-                expectations: vec![test_expectation!("equal", "lastly", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "lastly", false, false)]
+                }),
                 title: "This is the yet more title".to_string(),
                 exit_code: None,
                 line_number: 12,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[2],
             "testcase 3",
@@ -269,15 +289,18 @@ The title
         assert_eq!(
             TestCase {
                 shell_expression: ["echo hello && \\", "echo more && \\", "echo most"].join("\n"),
-                expectations: vec![
-                    test_expectation!("equal", "hello", false, false),
-                    test_expectation!("equal", "more", false, false),
-                    test_expectation!("equal", "most", false, false),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "hello", false, false),
+                        test_expectation!("equal", "more", false, false),
+                        test_expectation!("equal", "most", false, false),
+                    ]
+                }),
                 title: "The title".into(),
                 exit_code: None,
                 line_number: 3,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -307,36 +330,42 @@ This has an exit code 3
         assert_eq!(
             TestCase {
                 shell_expression: "command1".to_string(),
-                expectations: vec![test_expectation!("equal", "output", false, false)],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![test_expectation!("equal", "output", false, false)]
+                }),
                 title: "This has an exit code 1".to_string(),
                 exit_code: Some(4),
                 line_number: 3,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
         assert_eq!(
             TestCase {
                 shell_expression: "command2".to_string(),
-                expectations: vec![],
                 title: "This has an exit code 2".to_string(),
                 exit_code: Some(15),
                 line_number: 8,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[1]
         );
         assert_eq!(
             TestCase {
                 shell_expression: "command3".to_string(),
-                expectations: vec![
-                    test_expectation!("equal", "output1", false, false),
-                    test_expectation!("equal", "output2", false, false)
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!("equal", "output1", false, false),
+                        test_expectation!("equal", "output2", false, false)
+                    ]
+                }),
                 title: "This has an exit code 3".to_string(),
                 exit_code: Some(106),
                 line_number: 12,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[2]
         );
@@ -379,19 +408,22 @@ This is a title
         assert_eq!(
             TestCase {
                 shell_expression: "echo hello".to_string(),
-                expectations: vec![
-                    test_expectation!(
-                        "equal",
-                        "# this is not a comment, but part of the output",
-                        false,
-                        false
-                    ),
-                    test_expectation!("equal", "hello", false, false),
-                ],
+                body: ValidationBody::Output(OutputBody {
+                    expectations: vec![
+                        test_expectation!(
+                            "equal",
+                            "# this is not a comment, but part of the output",
+                            false,
+                            false
+                        ),
+                        test_expectation!("equal", "hello", false, false),
+                    ]
+                }),
                 title: "This is a title".to_string(),
                 exit_code: None,
                 line_number: 6,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
@@ -416,22 +448,22 @@ This is a title
         assert_eq!(
             TestCase {
                 shell_expression: "source $TESTDIR/setup.sh".to_string(),
-                expectations: vec![],
                 title: "Setup a buck dir with a mock visibility list".to_string(),
                 exit_code: None,
                 line_number: 2,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[0]
         );
         assert_eq!(
             TestCase {
                 shell_expression: "mkdir -p path/to".to_string(),
-                expectations: vec![],
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 3,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[1]
         );
@@ -446,22 +478,22 @@ This is a title
                     "EOF",
                 ]
                 .join("\n"),
-                expectations: vec![],
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 4,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[2]
         );
         assert_eq!(
             TestCase {
                 shell_expression: ["bla"].join("\n"),
-                expectations: vec![],
                 title: "".to_string(),
                 exit_code: None,
                 line_number: 10,
                 config: TestCaseConfig::default_cram(),
+                ..Default::default()
             },
             testcases[3]
         );

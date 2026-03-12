@@ -25,6 +25,16 @@ use crate::signal::KillSignal;
 /// The default total (per-document) timeout in seconds
 pub const DEFAULT_DOCUMENT_TIMEOUT: u64 = 900;
 
+/// The execution mode for a test case, controlling how the test is run and validated.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TestMode {
+    /// Standard output validation mode: execute command, capture output, compare
+    /// against line-by-line expectations using rules (equal, glob, regex, etc.).
+    /// This is the default mode.
+    Output,
+}
+
 /// The exit code that any test execution can return to skip all tests in one document
 pub const DEFAULT_SKIP_DOCUMENT_CODE: i32 = 80;
 
@@ -297,6 +307,12 @@ pub struct TestCaseConfig {
     /// output expectations before matching against actual output.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interpolated: Option<bool>,
+
+    /// The execution mode for this test case:
+    /// - `output` (default): execute command, compare output expectations
+    /// - `interactive`: drive a PTY session with WAIT/SEND_KEYS/ASSERT directives
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<TestMode>,
 }
 
 impl TestCaseConfig {
@@ -348,6 +364,7 @@ impl TestCaseConfig {
             && self.strip_ansi_escaping.is_none()
             && self.environment.is_empty()
             && self.interpolated.is_none()
+            && self.mode.is_none()
     }
 
     /// Returns a new instance that fills in unset values from the provided defaults
@@ -375,6 +392,7 @@ impl TestCaseConfig {
             skip_document_code: self.skip_document_code.or(defaults.skip_document_code),
             strip_ansi_escaping: self.strip_ansi_escaping.or(defaults.strip_ansi_escaping),
             interpolated: self.interpolated.or(defaults.interpolated),
+            mode: self.mode.clone().or_else(|| defaults.mode.clone()),
         }
     }
 
@@ -434,6 +452,9 @@ impl TestCaseConfig {
         }
         if self.wait != other.wait {
             diff.wait = self.wait.clone();
+        }
+        if self.mode != other.mode {
+            diff.mode = self.mode.clone();
         }
 
         // difference here is: all env vars that are set in self, but not in other
@@ -502,6 +523,14 @@ impl TestCaseConfig {
                 envvars.push(format!("{}: \"{}\"", key, value))
             }
             output.push(format!("environment: {{{}}}", envvars.join(", ")));
+        }
+        if let Some(ref mode) = self.mode {
+            output.push(format!(
+                "mode: {}",
+                match mode {
+                    TestMode::Output => "output",
+                }
+            ));
         }
         format!("{{{}}}", output.join(", "))
     }
@@ -634,6 +663,7 @@ total_timeout: 5m 3s
                     skip_document_code: Some(123),
                     strip_ansi_escaping: Some(true),
                     interpolated: Some(true),
+                    mode: None,
                 }
             }
         )
@@ -666,6 +696,7 @@ total_timeout: 5m 3s
                 skip_document_code: Some(123),
                 strip_ansi_escaping: Some(true),
                 interpolated: Some(true),
+                mode: None,
             },
         };
         assert_eq!(
@@ -718,6 +749,7 @@ interpolated: true
                 skip_document_code: Some(123),
                 strip_ansi_escaping: Some(true),
                 interpolated: Some(true),
+                mode: None,
             }
         )
     }
@@ -744,6 +776,7 @@ interpolated: true
             skip_document_code: Some(123),
             strip_ansi_escaping: Some(true),
             interpolated: Some(true),
+            mode: None,
         };
         assert_eq!(
             serde_yaml::to_string(&config).expect("render testcase config to YAML"),
@@ -783,6 +816,7 @@ interpolated: true
                     skip_document_code: Some(123),
                     strip_ansi_escaping: Some(true),
                     interpolated: Some(true),
+                    mode: None,
                     timeout: Some(Duration::from_secs(234)),
                     wait: Some(TestCaseWait {
                         timeout: Duration::from_secs(123),

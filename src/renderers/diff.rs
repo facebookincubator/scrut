@@ -326,6 +326,9 @@ mod tests {
     use crate::test_expectation;
     use crate::testcase::TestCase;
     use crate::testcase::TestCaseError;
+    use crate::validation::OutputBody;
+    use crate::validation::ValidationBody;
+    use crate::validation::ValidationFailure;
 
     #[test]
     fn test_render_success() {
@@ -336,7 +339,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".to_string(),
                     shell_expression: "the command".to_string(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -359,7 +364,9 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".into(),
                     shell_expression: "the command".into(),
-                    expectations: vec![],
+                    body: ValidationBody::Output(OutputBody {
+                        expectations: vec![],
+                    }),
                     exit_code: Some(111),
                     line_number: 234,
                     ..Default::default()
@@ -388,7 +395,9 @@ mod tests {
                         testcase: TestCase {
                             title: "the title".into(),
                             shell_expression: "the command".into(),
-                            expectations: vec![test_expectation!("the stdout")],
+                            body: ValidationBody::Output(OutputBody {
+                                expectations: vec![test_expectation!("the stdout")],
+                            }),
                             exit_code: Some(111),
                             line_number: 234,
                             ..Default::default()
@@ -412,11 +421,13 @@ mod tests {
         let testcase = TestCase {
             title: "the title".into(),
             shell_expression: "the command".into(),
-            expectations: vec![
-                test_expectation!("expected line 1"),
-                test_expectation!("expected line 2"),
-                test_expectation!("expected line 3"),
-            ],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![
+                    test_expectation!("expected line 1"),
+                    test_expectation!("expected line 2"),
+                    test_expectation!("expected line 3"),
+                ],
+            }),
             exit_code: None,
             line_number: 234,
             ..Default::default()
@@ -427,7 +438,7 @@ mod tests {
                 "missing",
                 Diff::new(vec![DiffLine::UnmatchedExpectation {
                     index: 1,
-                    expectation: testcase.expectations[1].clone(),
+                    expectation: testcase.expectations()[1].clone(),
                 }]),
             ),
             (
@@ -441,11 +452,11 @@ mod tests {
                 Diff::new(vec![
                     DiffLine::UnmatchedExpectation {
                         index: 1,
-                        expectation: testcase.expectations[1].clone(),
+                        expectation: testcase.expectations()[1].clone(),
                     },
                     DiffLine::UnmatchedExpectation {
                         index: 2,
-                        expectation: testcase.expectations[2].clone(),
+                        expectation: testcase.expectations()[2].clone(),
                     },
                     DiffLine::UnexpectedLines {
                         lines: vec![
@@ -470,7 +481,9 @@ mod tests {
                                 .into(),
                             testcase: testcase.clone(),
                             location: Some("the location".into()),
-                            result: Err(TestCaseError::MalformedOutput(diff.to_owned())),
+                            result: Err(TestCaseError::ValidationFailed(
+                                ValidationFailure::MalformedOutput(diff.to_owned()),
+                            )),
                             escaping: Escaper::default(),
                             format: *parser_type,
                         }])
@@ -489,11 +502,13 @@ mod tests {
         let testcase = TestCase {
             title: "the title".into(),
             shell_expression: "the command".into(),
-            expectations: vec![
-                test_expectation!("expected line 1"),
-                test_expectation!("expected line 2"),
-                test_expectation!("expected line 3"),
-            ],
+            body: ValidationBody::Output(OutputBody {
+                expectations: vec![
+                    test_expectation!("expected line 1"),
+                    test_expectation!("expected line 2"),
+                    test_expectation!("expected line 3"),
+                ],
+            }),
             exit_code: None,
             line_number: 234,
             ..Default::default()
@@ -504,7 +519,7 @@ mod tests {
                 "missing",
                 Diff::new(vec![DiffLine::UnmatchedExpectation {
                     index: 1,
-                    expectation: testcase.expectations[1].clone(),
+                    expectation: testcase.expectations()[1].clone(),
                 }]),
             ),
             (
@@ -518,11 +533,11 @@ mod tests {
                 Diff::new(vec![
                     DiffLine::UnmatchedExpectation {
                         index: 1,
-                        expectation: testcase.expectations[1].clone(),
+                        expectation: testcase.expectations()[1].clone(),
                     },
                     DiffLine::UnmatchedExpectation {
                         index: 2,
-                        expectation: testcase.expectations[2].clone(),
+                        expectation: testcase.expectations()[2].clone(),
                     },
                     DiffLine::UnexpectedLines {
                         lines: vec![
@@ -551,7 +566,9 @@ mod tests {
                                 .into(),
                             testcase: testcase2,
                             location: Some("location2".into()),
-                            result: Err(TestCaseError::MalformedOutput(diff.to_owned())),
+                            result: Err(TestCaseError::ValidationFailed(
+                                ValidationFailure::MalformedOutput(diff.to_owned()),
+                            )),
                             format: *parser_type,
                             escaping: Escaper::default(),
                         },
@@ -563,7 +580,9 @@ mod tests {
                                 .into(),
                             testcase: testcase1,
                             location: Some("location1".into()),
-                            result: Err(TestCaseError::MalformedOutput(diff.to_owned())),
+                            result: Err(TestCaseError::ValidationFailed(
+                                ValidationFailure::MalformedOutput(diff.to_owned()),
+                            )),
                             format: *parser_type,
                             escaping: Escaper::default(),
                         },

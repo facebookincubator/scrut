@@ -94,7 +94,6 @@ mod tests {
                 testcase: TestCase {
                     title: "the title".to_string(),
                     shell_expression: "the command".to_string(),
-                    expectations: vec![],
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -109,7 +108,6 @@ mod tests {
                 testcase: TestCase {
                     title: "the title 1".to_string(),
                     shell_expression: "the command 1".to_string(),
-                    expectations: vec![],
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
@@ -124,7 +122,6 @@ mod tests {
                 testcase: TestCase {
                     title: "the title 2".to_string(),
                     shell_expression: "the command 2".to_string(),
-                    expectations: vec![],
                     exit_code: None,
                     line_number: 234,
                     ..Default::default()
