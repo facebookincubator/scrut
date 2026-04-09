@@ -38,13 +38,15 @@ const { organizationName, baseUrl } =
   baseUrl,
   onBrokenLinks: 'warn',
   onBrokenAnchors: 'warn',
-  onBrokenMarkdownLinks: 'warn',
   trailingSlash: true,
   favicon: 'img/favicon.ico',
   organizationName,
   projectName: 'scrut',
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
   themes: ['@docusaurus/theme-mermaid'],
   customFields,
