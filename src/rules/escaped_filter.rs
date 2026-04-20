@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_resolve_escape_sequences_to_bytes() {
-        let tests = vec![
+        let tests = [
             ("foo", b"foo".to_vec()),
             ("foo\\x12bar", b"foo\x12bar".to_vec()),
             ("foo\nbar", b"foo\nbar".to_vec()),
