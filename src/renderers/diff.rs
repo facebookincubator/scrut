@@ -592,7 +592,7 @@ mod tests {
                     testcase1.line_number = 10;
                     let mut testcase2 = testcase.clone();
                     testcase2.line_number = 20;
-                    let outcomes = vec![
+                    let outcomes = [
                         Outcome {
                             output: (
                                 "expected line 1\nexpected line FAIL\nexpected line 3\n",
