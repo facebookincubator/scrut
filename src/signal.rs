@@ -217,8 +217,7 @@ mod nix_signal {
                 (KillSignal::Disabled, "\"disabled\""),
             ];
             for (input, expected) in cases {
-                let value = serde_json::to_string(&input)
-                    .expect(&format!("serialize '{}'", input.to_string()));
+                let value = serde_json::to_string(&input).expect(&format!("serialize '{}'", input));
                 assert_eq!(&value as &str, expected);
             }
         }
