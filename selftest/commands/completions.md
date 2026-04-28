@@ -10,14 +10,14 @@ OK
 ## Bash completions define function and include subcommands
 
 ```scrut
-$ _SCRUT_COMPLETE=bash_source "${SCRUT_BIN}" | grep -E "^_scrut\(\)|scrut__(create|test|update)"
+$ _SCRUT_COMPLETE=bash_source "${SCRUT_BIN}" | grep -E "^_scrut\(\)|scrut__subcmd__(create|test|update)"
 _scrut() {
-                cmd="scrut__create"
-                cmd="scrut__test"
-                cmd="scrut__update"
-        scrut__create)
-        scrut__test)
-        scrut__update)
+                cmd="scrut__subcmd__create"
+                cmd="scrut__subcmd__test"
+                cmd="scrut__subcmd__update"
+        scrut__subcmd__create)
+        scrut__subcmd__test)
+        scrut__subcmd__update)
 ```
 
 ## Zsh completions include compdef and subcommand descriptions
