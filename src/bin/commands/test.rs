@@ -370,7 +370,7 @@ impl Args {
                     // .. to compare the outputs with testcases and gather that
                     //    outcome for later rendering
                     let (mut failed, mut success) = (0, 0);
-                    for (testcase, output) in testcases.into_iter().zip(outputs.into_iter()) {
+                    for (testcase, output) in testcases.into_iter().zip(outputs) {
                         if output.exit_code == ExitStatus::Detached {
                             count_detached += 1;
                             if let Some(ref detached_process) = output.detached_process {
