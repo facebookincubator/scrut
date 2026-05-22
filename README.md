@@ -51,10 +51,6 @@ Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 
 That is assuming `acme --version` prints `acme 1.0.0`.
 
-## Getting Started
-
-Head over to the [Getting Started Guide](https://facebookincubator.github.io/scrut/docs/getting-started/) to get learn how to write your own tests and everything else you need to know
-
 ## Contribute
 
 - [Contributing](CONTRIBUTING.md)
