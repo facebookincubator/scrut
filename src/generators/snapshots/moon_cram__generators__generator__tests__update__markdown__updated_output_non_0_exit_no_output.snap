@@ -1,11 +1,11 @@
 ---
 source: src/generators/generator.rs
+assertion_line: 50
 expression: result
 ---
 This is a test
 
-```scrut
+```mooncram
 $ the command
-new output
+[10]
 ```
-

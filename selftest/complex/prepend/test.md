@@ -1,11 +1,11 @@
 # Test prepending of test files
 
-Scrut supports prepending of tests in front of a list of other files.
+Moon Cram supports prepending of tests in front of a list of other files.
 
 ## Run tests without prepend should make it fail
 
-```scrut
-$ "${SCRUT_BIN}" test --match-markdown "*.mdtest" "$TESTDIR/actual.mdtest"
+```mooncram
+$ "${MOON_CRAM_BIN}" test --match-markdown "*.mdtest" "$TESTDIR/actual.mdtest"
 // =============================================================================
 // @ *actual.mdtest:8 (glob)
 // -----------------------------------------------------------------------------
@@ -24,7 +24,7 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 
 ## Run test with prepend should make it succeed
 
-```scrut
-$ "${SCRUT_BIN}" test --match-markdown "*.mdtest" --prepend-test-file-paths "$TESTDIR/prepend.mdtest" "$TESTDIR/actual.mdtest"
+```mooncram
+$ "${MOON_CRAM_BIN}" test --match-markdown "*.mdtest" --prepend-test-file-paths "$TESTDIR/prepend.mdtest" "$TESTDIR/actual.mdtest"
 Result: 0 document(s) with 0 testcase(s): 0 succeeded, 0 failed and 0 skipped
 ```

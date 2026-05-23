@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-use scrut::executors::DEFAULT_SHELL;
+use moon_cram::executors::DEFAULT_SHELL;
 use tempfile::TempDir;
 use tracing::debug;
 
@@ -27,7 +27,7 @@ pub enum EnvironmentDirectory {
     /// A permanent directory, that will not be cleaned up
     UserProvided(PathBuf),
 
-    /// A temporary directory that is created by Scrut and not removed / cleaned up
+    /// A temporary directory that is created by Moon Cram and not removed / cleaned up
     Kept(PathBuf),
 }
 
@@ -278,7 +278,7 @@ pub fn canonical_shell(shell: Option<&Path>) -> Result<PathBuf> {
     .context("path to shell")
 }
 
-// All paths that Scrut outputs are canonicalized for the current operation system.
+// All paths that Moon Cram outputs are canonicalized for the current operation system.
 // For windows `dunce` is used to assure that Windows NT forms are only used
 // if the path length or reserved words demand it.
 fn canonical_path<P: AsRef<Path> + Debug>(path: P) -> Result<PathBuf> {

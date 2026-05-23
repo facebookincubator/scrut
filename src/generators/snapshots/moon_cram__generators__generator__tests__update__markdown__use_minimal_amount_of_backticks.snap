@@ -2,10 +2,10 @@
 source: src/generators/generator.rs
 expression: result
 ---
-# This is a test
+This is a test
 
-```scrut
+```mooncram
 $ the command
-an expectation
+new output
 ```
 

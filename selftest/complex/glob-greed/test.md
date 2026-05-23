@@ -4,15 +4,15 @@ Assure the glob rule is only as greed as it should be
 
 ## Succeed with valid concrete match sandwiched between greedy multiline
 
-```scrut
-$ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-good.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-good.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Fail with invalid concrete match sandwiched between greedy multiline
 
-```scrut
-$ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-bad.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --match-markdown "*.mdtest" "$TESTDIR/greedy-bad.mdtest"
 // =============================================================================
 // @ *greedy-bad.mdtest:4 (glob)
 // -----------------------------------------------------------------------------

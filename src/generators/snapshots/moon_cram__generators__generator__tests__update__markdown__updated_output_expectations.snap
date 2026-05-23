@@ -1,13 +1,12 @@
 ---
 source: src/generators/generator.rs
+assertion_line: 50
 expression: result
 ---
-# This is a test
+This is a test
 
-```scrut
+```mooncram
 $ the command
-line 1
-line 2
-line 3 (no-eol)
+new output
 ```
 

@@ -1,6 +1,6 @@
 # This is the test 1
 
-```scrut
+```mooncram
 $ echo -e "FOO\n BAR\n  BAZ"
 FOO
  NOT-BAR
@@ -9,7 +9,7 @@ FOO
 
 # This is the test 2
 
-```scrut
+```mooncram
 $ echo -e "AAA\n BBB\n  CCC"
 AAA
  NOT-BBB

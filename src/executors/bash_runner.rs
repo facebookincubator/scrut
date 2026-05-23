@@ -12,7 +12,6 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use tracing::trace;
-use tracing::warn;
 
 use super::context::Context as ExecutionContext;
 use super::runner::Runner;
@@ -23,11 +22,11 @@ use crate::testcase::TestCase;
 
 #[doc = include_str!("./bash_runner.excluded_variables.md")]
 pub const BASH_EXCLUDED_VARIABLES: &[&str] = &[
-    // variables from Scrut internals
-    "__SCRUT_DECLARE_VARS_CMD",
-    "__SCRUT_TEMP_STATE_PATH",
-    // variables set by scrut in every execution
-    "SCRUT_TEST",
+    // variables from Moon Cram internals
+    "__MOON_CRAM_DECLARE_VARS_CMD",
+    "__MOON_CRAM_TEMP_STATE_PATH",
+    // variables set by mooncram in every execution
+    "MOON_CRAM_TEST",
     // variables from `man bash`
     "BASHOPTS",
     "BASH_ALIASES",
@@ -273,12 +272,12 @@ mod tests {
         }
         .run(
             "name",
-            &TestCase::from_expression("export SCRUT_TEST_VAR=hello_world"),
+            &TestCase::from_expression("export MOON_CRAM_TEST_VAR=hello_world"),
             &ExecutionContext::new_for_test(),
         )
         .expect("execute without error");
         assert_eq!(
-            output.captured_env.get("SCRUT_TEST_VAR"),
+            output.captured_env.get("MOON_CRAM_TEST_VAR"),
             Some(&"hello_world".to_string()),
             "exported variable is captured in env"
         );
@@ -287,7 +286,7 @@ mod tests {
     #[test]
     fn test_captured_env_is_empty_for_detached() {
         let temp_dir = TempDir::with_prefix("runner.").expect("create temporary directory");
-        let mut testcase = TestCase::from_expression("export SCRUT_DETACH_VAR=test");
+        let mut testcase = TestCase::from_expression("export MOON_CRAM_DETACH_VAR=test");
         testcase.config.detached = Some(true);
         let output = BashRunner {
             shell: DEFAULT_SHELL.to_owned(),

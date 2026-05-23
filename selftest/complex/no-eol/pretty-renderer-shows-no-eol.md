@@ -1,12 +1,12 @@
-# Test that Scrut proposes noeol if a line does not match for that reason
+# Test that Moon Cram proposes noeol if a line does not match for that reason
 
-This test validates that if the user writes a Scrut test where they use an equal-rule (i.e. with ending new-line
-character) but the output does not end in a new-line, then Scrut prints the missing `(no-eol)` suffix.
+This test validates that if the user writes a Moon Cram test where they use an equal-rule (i.e. with ending new-line
+character) but the output does not end in a new-line, then Moon Cram prints the missing `(no-eol)` suffix.
 
 ## No-EOL is proposed in the pretty print of the failed test
 
-```scrut
-$ "$SCRUT_BIN" test --renderer pretty --match-markdown "*.mdtest" "$TESTDIR/invalid.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer pretty --match-markdown "*.mdtest" "$TESTDIR/invalid.mdtest"
 // =============================================================================
 // @ .*[/\\]invalid\.mdtest:4 (regex)
 // -----------------------------------------------------------------------------

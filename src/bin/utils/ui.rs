@@ -122,7 +122,7 @@ impl ProgressWriter {
     pub fn set_message<S: AsRef<str>>(&self, msg: S) {
         let msg = self.render(msg.as_ref()).into_owned();
         if let Some(pb) = &self.pb {
-            if !is_in_scrut_test() {
+            if !is_in_moon_cram_test() {
                 pb.set_message(msg);
             }
         } else {
@@ -153,8 +153,8 @@ impl ProgressWriter {
     }
 }
 
-fn is_in_scrut_test() -> bool {
-    std::env::var("SCRUT_TEST").is_ok()
+fn is_in_moon_cram_test() -> bool {
+    std::env::var("MOON_CRAM_TEST").is_ok()
 }
 
 /// Get the current log level that has been set by the user

@@ -1,5 +1,5 @@
 ---
-source: fbcode/clifoundation/scrut/src/diff.rs
+source: fbcode/clifoundation/mooncram/src/diff.rs
 assertion_line: 865
 expression: "&rendered"
 ---

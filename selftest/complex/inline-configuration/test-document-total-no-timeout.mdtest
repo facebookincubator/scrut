@@ -4,7 +4,7 @@ Run howeverlong
 
 ## Run the first test
 
-```scrut
+```mooncram
 $ echo TestA && sleep 0.5 && echo Test1
 TestA
 Test1
@@ -12,7 +12,7 @@ Test1
 
 ## Run the second test
 
-```scrut
+```mooncram
 $ echo TestB && sleep 0.5 && echo Test2
 TestB
 Test2
@@ -20,7 +20,7 @@ Test2
 
 ## Run the third test
 
-```scrut
+```mooncram
 $ echo TestC && sleep 0.5 && echo Test3
 TestC
 Test3

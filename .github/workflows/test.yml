@@ -101,7 +101,7 @@ jobs:
           #   Error: Windows Subsystem for Linux has no installed distributions
           #   Workaround: Choose right bash.exe
           if [[ "${{ matrix.target }}" == *-windows-gnu ]]; then
-            export SCRUT_DEFAULT_SHELL="C:\\Program Files\\Git\\bin\\bash.exe"
+            export MOON_CRAM_DEFAULT_SHELL="C:\\Program Files\\Git\\bin\\bash.exe"
           fi
           cargo test
 

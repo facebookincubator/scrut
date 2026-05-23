@@ -1,76 +1,76 @@
 # Regular Expression Expectations
 
-Scrut `(regex)` expectations support regular expressions to match output line(s).
+Moon Cram `(regex)` expectations support regular expressions to match output line(s).
 
 This test file show-cases the use.
 
 ## Exact regex match of whole line
 
-```scrut
+```mooncram
 $ echo foo
 foo (regex)
 ```
 
 ## Regex match doesn't care about line ending
 
-```scrut
+```mooncram
 $ echo -n foo
 foo (regex)
 ```
 
 ## Regex match with wildcards
 
-```scrut
+```mooncram
 $ echo foo
 .* (regex)
 ```
 
 ## Regex match of multiple lines
 
-```scrut
+```mooncram
 $ echo -e "foo\nfun\nfacts"
 f.* (regex+)
 ```
 
 ## Regex match of multiple set of repeating lines
-```scrut
+```mooncram
 $ echo -e "sea\nsand\nsea\nsand\nsea\nsand"
 sea|sand (regex+)
 ```
 
 ## Regex with escaped characters
 
-```scrut
+```mooncram
 $ echo "a [word]"
 a \[word\] (regex)
 ```
 
 ## Regex with unnecessary escapes
 
-```scrut
+```mooncram
 $ echo 'a "thing"'
 a \"thing\" (regex)
 ```
 
 ## Regex with quantifiers
 
-```scrut
+```mooncram
 $ echo aaaaa
 a{5} (regex)
 ```
 
 ## Regex auto fix of curly braces
 
-```scrut
+```mooncram
 $ echo '{"i am": "json"}'
 {"i am": "json"} (regex)
 ```
 
-Unescaped, matching curly braces are auto-escaped in pre-processing by Scrut.
+Unescaped, matching curly braces are auto-escaped in pre-processing by Moon Cram.
 
 ## Table output
 
-```scrut
+```mooncram
 $ cat <<EOF
 > +------------+----------+----------+-------------+-------------------------+-----------+------------+
 > |            | Saucisse | Beaufort | Raclette    | Omelette du fromage     | Roquefort | Emmental   |

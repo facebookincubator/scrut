@@ -2,14 +2,14 @@
 
 Tests in this file validate that the `fail_fast` option stops execution of the entire test document when a test case fails.
 
-```scrut
-$ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
+```mooncram
+$ alias moon_cram_test='$MOON_CRAM_BIN test --match-markdown="*.mdtest"'
 ```
 
 ## fail_fast stops on first failure
 
-```scrut
-$ scrut_test "$TESTDIR"/test-testcase-fail-fast.mdtest 2>&1
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-testcase-fail-fast.mdtest 2>&1
 // =============================================================================
 // @ *test-testcase-fail-fast.mdtest:* (glob)
 // -----------------------------------------------------------------------------
@@ -28,8 +28,8 @@ Result: 1 document(s) with 3 testcase(s): 1 succeeded, 1 failed and 1 skipped
 
 ## without fail_fast all tests run
 
-```scrut
-$ scrut_test "$TESTDIR"/test-testcase-no-fail-fast.mdtest 2>&1
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-testcase-no-fail-fast.mdtest 2>&1
 // =============================================================================
 // @ *test-testcase-no-fail-fast.mdtest:* (glob)
 // -----------------------------------------------------------------------------

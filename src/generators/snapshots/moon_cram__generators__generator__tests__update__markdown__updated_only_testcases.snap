@@ -12,7 +12,7 @@ println!("including code");
 
 ## Then there is a test
 
-```scrut
+```mooncram
 $ the command 1
 new output ONE
 ```
@@ -23,7 +23,7 @@ Followed by other stuff
 
 Followed by another test
 
-```scrut
+```mooncram
 $ the command 2
 new output ZWEI
 ```

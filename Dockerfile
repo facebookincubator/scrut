@@ -4,7 +4,7 @@
 FROM rust:1-slim-bookworm AS builder
 ARG SKIP_TESTS=no
 
-ENV BUILD_ARGS="--bin scrut --release"
+ENV BUILD_ARGS="--bin moon-cram --release"
 
 RUN apt update && \
     apt install -y build-essential && \
@@ -14,7 +14,7 @@ RUN apt update && \
 # Cache build dependencies separately
 WORKDIR /app
 RUN mkdir -p src/bin && \
-    printf 'extern crate scrut;\n\ninclude!(concat!(env!("OUT_DIR"), "/version.rs"));\n\nfn main() {}\n' > src/bin/main.rs && \
+    printf 'extern crate moon_cram;\n\ninclude!(concat!(env!("OUT_DIR"), "/version.rs"));\n\nfn main() {}\n' > src/bin/main.rs && \
     echo > src/lib.rs
 COPY Cargo.toml build.rs .
 RUN --mount=type=cache,target=/usr/local/cargo/git \
@@ -32,14 +32,14 @@ RUN --mount=type=cache,target=/usr/local/cargo/git \
     cargo build $BUILD_ARGS && \
     ls -lha target/release/ && \
     cat src/bin/main.rs && \
-    cp -av target/release/scrut .
+    cp -av target/release/moon-cram .
 
 # Run tests (conditionally)
 RUN --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     if [ "$SKIP_TESTS" != "yes" ]; then \
-        SCRUT_BIN="$(pwd)"/scrut make cargotest selftest; \
+        MOON_CRAM_BIN="$(pwd)"/moon-cram make cargotest selftest; \
     fi
 
 #
@@ -49,7 +49,7 @@ FROM debian:bookworm-slim
 
 # Copy previously build binary
 WORKDIR /app
-COPY --from=builder /app/scrut /usr/local/bin
+COPY --from=builder /app/moon-cram /usr/local/bin
 
-# Run the container to run scrut
-ENTRYPOINT ["scrut"]
+# Run the container to run moon-cram
+ENTRYPOINT ["moon-cram"]

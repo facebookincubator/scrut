@@ -112,7 +112,7 @@ mod test {
 
     /// Prefix that is added to any temp or work directory created by [`Context::new_for_test`],
     /// so that such directories can be identified and cleaned up.
-    pub(super) const TESTING_PATH_PREFIX: &str = "scrut-selftest-temp-directory";
+    pub(super) const TESTING_PATH_PREFIX: &str = "mooncram-selftest-temp-directory";
 
     /// Creates a new temporary directory that can be identified as created for
     /// testing, and that is not automatically cleaned up by the `tempfile` crate.

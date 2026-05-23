@@ -1,6 +1,6 @@
 # Cram compat is explicit about carriage return
 
-```scrut
+```mooncram
 $ echo -e "Foo\r\nBar"
 Foo\r (esc)
 Bar

@@ -5,8 +5,8 @@ that indeed multiple commands are not supported in a single code block, because:
 
 ## Everything after the first command in a code block is considered output
 
-```scrut
-$ "${SCRUT_BIN}" test --match-markdown "*.mdtest" "$TESTDIR"/no-multiple-commands-in-code-block.mdtest
+```mooncram
+$ "${MOON_CRAM_BIN}" test --match-markdown "*.mdtest" "$TESTDIR"/no-multiple-commands-in-code-block.mdtest
 // =============================================================================
 // @ *no-multiple-commands-in-code-block.mdtest:4 (glob)
 // -----------------------------------------------------------------------------

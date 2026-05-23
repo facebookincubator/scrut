@@ -104,8 +104,8 @@ impl ExpectationMaker {
     /// ```
     ///
     /// ```
-    /// use scrut::expectation::ExpectationMaker;
-    /// use scrut::rules::registry::RuleRegistry;
+    /// use moon_cram::expectation::ExpectationMaker;
+    /// use moon_cram::rules::registry::RuleRegistry;
     ///
     /// let maker = ExpectationMaker::new(RuleRegistry::default());
     /// maker.parse("foo bar").expect("parses expectation");

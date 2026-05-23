@@ -4,10 +4,8 @@ expression: result
 ---
 This is a test
 
-`````scrut
+```mooncram
 $ the command
-````
-new output
-````
-`````
+line * (glob+)
+```
 

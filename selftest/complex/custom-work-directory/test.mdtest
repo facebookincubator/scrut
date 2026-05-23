@@ -1,6 +1,6 @@
 # Execution from within custom shell
 
-```scrut
+```mooncram
 $ ls
 temp.* (glob)
 test-me.fixture

@@ -1,4 +1,4 @@
-# Test Scrut's multiline inline configuration syntax is supported
+# Test Moon Cram's multiline inline configuration syntax is supported
 
 Below tests validate that multi-line configuration syntax is interpreted, by running a test with CRLF normalizing enabled and disabled.
 They can only both succeed if the crlf_keep option is delegated.
@@ -6,7 +6,7 @@ They can only both succeed if the crlf_keep option is delegated.
 
 ## Disable CRLF option
 
-```scrut
+```mooncram
 % keep_crlf: false
 $ echo -e "word\r"
 word
@@ -16,7 +16,7 @@ This test can only succeed if a) either keep_crlf is disabled per default or the
 
 ## Enable CRLF option
 
-```scrut
+```mooncram
 % keep_crlf: true
 $ echo -e "word\r"
 word\r (escaped)

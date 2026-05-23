@@ -6,7 +6,7 @@
  */
 
 use anyhow::Result;
-use scrut::output::DetachedProcess;
+use moon_cram::output::DetachedProcess;
 
 use crate::utils::ProgressWriter;
 

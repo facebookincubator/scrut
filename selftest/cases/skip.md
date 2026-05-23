@@ -1,6 +1,6 @@
 # Skipping the test from the inside
 
-Scrut supports skipping of tests, that can be controlled from the "inside": If any shell expression of any test in a file ends in the exit code 80, then the whole file is skipped (ignored).
+Moon Cram supports skipping of tests, that can be controlled from the "inside": If any shell expression of any test in a file ends in the exit code 80, then the whole file is skipped (ignored).
 
 The use-case is e.g. test files that run only in special conditions (operating system (distribution)? environment / context? moon phase? ...)
 
@@ -8,20 +8,20 @@ This test file show-cases how that is done by having a test which would make the
 
 ## Fail because of mismatching exit code
 
-```scrut
+```mooncram
 $ echo OK
 [1]
 ```
 
 ## Skip this file, and all failures, because of exit code 80
 
-```scrut
+```mooncram
 $ exit 80
 ```
 
 ## Fail because of mismatching expectation
 
-```scrut
+```mooncram
 $ echo OK
 FAIL
 ```

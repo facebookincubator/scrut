@@ -209,7 +209,7 @@ mod tests {
                     original_document: &([
                         "# This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "an expectation",
                         "```",
@@ -247,7 +247,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "line * (glob+)",
                         "```",
@@ -285,7 +285,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "an expectation",
                         "```",
@@ -328,7 +328,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "same output",
                         "```",
@@ -364,7 +364,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "```",
                     ]
@@ -396,7 +396,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "same output",
                         "[10]",
@@ -433,7 +433,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "````scrut",
+                        "````mooncram",
                         "$ the command",
                         "old output",
                         "````",
@@ -476,7 +476,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "````scrut",
+                        "````mooncram",
                         "$ the command",
                         "old output",
                         "````",
@@ -529,7 +529,7 @@ mod tests {
                         "",
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command",
                         "old output",
                         "```",
@@ -580,7 +580,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut {timeout: 3m 4s, wait: {timeout: 4m 5s, path: some-path}}",
+                        "```mooncram {timeout: 3m 4s, wait: {timeout: 4m 5s, path: some-path}}",
                         "$ the command",
                         "old output",
                         "```",
@@ -631,7 +631,7 @@ mod tests {
                     original_document: &([
                         "This is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "# some comment before",
                         "$ the command",
                         "old output",
@@ -683,7 +683,7 @@ mod tests {
                         "",
                         "## Then there is a test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command 1",
                         "old output 1",
                         "```",
@@ -694,7 +694,7 @@ mod tests {
                         "",
                         "Followed by another test",
                         "",
-                        "```scrut",
+                        "```mooncram",
                         "$ the command 2",
                         "old output 2",
                         "```",

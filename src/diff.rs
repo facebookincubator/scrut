@@ -29,13 +29,13 @@ use crate::newline::SplitLinesByNewline;
 /// are instances of [`DiffLine::MatchedExpectation`]
 ///
 /// ```
-/// use scrut::bformatln;
-/// use scrut::blines;
-/// use scrut::diff::DiffLine;
-/// use scrut::diff::DiffTool;
-/// use scrut::expectation::Expectation;
-/// use scrut::expectation::ExpectationMaker;
-/// use scrut::rules::registry::RuleRegistry;
+/// use moon_cram::bformatln;
+/// use moon_cram::blines;
+/// use moon_cram::diff::DiffLine;
+/// use moon_cram::diff::DiffTool;
+/// use moon_cram::expectation::Expectation;
+/// use moon_cram::expectation::ExpectationMaker;
+/// use moon_cram::rules::registry::RuleRegistry;
 ///
 /// let maker = ExpectationMaker::new(RuleRegistry::default());
 /// let expectations = vec![
@@ -789,7 +789,7 @@ mod tests {
     // this test assures that this is the also the case when expectations follow
     // a multiline expectation. The following MUST FAIL, because the last
     // expectation does NOT match and is "left over":
-    // ```scrut
+    // ```mooncram
     // $ echo -e "foo\nfoo\nbar"
     // * (glob*)
     // baz
@@ -813,7 +813,7 @@ mod tests {
     // that follow (greedy) multiline expectations, but are not multiline expectations
     // themselves (and thereby "more precise") must tak precedence and "end" the
     // multiline match. The following MUST WORK:
-    // ```scrut
+    // ```mooncram
     // $ echo -e "foo\nfoo\nbar"
     // * (glob*)
     // bar

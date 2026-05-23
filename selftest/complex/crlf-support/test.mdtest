@@ -1,6 +1,6 @@
 # Test expecting CRLF support
 
-```scrut
+```mooncram
 $ echo -en "With\r\nNewlines\r\n"
 With\r (escaped)
 Newlines\r (escaped)

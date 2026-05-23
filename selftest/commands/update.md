@@ -2,18 +2,18 @@
 
 ## Bootstrap
 
-```scrut
+```mooncram
 $ . "${TESTDIR}/setup.sh"
 OK
 ```
 
 ## Output of update -h in markdown format
 
-```scrut
-$ "${SCRUT_BIN}" update -h
+```mooncram
+$ "${MOON_CRAM_BIN}" update -h
 Re-run all testcases in given file(s) and update the output expectations
 
-Usage: scrut(?:\.exe)? update \[OPTIONS\] \<PATHS\>\.\.\. (regex)
+Usage: moon-cram(?:\.exe)? update \[OPTIONS\] \<PATHS\>\.\.\. (regex)
 
 Arguments:
   <PATHS>...  Path to test files or directories

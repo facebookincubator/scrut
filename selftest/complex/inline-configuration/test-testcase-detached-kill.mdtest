@@ -4,7 +4,7 @@ This test emulates an execution that accepts SIGINT or SIGHUP to abort.
 
 ## Start a long running process
 
-```scrut {detached: true, detached_kill_signal: int}
+```mooncram {detached: true, detached_kill_signal: int}
 $ function cleanup_int {
 >     echo INT received > "$DELEGATED_TMPDIR"/signal
 >     exit
@@ -27,7 +27,7 @@ $ function cleanup_int {
 
 ## A test that does something
 
-```scrut
+```mooncram
 $ echo OK
 OK
 ```

@@ -2,14 +2,14 @@
 
 Tests in this file validate that the `append` configuration and the respective `--append-test-file-paths` command line parameter act as expected.
 
-```scrut
-$ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
+```mooncram
+$ alias moon_cram_test='$MOON_CRAM_BIN test --match-markdown="*.mdtest"'
 ```
 
 ## Inline appending
 
-```scrut
-$ scrut_test "$TESTDIR"/test-document-append.mdtest
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-document-append.mdtest
 // =============================================================================
 // @ *test-document-append.mdtest:8 (glob)
 // -----------------------------------------------------------------------------
@@ -28,8 +28,8 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 
 ## Inline and command line appending
 
-```scrut
-$ scrut_test "$TESTDIR"/test-document-append.mdtest --append-test-file-paths "$TESTDIR"/test-document-appended-2.mdtest
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-document-append.mdtest --append-test-file-paths "$TESTDIR"/test-document-appended-2.mdtest
 // =============================================================================
 // @ *test-document-append.mdtest:8 (glob)
 // -----------------------------------------------------------------------------

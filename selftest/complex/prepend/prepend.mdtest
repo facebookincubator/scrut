@@ -4,6 +4,6 @@ This file contains the tings that are prepended
 
 ## Export variable
 
-```scrut
+```mooncram
 $ export SOME_VARIABLE="prepended, not shaken"
 ```

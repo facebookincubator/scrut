@@ -12,9 +12,9 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::bail;
-use rand::RngExt as _;
 use rand::distr::Alphanumeric;
 use rand::rng;
+use rand::Rng;
 use tracing::debug;
 
 use super::DEFAULT_SHELL;
@@ -413,7 +413,7 @@ fn parse_divider_bytes(line: &[u8]) -> anyhow::Result<DividerSearch> {
 /// Generate a random alphanumeric string of given size
 fn random_string(size: usize) -> String {
     rng()
-        .sample_iter(&Alphanumeric)
+        .sample_iter(Alphanumeric)
         .take(size)
         .map(char::from)
         .collect()

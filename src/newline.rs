@@ -7,17 +7,17 @@
 
 //! This module provides convenient handlers for handling common newline relating
 //! operations, like assuring that strings do end (or do not end) in a newline.
-//! Also, since Scrut deals with raw byte output of scripts, that may not even
+//! Also, since Moon Cram deals with raw byte output of scripts, that may not even
 //! be unicode, the whole shabang is implemented for byte arrays as well.
 //!
 //! Regarding CRLF and LF line endings:
-//! Scrut internally only works with LF endings and considers CRLF only at
+//! Moon Cram internally only works with LF endings and considers CRLF only at
 //! certain boundaries, which are:
 //!
 //! - Content read from test files: CRLF is converted into LF
 //! - Output generated from test execution: CRLF is converter into LF
 //!
-//! In line with the Rust policy, Scrut does _NOT_ output CRLF at any time.
+//! In line with the Rust policy, Moon Cram does _NOT_ output CRLF at any time.
 use std::borrow::Cow;
 
 /// Extends byte slices to provide easy interface dealing with newline characters

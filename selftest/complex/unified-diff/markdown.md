@@ -4,14 +4,14 @@ This test validates that unified Diffs of mismatching Markdown formatted tests c
 
 ## Initial test fails
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-markdown "*.mdtest" "$TESTDIR/invalid.mdtest" > output.diff
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-markdown "*.mdtest" "$TESTDIR/invalid.mdtest" > output.diff
 [50]
 ```
 
 ## Test output is valid unified diff format
 
-```scrut
+```mooncram
 $ cat output.diff
 --- *invalid.mdtest (glob)
 +++ *invalid.mdtest.new (glob)
@@ -30,7 +30,7 @@ $ cat output.diff
 
 ## Patch the invalid output
 
-```scrut
+```mooncram
 $ cp "$TESTDIR/invalid.mdtest" invalid.mdtest && \
 >   patch -o valid.mdtest invalid.mdtest < output.diff
 patching file * (glob)
@@ -38,6 +38,6 @@ patching file * (glob)
 
 ## Use the valid output as test
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-markdown "*.mdtest" valid.mdtest
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-markdown "*.mdtest" valid.mdtest
 ```

@@ -7,9 +7,9 @@
 
 use std::path::Path;
 
-use scrut::escaping::Escaper;
-use scrut::output::Output;
-use scrut::testcase::TestCase;
+use moon_cram::escaping::Escaper;
+use moon_cram::output::Output;
+use moon_cram::testcase::TestCase;
 
 pub(crate) fn debug_testcases(testcases: &[TestCase], test_file_path: &Path, outputs: &[Output]) {
     for (index, testcase) in testcases.iter().enumerate() {

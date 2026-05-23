@@ -1,78 +1,78 @@
-# Environment in Scrut tests
+# Environment in Moon Cram tests
 
 ## Haz TESTDIR
 
-```scrut
+```mooncram
 $ echo "TESTDIR: '$TESTDIR'"
 TESTDIR: '*selftest?cases' (glob)
 ```
 
 ## Haz TESTFILE
 
-```scrut
+```mooncram
 $ echo "TESTFILE: '$TESTFILE'"
 TESTFILE: 'environment.md'
 ```
 
 ## Haz TMPDIR
 
-```scrut
+```mooncram
 $ echo "TMPDIR: '$TMPDIR'"
 TMPDIR: '*__tmp' (glob)
 ```
 
 ## Haz TESTSHELL
 
-```scrut
+```mooncram
 $ echo "TESTSHELL: '$TESTSHELL'"
 TESTSHELL: '*bash*' (glob)
 ```
 
 ## Haz LANG, LANGUAGE and LC_ALL
 
-```scrut
+```mooncram
 $ echo "languages: '$LANG', '$LANGUAGE', '$LC_ALL'"
 languages: 'C', 'C', 'C'
 ```
 
 ## Haz TZ
 
-```scrut
+```mooncram
 $ echo "TZ: '$TZ'"
 TZ: 'GMT'
 ```
 
 ## Haz COLUMNS
 
-```scrut
+```mooncram
 $ echo "COLUMNS: '$COLUMNS'"
 COLUMNS: '80'
 ```
 
 ## Haz CDPATH
 
-```scrut
+```mooncram
 $ echo "CDPATH: '$CDPATH'"
 CDPATH: ''
 ```
 
 ## Haz GREP_OPTIONS
 
-```scrut
+```mooncram
 $ echo "GREP_OPTIONS: '$GREP_OPTIONS'"
 GREP_OPTIONS: ''
 ```
 
 ## Haz GREP_OPTIONS
 
-```scrut
+```mooncram
 $ echo "GREP_OPTIONS: '$GREP_OPTIONS'"
 GREP_OPTIONS: ''
 ```
 
-## Haz SCRUT_TEST
+## Haz MOON_CRAM_TEST
 
-```scrut
-$ echo "SCRUT_TEST: $SCRUT_TEST"
-SCRUT_TEST: .*selftest[/\\]cases[/\\]environment\.md:76 (regex)
+```mooncram
+$ echo "MOON_CRAM_TEST: $MOON_CRAM_TEST"
+MOON_CRAM_TEST: .*selftest[/\\]cases[/\\]environment\.md:76 (regex)
 ```

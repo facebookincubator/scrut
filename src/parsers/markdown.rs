@@ -28,12 +28,12 @@ lazy_static! {
         Regex::new(r"^(#+\s+)(.+)$").expect("header start expression must compile");
 }
 
-pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut"];
+pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["mooncram"];
 
 #[derive(Debug, thiserror::Error)]
 pub enum MarkdownParserError {
     #[error(
-        "Code block starting at line {line} is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block."
+        "Code block starting at line {line} is missing language specifier. Use ```mooncram to make this block a Moon Cram test, or any other language to make Moon Cram skip this block."
     )]
     MissingLanguageSpecifier { line: usize },
 }
@@ -164,20 +164,20 @@ pub(crate) enum MarkdownToken {
     /// Raw configuration that is prepending the document
     DocumentConfig(Vec<(usize, String)>),
 
-    /// The parsed contents of a code block within backticks, representing a Scrut test:
+    /// The parsed contents of a code block within backticks, representing a Moon Cram test:
     ///
     /// ````markdown
-    /// ```scrut { ... config ..}
+    /// ```mooncram { ... config ..}
     /// # comment
     /// $ shell expression
     /// output expectations
     /// ```
     /// ````
     TestCodeBlock {
-        /// The used language token of the test (i.e. `scrut`)
+        /// The used language token of the test (i.e. `mooncram`)
         language: String,
 
-        /// Any configuration lines that precede the test (i.e. `scrut {..this config..}`)
+        /// Any configuration lines that precede the test (i.e. `mooncram {..this config..}`)
         config_lines: Vec<(usize, String)>,
 
         /// Any comments that precede the test
@@ -192,7 +192,7 @@ pub(crate) enum MarkdownToken {
         /// Index of the line containing opening backticks
         starting_line_number: usize,
 
-        /// Language specifier (e.g. `scrut`), possibly an empty string
+        /// Language specifier (e.g. `mooncram`), possibly an empty string
         language: String,
 
         /// All the lines of the code block, including opening and closing backtick lines
@@ -421,7 +421,7 @@ mod tests {
         let cram_test = r#"
 This is a title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -460,7 +460,7 @@ shell: some-shell
 
 This is a title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -498,7 +498,7 @@ hello
         let cram_test = r#"
 This is a title
 
-```scrut {timeout: 3m 3s, wait: 4m 4s}
+```mooncram {timeout: 3m 3s, wait: 4m 4s}
 $ echo hello
 hello
 ```
@@ -543,7 +543,7 @@ Something there
 
 This is a title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -576,7 +576,7 @@ This is a title
 This is still part of it
 And another part of the title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -608,7 +608,7 @@ Something
 
 ### This is a title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -637,7 +637,7 @@ hello
         let cram_test = r#"
 # This is a title
 
-```scrut
+```mooncram
 # ignore
 # me
 $ echo hello
@@ -675,7 +675,7 @@ hello1
 
 This is a title
 
-```scrut
+```mooncram
 $ echo hello
 hello
 ```
@@ -689,7 +689,7 @@ hello3
 
 This is another title
 
-```scrut
+```mooncram
 $ echo world
 world
 ```
@@ -734,7 +734,7 @@ Something
 
 ### This is a title
 
-```scrut
+```mooncram
 $ i am command 1
 > i am command 2
 i am output 1
@@ -770,9 +770,9 @@ i am output 3
         let cram_test = r#"
 This is a title
 
-````scrut
+````mooncram
 $ echo hello
-```scrut
+```mooncram
 inner
 ```
 text
@@ -780,11 +780,11 @@ text
 
 And another title
 
-````scrut
+````mooncram
 $ cat test.md
 # Command executes successfully
 
-```scrut
+```mooncram
 $ echo Hello World
 Hello World
 ```
@@ -800,7 +800,7 @@ Hello World
                     shell_expression: "echo hello".to_string(),
                     body: ValidationBody::Output(OutputBody {
                         expectations: vec![
-                            test_expectation!("equal", "```scrut"),
+                            test_expectation!("equal", "```mooncram"),
                             test_expectation!("equal", "inner"),
                             test_expectation!("equal", "```"),
                             test_expectation!("equal", "text"),
@@ -818,7 +818,7 @@ Hello World
                         expectations: vec![
                             test_expectation!("equal", "# Command executes successfully"),
                             test_expectation!("equal", ""),
-                            test_expectation!("equal", "```scrut"),
+                            test_expectation!("equal", "```mooncram"),
                             test_expectation!("equal", "$ echo Hello World"),
                             test_expectation!("equal", "Hello World"),
                             test_expectation!("equal", "```"),
@@ -840,7 +840,7 @@ Hello World
         let cram_test = r"
 This is a title
 
-```scrut
+```mooncram
 $ echo -e '$ hello\nworld'
 $ hello
 world
@@ -871,8 +871,8 @@ world
     #[test]
     fn test_extract_code_block_start() {
         assert_eq!(
-            Some(("```", "scrut", "")),
-            extract_code_block_start("```scrut")
+            Some(("```", "mooncram", "")),
+            extract_code_block_start("```mooncram")
         );
         assert_eq!(
             Some(("```", "bash", "")),
@@ -883,8 +883,8 @@ world
     #[test]
     fn test_extract_code_block_start_with_config() {
         assert_eq!(
-            Some(("```", "scrut", "{timeout: 3m 3s, wait: 4m 4s}")),
-            extract_code_block_start("```scrut {timeout: 3m 3s, wait: 4m 4s}")
+            Some(("```", "mooncram", "{timeout: 3m 3s, wait: 4m 4s}")),
+            extract_code_block_start("```mooncram {timeout: 3m 3s, wait: 4m 4s}")
         );
     }
 

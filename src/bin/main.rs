@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-extern crate scrut;
+extern crate moon_cram;
 
 mod commands;
 mod utils;
@@ -25,7 +25,7 @@ use tracing::error;
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 #[derive(Debug, Parser)]
-#[clap(about = "A testing toolkit to scrutinize CLI applications", version = VERSION)]
+#[clap(about = "A testing toolkit for CLI applications", version = VERSION)]
 struct Args {
     #[clap(subcommand)]
     commands: Commands,
@@ -43,7 +43,7 @@ fn generate_completion(completion_value: &str) -> ExitCode {
         "zsh_source" => Shell::Zsh,
         _ => {
             eprintln!(
-                "Error: Invalid value passed to environment variable '_SCRUT_COMPLETE'\n\
+                "Error: Invalid value passed to environment variable '_MOON_CRAM_COMPLETE'\n\
                 Valid values: bash_source, elvish_source, fish_source, powershell_source, zsh_source",
             );
             return 1.into();
@@ -51,12 +51,12 @@ fn generate_completion(completion_value: &str) -> ExitCode {
     };
 
     let mut command = Args::command();
-    generate(shell, &mut command, "scrut", &mut std::io::stdout());
+    generate(shell, &mut command, "moon-cram", &mut std::io::stdout());
     ExitCode::SUCCESS
 }
 
 pub fn main() -> ExitCode {
-    if let Ok(completion_value) = env::var("_SCRUT_COMPLETE") {
+    if let Ok(completion_value) = env::var("_MOON_CRAM_COMPLETE") {
         return generate_completion(&completion_value);
     }
 

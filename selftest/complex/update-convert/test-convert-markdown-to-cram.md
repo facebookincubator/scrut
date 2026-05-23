@@ -2,17 +2,17 @@
 
 ## Create a markdown test
 
-```scrut
-$ "${SCRUT_BIN}" create --format markdown "echo Hello World" > test.md
+```mooncram
+$ "${MOON_CRAM_BIN}" create --format markdown "echo Hello World" > test.md
 ```
 
 Check the created Markdown test file
 
-````scrut
+````mooncram
 $ cat test.md
 # Command executes successfully
 
-```scrut
+```mooncram
 $ echo Hello World
 Hello World
 ```
@@ -20,14 +20,14 @@ Hello World
 
 ## Convert from Markdown to Cram
 
-```scrut
-$ "${SCRUT_BIN}" update --convert cram test.md
+```mooncram
+$ "${MOON_CRAM_BIN}" update --convert cram test.md
 Result: 1 document(s) of which 1 updated, 0 skipped and 0 unchanged
 ```
 
 A new Cram file should have been created and the tests should look fine:
 
-```scrut
+```mooncram
 $ echo Hello World
 Hello World
 ```

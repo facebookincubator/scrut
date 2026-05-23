@@ -2,26 +2,26 @@
 
 ## A detached test
 
-```scrut {detached: true}
+```mooncram {detached: true}
 $ echo foo1
 ```
 
 ## A normal test
 
-```scrut
+```mooncram
 $ echo foo2
 foo2
 ```
 
 ## Another detached test
 
-```scrut {detached: true}
+```mooncram {detached: true}
 $ echo foo3
 ```
 
 ## Another normal test
 
-```scrut
+```mooncram
 $ echo foo4
 foo4
 ```

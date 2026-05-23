@@ -4,9 +4,9 @@ expression: result
 ---
 # This is a test
 
-```scrut
-$ the command
+```mooncram
+$ echo \
+> something
 the output
-[123]
 ```
 

@@ -4,21 +4,21 @@ Tests in this file validate that the `environment` configuration sets environmen
 
 ## Environment variable is not set initially
 
-```scrut
+```mooncram
 $ echo "Var is '${SOME_VAR}'"
 Var is ''
 ```
 
 ## Environment variable is set
 
-```scrut {environment: {"SOME_VAR": "some value"}}
+```mooncram {environment: {"SOME_VAR": "some value"}}
 $ echo "Var is '${SOME_VAR}'"
 Var is 'some value'
 ```
 
 ## Environment variable will not be unset
 
-```scrut
+```mooncram
 $ echo "Var is '${SOME_VAR}'"
 Var is 'some value'
 ```

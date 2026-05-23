@@ -2,11 +2,10 @@
 source: src/generators/generator.rs
 expression: result
 ---
-This is a test
+# This is a test
 
-```scrut
-# some comment before
+```mooncram
 $ the command
-new output
+the output (no-eol)
 ```
 

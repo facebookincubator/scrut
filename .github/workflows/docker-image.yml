@@ -20,10 +20,10 @@ jobs:
         shell: bash
         run: |
           if [[ "$GITHUB_REF" =~ refs/tags ]]; then
-            SCRUT_VERSION="${GITHUB_REF#refs/tags/}"
-            echo "SCRUT_VERSION=${SCRUT_VERSION//+/_}" >> $GITHUB_ENV
+            MOON_CRAM_VERSION="${GITHUB_REF#refs/tags/}"
+            echo "MOON_CRAM_VERSION=${MOON_CRAM_VERSION//+/_}" >> $GITHUB_ENV
           else
-            echo "SCRUT_VERSION=debug-${GITHUB_REF#refs/heads/}-$(date +%s)" >> $GITHUB_ENV
+            echo "MOON_CRAM_VERSION=debug-${GITHUB_REF#refs/heads/}-$(date +%s)" >> $GITHUB_ENV
           fi
 
       - name: Login to GHCR
@@ -66,7 +66,7 @@ jobs:
               push: true
               tags: |
                   ghcr.io/${{ github.repository }}:latest
-                  ghcr.io/${{ github.repository }}:${{ env.SCRUT_VERSION }}
+                  ghcr.io/${{ github.repository }}:${{ env.MOON_CRAM_VERSION }}
 
       - name: Build and Push Development Docker Image
         uses: docker/build-push-action@v6
@@ -78,4 +78,4 @@ jobs:
               cache-to: type=gha,mode=max
               push: true
               tags: |
-                  ghcr.io/${{ github.repository }}:${{ env.SCRUT_VERSION }}
+                  ghcr.io/${{ github.repository }}:${{ env.MOON_CRAM_VERSION }}

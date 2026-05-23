@@ -4,14 +4,14 @@ This test validates that unified Diffs of mismatching Cram formatted tests can b
 
 ## Initial test fails
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-cram "*.cramtest" "$TESTDIR/invalid.cramtest" > output.diff
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-cram "*.cramtest" "$TESTDIR/invalid.cramtest" > output.diff
 [50]
 ```
 
 ## Test output is valid unified diff format
 
-```scrut
+```mooncram
 $ cat output.diff
 --- *invalid.cramtest (glob)
 +++ *invalid.cramtest.new (glob)
@@ -30,7 +30,7 @@ $ cat output.diff
 
 ## Patch the invalid output
 
-```scrut
+```mooncram
 $ cp "$TESTDIR/invalid.cramtest" invalid.cramtest && \
 >   patch -o valid.cramtest invalid.cramtest < output.diff
 patching file * (glob)
@@ -38,6 +38,6 @@ patching file * (glob)
 
 ## Use the valid output as test
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-cram "*.cramtest" valid.cramtest
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-cram "*.cramtest" valid.cramtest
 ```

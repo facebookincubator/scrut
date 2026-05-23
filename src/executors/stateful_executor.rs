@@ -169,7 +169,7 @@ impl<'a> ExecutionSession<'a> {
         // set timeout and identifying environment variable
         testcase.config.timeout = timeout;
         testcase.config.environment.insert(
-            "SCRUT_TEST".into(),
+            "MOON_CRAM_TEST".into(),
             format!(
                 "{}:{}",
                 self.context.file.to_string_lossy(),

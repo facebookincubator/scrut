@@ -16,33 +16,33 @@ use anyhow::bail;
 use clap::Parser as ClapParser;
 use dialoguer::console::style;
 use humantime::format_duration;
-use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
-use scrut::config::DocumentConfig;
-use scrut::config::TestCaseConfig;
-use scrut::executors::context::ContextBuilder;
-use scrut::executors::error::ExecutionError;
-use scrut::executors::error::ExecutionTimeout;
-use scrut::outcome::Outcome;
-use scrut::output::ExitStatus;
-use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
-use scrut::parsers::parser::ParserType;
-use scrut::renderers::diff::DiffRenderer;
-use scrut::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
-use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
-use scrut::renderers::pretty::PrettyColorRenderer;
-use scrut::renderers::pretty::PrettyMonochromeRenderer;
-use scrut::renderers::renderer::Renderer;
-use scrut::renderers::structured::JsonRenderer;
-use scrut::renderers::structured::YamlRenderer;
-use scrut::testcase::TestCase;
-use scrut::testcase::TestCaseError;
+use moon_cram::config::DEFAULT_SKIP_DOCUMENT_CODE;
+use moon_cram::config::DocumentConfig;
+use moon_cram::config::TestCaseConfig;
+use moon_cram::executors::context::ContextBuilder;
+use moon_cram::executors::error::ExecutionError;
+use moon_cram::executors::error::ExecutionTimeout;
+use moon_cram::outcome::Outcome;
+use moon_cram::output::ExitStatus;
+use moon_cram::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
+use moon_cram::parsers::parser::ParserType;
+use moon_cram::renderers::diff::DiffRenderer;
+use moon_cram::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
+use moon_cram::renderers::pretty::DEFAULT_SURROUNDING_LINES;
+use moon_cram::renderers::pretty::PrettyColorRenderer;
+use moon_cram::renderers::pretty::PrettyMonochromeRenderer;
+use moon_cram::renderers::renderer::Renderer;
+use moon_cram::renderers::structured::JsonRenderer;
+use moon_cram::renderers::structured::YamlRenderer;
+use moon_cram::testcase::TestCase;
+use moon_cram::testcase::TestCaseError;
 use tracing::debug;
 use tracing::debug_span;
 use tracing::info;
 use tracing::trace;
 
 use super::root::GlobalSharedParameters;
-use super::root::ScrutRenderer;
+use super::root::MoonCramRenderer;
 use crate::utils::FileParser;
 use crate::utils::ProgressWriter;
 use crate::utils::TestEnvironment;
@@ -93,14 +93,14 @@ pub struct Args {
     match_cram: String,
 
     /// Glob match that identifies markdown files
-    #[clap(long, default_value = "*.{md,markdown,scrut}")]
+    #[clap(long, default_value = "*.{md,markdown,mooncram}")]
     match_markdown: String,
 
     /// Which renderer to use for generating the result, with `diff` being the
     /// best choice for human consumption and `json` or `yaml` for further
     /// machine processing.
     #[clap(long, short, default_value = "auto", value_enum)]
-    renderer: ScrutRenderer,
+    renderer: MoonCramRenderer,
 
     /// Per default, renderers that provide line numbers use relative numbers within
     /// the test case / the output of the execution. Setting this flag changes that
@@ -422,7 +422,7 @@ impl Args {
 
         // finally render all outcomes of testcase validations
         let renderer: Box<dyn Renderer> = match self.renderer {
-            ScrutRenderer::Auto | ScrutRenderer::Pretty => {
+            MoonCramRenderer::Auto | MoonCramRenderer::Pretty => {
                 let color_renderer = PrettyColorRenderer {
                     max_surrounding_lines: DEFAULT_SURROUNDING_LINES,
                     absolute_line_numbers: self.absolute_line_numbers,
@@ -435,9 +435,9 @@ impl Args {
                     Box::new(PrettyMonochromeRenderer::new(color_renderer))
                 }
             }
-            ScrutRenderer::Diff => Box::<DiffRenderer>::default(),
-            ScrutRenderer::Json => Box::<JsonRenderer>::default(),
-            ScrutRenderer::Yaml => Box::<YamlRenderer>::default(),
+            MoonCramRenderer::Diff => Box::<DiffRenderer>::default(),
+            MoonCramRenderer::Json => Box::<JsonRenderer>::default(),
+            MoonCramRenderer::Yaml => Box::<YamlRenderer>::default(),
         };
 
         info!(
@@ -479,18 +479,18 @@ impl Args {
 /// Helper function to handle early termination cases (timeout, fail_fast).
 /// Validates outputs that were collected, marks remaining tests as skipped.
 fn handle_early_termination<F>(
-    outputs: &[scrut::output::Output],
+    outputs: &[moon_cram::output::Output],
     testcases: &[&TestCase],
     outcomes: &mut Vec<Outcome>,
     location: String,
-    escaping: scrut::escaping::Escaper,
+    escaping: moon_cram::escaping::Escaper,
     format: ParserType,
     count_success: &mut usize,
     count_failed: &mut usize,
     count_skipped: &mut usize,
     mut validate_output: F,
 ) where
-    F: FnMut(&scrut::output::Output, &TestCase) -> Result<(), TestCaseError>,
+    F: FnMut(&moon_cram::output::Output, &TestCase) -> Result<(), TestCaseError>,
 {
     // append outcomes for each testcase that was executed
     outcomes.extend(

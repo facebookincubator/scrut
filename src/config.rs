@@ -244,8 +244,8 @@ impl Display for TestCaseWait {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default)]
 pub struct TestCaseConfig {
-    /// Tell Scrut that the shell expression of this test will detach itself, so
-    /// Scrut will not consider this a test (i.e. no output or exit code evaluation).
+    /// Tell Moon Cram that the shell expression of this test will detach itself, so
+    /// Moon Cram will not consider this a test (i.e. no output or exit code evaluation).
     /// Purpose is to allow the user to detach a command (like
     /// `nohup some-command &`) that is doing something asynchronous (e.g.
     /// starting a server to which the tested CLI is a client).
@@ -476,7 +476,7 @@ impl TestCaseConfig {
         diff
     }
 
-    /// Serde YAML does not support one-line-formatted YAML and currently Scrut
+    /// Serde YAML does not support one-line-formatted YAML and currently Moon Cram
     /// supports only parsing one-line-formatted YAML.
     /// This implementation provides a least-effort
     pub fn to_yaml_one_liner(&self) -> String {

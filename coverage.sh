@@ -8,7 +8,7 @@ set -e
 #set -x
 
 export RUSTFLAGS="-Cinstrument-coverage"
-export LLVM_PROFILE_FILE="coverage/profiles/scrut-%p-%m.profraw"
+export LLVM_PROFILE_FILE="coverage/profiles/mooncram-%p-%m.profraw"
 
 # cleanup & init
 [ -d coverage ] && rm -rf coverage

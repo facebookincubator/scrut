@@ -1,26 +1,26 @@
 {
     "outputs": {
-        "scrut": {
+        "moon-cram": {
             "platforms": {
                 "macos-x86_64": {
-                    "regex": "^scrut-.*-macos-x86_64",
-                    "path": "scrut-macos-x86_64/scrut"
+                    "regex": "^moon-cram-.*-macos-x86_64",
+                    "path": "moon-cram-macos-x86_64/moon-cram"
                 },
                 "macos-aarch64": {
-                    "regex": "^scrut-.*-macos-aarch64",
-                    "path": "scrut-macos-aarch64/scrut"
+                    "regex": "^moon-cram-.*-macos-aarch64",
+                    "path": "moon-cram-macos-aarch64/moon-cram"
                 },
                 "linux-x86_64": {
-                    "regex": "^scrut-.*-linux-x86_64",
-                    "path": "scrut-linux-x86_64/scrut"
+                    "regex": "^moon-cram-.*-linux-x86_64",
+                    "path": "moon-cram-linux-x86_64/moon-cram"
                 },
                 "linux-aarch64": {
-                    "regex": "^scrut-.*-linux-aarch64",
-                    "path": "scrut-linux-aarch64/scrut"
+                    "regex": "^moon-cram-.*-linux-aarch64",
+                    "path": "moon-cram-linux-aarch64/moon-cram"
                 },
                 "windows-x86_64": {
-                    "regex": "^scrut-.*-windows-x86_64",
-                    "path": "scrut-windows-x86_64/scrut.exe"
+                    "regex": "^moon-cram-.*-windows-x86_64",
+                    "path": "moon-cram-windows-x86_64/moon-cram.exe"
                 }
             }
         }

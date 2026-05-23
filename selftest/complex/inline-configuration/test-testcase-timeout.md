@@ -2,14 +2,14 @@
 
 Tests in this file validate that the `timeout` configuration modifies how long a test may run before the execution is aborted.
 
-```scrut
-$ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
+```mooncram
+$ alias moon_cram_test='$MOON_CRAM_BIN test --match-markdown="*.mdtest"'
 ```
 
 ## Run tests that timeout
 
-```scrut
-$ scrut_test "$TESTDIR"/test-testcase-timeout.mdtest 2>&1
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-testcase-timeout.mdtest 2>&1
 // =============================================================================
 // @ *test-testcase-timeout.mdtest:16 (glob)
 // -----------------------------------------------------------------------------

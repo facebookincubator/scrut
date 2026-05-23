@@ -4,21 +4,21 @@ This file runs some failing tests and lastly skips with the custom skip code
 
 ## Run failing test
 
-```scrut
+```mooncram
 $ echo Output1
 Whatever1
 ```
 
 ## Skip on default skip code
 
-```scrut
+```mooncram
 $ echo Output2 && exit 80
 Whatever2
 ```
 
 ## Run another failing test
 
-```scrut
+```mooncram
 $ echo Output3
 Whatever3
 ```

@@ -1,6 +1,6 @@
 # Multiple commands in a single code block
 
-```scrut
+```mooncram
 $ echo Foo
 Foo
 $ echo Bar

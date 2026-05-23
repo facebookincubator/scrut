@@ -2,18 +2,18 @@
 
 ## Bootstrap
 
-```scrut
+```mooncram
 $ . "${TESTDIR}/setup.sh"
 OK
 ```
 
 ## Output of create -h in markdown format
 
-```scrut
-$ "${SCRUT_BIN}" create -h
+```mooncram
+$ "${MOON_CRAM_BIN}" create -h
 Create tests from provided shell expression
 
-Usage: scrut(?:\.exe)? create \[OPTIONS\] <SHELL_EXPRESSION>\.\.\. (regex)
+Usage: moon-cram(?:\.exe)? create \[OPTIONS\] <SHELL_EXPRESSION>\.\.\. (regex)
 
 Arguments:
   <SHELL_EXPRESSION>...  Shell expression THAT WILL BE EXECUTED to automatically

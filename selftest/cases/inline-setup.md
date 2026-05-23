@@ -8,7 +8,7 @@ This test show-cases a practice that works for such cases.
 
 ## Run bootstrap block of multiple commands
 
-```scrut
+```mooncram
 $ shopt -s expand_aliases && \
 >   alias foo="echo Foo" && \
 >   alias bar="echo Bar" && \
@@ -18,7 +18,7 @@ $ shopt -s expand_aliases && \
 
 ## Assert aliases are exported
 
-```scrut
+```mooncram
 $ bar && foo
 Bar
 Foo
@@ -26,7 +26,7 @@ Foo
 
 ## Assure aliases of aliases are exported
 
-```scrut
+```mooncram
 $ baz
 Foo
 Bar
@@ -34,7 +34,7 @@ Bar
 
 ## Assure environment variables are exported
 
-```scrut
+```mooncram
 $ echo "Say ${SOMETHING}"
 Say whatever
 ```

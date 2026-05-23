@@ -134,7 +134,7 @@ With:
   even by the export / import in between executions, or it may confuse `bash` itself.
 - *read-only* variables cannot be set and any attempt to do so results in failure and a message on
   STDERR.
-  These messages would interfere with the capturing of the STDERR output by Scrut and the failure
+  These messages would interfere with the capturing of the STDERR output by Moon Cram and the failure
   would trigger if `set -e`.
   Hence read-only variables must be excluded from export, so not to cause those errors on import.
   Variables are exported using the built-in `declare -p`.

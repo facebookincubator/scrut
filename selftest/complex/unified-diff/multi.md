@@ -4,20 +4,20 @@ This test validates that unified diff outputs that change multiple files are val
 
 ## Copy files to current temp path
 
-```scrut
+```mooncram
 $ cp "$TESTDIR"/multi*.mdtest .
 ```
 
 ## Initial test of multiple files fails
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-markdown "*.mdtest" . > output.diff
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-markdown "*.mdtest" . > output.diff
 [50]
 ```
 
 ## Test output is valid unified diff format
 
-```scrut
+```mooncram
 $ cat output.diff
 --- \.[/\\]multi-test-1\.mdtest (regex)
 \+\+\+ \.[/\\]multi-test-1\.mdtest\.new (regex)
@@ -37,13 +37,13 @@ $ cat output.diff
 
 ## Patch the invalid output
 
-```scrut
+```mooncram
 $ patch < output.diff
 patching file * (glob+)
 ```
 
 ## Use the valid output as test
 
-```scrut
-$ "$SCRUT_BIN" test --renderer diff --match-markdown "*.mdtest" .
+```mooncram
+$ "$MOON_CRAM_BIN" test --renderer diff --match-markdown "*.mdtest" .
 ```

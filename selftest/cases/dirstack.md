@@ -5,7 +5,7 @@ test executions.
 
 ## Initialize directories and directory stack
 
-```scrut
+```mooncram
 $ mkdir dir1 dir2 dir3
 > cd "dir1"
 > pushd "../dir2" >/dev/null
@@ -20,7 +20,7 @@ $ mkdir dir1 dir2 dir3
 
 ## Verify that the directory stack is the same
 
-```scrut
+```mooncram
 $ pwd
 > dirs -l -p
 */dir3 (glob)

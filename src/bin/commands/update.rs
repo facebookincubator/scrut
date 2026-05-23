@@ -18,27 +18,27 @@ use anyhow::bail;
 use clap::Parser;
 use dialoguer::console;
 use dialoguer::console::style;
-use scrut::config::DEFAULT_SKIP_DOCUMENT_CODE;
-use scrut::config::DocumentConfig;
-use scrut::config::TestCaseConfig;
-use scrut::escaping::strip_colors;
-use scrut::executors::context::ContextBuilder;
-use scrut::executors::error::ExecutionError;
-use scrut::generators::cram::CramTestCaseGenerator;
-use scrut::generators::cram::CramUpdateGenerator;
-use scrut::generators::generator::TestCaseGenerator;
-use scrut::generators::generator::UpdateGenerator;
-use scrut::generators::markdown::MarkdownTestCaseGenerator;
-use scrut::generators::markdown::MarkdownUpdateGenerator;
-use scrut::outcome::Outcome;
-use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
-use scrut::parsers::parser::ParserType;
-use scrut::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
-use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
-use scrut::renderers::pretty::PrettyColorRenderer;
-use scrut::renderers::pretty::PrettyMonochromeRenderer;
-use scrut::renderers::renderer::Renderer;
-use scrut::testcase::TestCase;
+use moon_cram::config::DEFAULT_SKIP_DOCUMENT_CODE;
+use moon_cram::config::DocumentConfig;
+use moon_cram::config::TestCaseConfig;
+use moon_cram::escaping::strip_colors;
+use moon_cram::executors::context::ContextBuilder;
+use moon_cram::executors::error::ExecutionError;
+use moon_cram::generators::cram::CramTestCaseGenerator;
+use moon_cram::generators::cram::CramUpdateGenerator;
+use moon_cram::generators::generator::TestCaseGenerator;
+use moon_cram::generators::generator::UpdateGenerator;
+use moon_cram::generators::markdown::MarkdownTestCaseGenerator;
+use moon_cram::generators::markdown::MarkdownUpdateGenerator;
+use moon_cram::outcome::Outcome;
+use moon_cram::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
+use moon_cram::parsers::parser::ParserType;
+use moon_cram::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
+use moon_cram::renderers::pretty::DEFAULT_SURROUNDING_LINES;
+use moon_cram::renderers::pretty::PrettyColorRenderer;
+use moon_cram::renderers::pretty::PrettyMonochromeRenderer;
+use moon_cram::renderers::renderer::Renderer;
+use moon_cram::testcase::TestCase;
 
 use super::root::GlobalSharedParameters;
 use crate::utils::FileParser;
@@ -82,7 +82,7 @@ pub struct Args {
     match_cram: String,
 
     /// Glob match that identifies markdown files
-    #[clap(long, default_value = "*.{md,markdown,scrut}")]
+    #[clap(long, default_value = "*.{md,markdown,mooncram}")]
     match_markdown: String,
 
     /// Whether to replace the contents of the files (see --output-suffix)

@@ -1,6 +1,6 @@
 # A successful test 2
 
-```scrut
+```mooncram
 $ echo OK
 OK
 ```

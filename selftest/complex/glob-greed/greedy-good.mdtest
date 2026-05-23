@@ -1,6 +1,6 @@
 # This test must succeed
 
-```scrut
+```mooncram
 $ echo -e "foo\nbar\nbaz"
 * (glob*)
 bar

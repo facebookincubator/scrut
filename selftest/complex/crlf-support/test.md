@@ -4,8 +4,8 @@ This test proves that the `--keep-output-crlf` flag combines STDOUT and STDERR i
 
 ## Run with normal CRLF handling
 
-```scrut
-$ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // =============================================================================
 // @ *test.mdtest:4 (glob)
 // -----------------------------------------------------------------------------
@@ -26,22 +26,22 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 
 ## Run with explicit CRLF handling
 
-```scrut
-$ "$SCRUT_BIN" test --keep-output-crlf --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --keep-output-crlf --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Run with explicit CRLF handling (global)
 
-```scrut
-$ "$SCRUT_BIN" --keep-output-crlf test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" --keep-output-crlf test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 
 ## Run with cram compat enabling CRLF handling
 
-```scrut
-$ "$SCRUT_BIN" --cram-compat test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" --cram-compat test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```

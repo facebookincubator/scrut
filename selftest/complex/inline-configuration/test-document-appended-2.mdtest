@@ -4,7 +4,7 @@ The following test ought to file, so we can validate that it was appended
 
 ## This fails in appended
 
-```scrut
+```mooncram
 $ echo FooInAppended2
 BarInAppended2
 ```

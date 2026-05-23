@@ -1,0 +1,10 @@
+# This is a mooncram test
+
+Tests whether `.mooncram` tests are automatically picked up.
+
+## Test me
+
+```mooncram
+$ echo Hello World
+Hello World
+```

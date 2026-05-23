@@ -1,12 +1,12 @@
 # Test various multiline usages
 
-Scrut Markdown supports exactly one shell expression per test. This shell expression can span multiple lines and is ultimately piped into the used shell process, so must comply with the constraints of that shell.
+Moon Cram Markdown supports exactly one shell expression per test. This shell expression can span multiple lines and is ultimately piped into the used shell process, so must comply with the constraints of that shell.
 
 This test shows how multiple commands within one shell expression can be written -- assuming common Linux / MacOS shells (`bash`, `zsh`, ..) are used.
 
 ## One conjunct expression
 
-```scrut
+```mooncram
 $ echo Foo && \
 > echo Bar && \
 > echo Baz
@@ -17,7 +17,7 @@ Baz
 
 ## Many expressions
 
-```scrut
+```mooncram
 $ echo Foo
 > echo Bar
 > echo Baz
@@ -28,7 +28,7 @@ Baz
 
 ## Fail conjunct expression
 
-```scrut
+```mooncram
 $ echo Foo && \
 > false && \
 > echo Baz
@@ -41,7 +41,7 @@ Foo
 
 ## Fail multiple expressions
 
-```scrut
+```mooncram
 $ echo Foo
 > false
 > echo Baz
@@ -52,13 +52,13 @@ Baz
 - **Pro**: Easy to read / write
 - **Con**: Hides failed executions within (only the last statement's exit code is returned)
 
-**Note**: If you are now thinking `set -e`, then be aware that all statements in a test file are piped into the same shell process. This is intentional, so that `export` and `alias` statements can be used. It also means `set -e` in any test's shell expression that fails will immediately abort all execution and make the whole `scrut test` execution fail.
+**Note**: If you are now thinking `set -e`, then be aware that all statements in a test file are piped into the same shell process. This is intentional, so that `export` and `alias` statements can be used. It also means `set -e` in any test's shell expression that fails will immediately abort all execution and make the whole `moon-cram test` execution fail.
 
 ## Use-case: Shell function
 
 Initialize shell function
 
-```scrut
+```mooncram
 $ function bla {
 >   echo BLA
 > }
@@ -66,7 +66,7 @@ $ function bla {
 
 Use shell function
 
-```scrut
+```mooncram
 $ bla
 BLA
 ```
@@ -75,7 +75,7 @@ BLA
 
 Create a file with a heredoc
 
-```scrut
+```mooncram
 $ cat > file.txt <<EOF
 > Hello,
 >
@@ -85,7 +85,7 @@ $ cat > file.txt <<EOF
 
 Read file
 
-```scrut
+```mooncram
 $ cat file.txt
 Hello,
 

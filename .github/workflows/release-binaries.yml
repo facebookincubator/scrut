@@ -61,7 +61,7 @@ jobs:
       - name: Build Archive
         shell: bash
         run: |
-          binary_name="scrut"
+          binary_name="moon-cram"
           dirname="$binary_name-${{ matrix.build }}"
           archivename="$binary_name-${{ env.VERSION }}-${{ matrix.build }}"
 

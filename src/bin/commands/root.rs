@@ -11,11 +11,11 @@ use std::time::Duration;
 use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
-use scrut::config::DocumentConfig;
-use scrut::config::OutputStreamControl;
-use scrut::config::TestCaseConfig;
-use scrut::escaping::Escaper;
-use scrut::parsers::parser::ParserType;
+use moon_cram::config::DocumentConfig;
+use moon_cram::config::OutputStreamControl;
+use moon_cram::config::TestCaseConfig;
+use moon_cram::escaping::Escaper;
+use moon_cram::parsers::parser::ParserType;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum Commands {
@@ -34,9 +34,9 @@ impl Commands {
     }
 }
 
-/// Supported scrut output format
+/// Supported mooncram output format
 #[derive(Debug, Clone, ValueEnum)]
-pub enum ScrutRenderer {
+pub enum MoonCramRenderer {
     Auto,
     Pretty,
     Diff,
@@ -71,7 +71,7 @@ pub(crate) struct GlobalParameters {
     pub(crate) no_keep_output_crlf: bool,
 
     /// Optional output escaping mode. If not set then defaults to escaping
-    /// all non-printable unicode characters for Scrut Markdown tests and
+    /// all non-printable unicode characters for Moon Cram Markdown tests and
     /// all non-printable ASCII characters for Cram tests.
     #[clap(long, short = 'e', global = true)]
     pub(crate) escaping: Option<Escaper>,
@@ -254,9 +254,9 @@ mod logging {
 
 #[cfg(test)]
 mod tests {
-    use scrut::config::DocumentConfig;
-    use scrut::config::OutputStreamControl;
-    use scrut::config::TestCaseConfig;
+    use moon_cram::config::DocumentConfig;
+    use moon_cram::config::OutputStreamControl;
+    use moon_cram::config::TestCaseConfig;
 
     use super::GlobalSharedParameters;
 

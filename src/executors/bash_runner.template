@@ -5,27 +5,27 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-__SCRUT_TEMP_STATE_PATH="{state_directory}"
+__MOON_CRAM_TEMP_STATE_PATH="{state_directory}"
 
 # persist the whole state / context of the execution in a file `state`, so that
 # it can be recovered in a subsequent execution using `source state`.
-function __scrut_persist_state {
+function __moon_cram_persist_state {
     local code=$?
 
     # do not persist this trap
-    unset -f __scrut_persist_state
+    unset -f __moon_cram_persist_state
 
     # ensure the state directory exists
-    mkdir -p "$__SCRUT_TEMP_STATE_PATH"
+    mkdir -p "$__MOON_CRAM_TEMP_STATE_PATH"
 
     # for bash (<4): "declare -p" returns expressions of the form "VARNAME=VARVALUE" as opposed to
     # the longer form "declare -x VARNAME=VARVALUE". Re-importing these statements works, but the
-    # variables are not exported to the environment, which changes the behavior of Scrut. The
+    # variables are not exported to the environment, which changes the behavior of Moon Cram. The
     # following ensures the "declare -x"-form export of variables and aligns the behavior accross
     # bash versions.
-    __SCRUT_DECLARE_VARS_CMD="declare -p"
+    __MOON_CRAM_DECLARE_VARS_CMD="declare -p"
     if ! declare -p | grep -q "^declare "; then
-        __SCRUT_DECLARE_VARS_CMD="declare -p | sed -re 's/^([A-Za-z0-9_]+)=/declare -x \1=/'"
+        __MOON_CRAM_DECLARE_VARS_CMD="declare -p | sed -re 's/^([A-Za-z0-9_]+)=/declare -x \1=/'"
     fi
 
     (
@@ -42,7 +42,7 @@ function __scrut_persist_state {
         declare -f
 
         # store all shell and environment variables
-        eval "$__SCRUT_DECLARE_VARS_CMD" | \
+        eval "$__MOON_CRAM_DECLARE_VARS_CMD" | \
             grep -Ev "^declare -.?r" | \
             grep -Ev "^declare -[a-zA-Z-]* ({excluded_variables}|[^=]*[^a-zA-Z0-9_=][^=]*)(=|\$)"
 
@@ -51,20 +51,20 @@ function __scrut_persist_state {
 
         # store the current directory stack (pushd / popd)
         printf "pushd %q >/dev/null 2>/dev/null\n" "${DIRSTACK[@]}" | sed '1!G;h;$!d' | tail -n +2
-    ) > "$__SCRUT_TEMP_STATE_PATH/state"
+    ) > "$__MOON_CRAM_TEMP_STATE_PATH/state"
 
     # dump environment variables for interpolation support
-    env -0 > "$__SCRUT_TEMP_STATE_PATH/env"
+    env -0 > "$__MOON_CRAM_TEMP_STATE_PATH/env"
 
     exit $code
 }
 
 # load the state from the previous execution, if it exists
 shopt -s expand_aliases
-[ -f "$__SCRUT_TEMP_STATE_PATH/state" ] && source "$__SCRUT_TEMP_STATE_PATH/state"
+[ -f "$__MOON_CRAM_TEMP_STATE_PATH/state" ] && source "$__MOON_CRAM_TEMP_STATE_PATH/state"
 
 # ensure the state of this execution will be persisted for the next execution
-[ {persist_state} -eq 1 ] && trap __scrut_persist_state EXIT
+[ {persist_state} -eq 1 ] && trap __moon_cram_persist_state EXIT
 
 # execute the shell expression
 {shell_expression}

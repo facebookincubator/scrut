@@ -3,15 +3,9 @@ source: src/generators/generator.rs
 assertion_line: 52
 expression: result
 ---
----
-total_timeout: 2m 3s
-defaults:
-  timeout: 3m 4s
----
-
 This is a test
 
-```scrut
+```mooncram {timeout: 3m 4s, wait: {timeout: 4m 5s, path: some-path}}
 $ the command
 new output
 ```

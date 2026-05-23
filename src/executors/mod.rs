@@ -31,7 +31,7 @@ pub mod subprocess_runner;
 pub mod util;
 
 lazy_static! {
-    static ref SHELL_PATH: String = if let Ok(value) = std::env::var("SCRUT_DEFAULT_SHELL") {
+    static ref SHELL_PATH: String = if let Ok(value) = std::env::var("MOON_CRAM_DEFAULT_SHELL") {
         value
     } else if cfg!(target_os = "windows") {
         "bash".to_string()

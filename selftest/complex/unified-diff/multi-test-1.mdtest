@@ -1,6 +1,6 @@
 # This is the test
 
-```scrut
+```mooncram
 $ echo -e "foo\n bar\n  baz"
 foo
  not-bar

@@ -2,7 +2,7 @@
 
 ## Full Schema validates a JSON object
 
-```scrut
+```mooncram
 % mode: jsonschema
 $ echo '{"foo": "bar", "other": 123}'
 ---
@@ -20,7 +20,7 @@ required:
 
 ## Schema URL spec is optional
 
-```scrut
+```mooncram
 % mode: jsonschema
 $ echo '{"foo": "bar", "other": 123}'
 ---
@@ -37,7 +37,7 @@ required:
 
 ## Unspecific attributes are valid
 
-```scrut
+```mooncram
 % mode: jsonschema
 $ echo '{"foo": "bar", "other": 123}'
 ---

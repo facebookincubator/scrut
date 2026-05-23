@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-//! The glob rule implementation for Scrut uses the [`wildmatch`] crate which
+//! The glob rule implementation for Moon Cram uses the [`wildmatch`] crate which
 //! supports simple matches against wildcards `*` and `?`
 //!
 //! Alternative crates that have been reviewed:

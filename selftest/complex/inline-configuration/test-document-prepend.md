@@ -2,14 +2,14 @@
 
 Tests in this file validate that the `prepend` configuration and the respective `--prepend-test-file-paths` command line parameter act as expected.
 
-```scrut
-$ alias scrut_test='$SCRUT_BIN test --match-markdown="*.mdtest"'
+```mooncram
+$ alias moon_cram_test='$MOON_CRAM_BIN test --match-markdown="*.mdtest"'
 ```
 
 ## Inline prepending
 
-```scrut
-$ scrut_test "$TESTDIR"/test-document-prepend.mdtest
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-document-prepend.mdtest
 // =============================================================================
 // @ *test-document-prepend.mdtest:8 (glob)
 // -----------------------------------------------------------------------------
@@ -28,8 +28,8 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 
 ## Inline and command line prepending
 
-```scrut
-$ scrut_test "$TESTDIR"/test-document-prepend.mdtest --prepend-test-file-paths "$TESTDIR"/test-document-prepended-2.mdtest
+```mooncram
+$ moon_cram_test "$TESTDIR"/test-document-prepend.mdtest --prepend-test-file-paths "$TESTDIR"/test-document-prepended-2.mdtest
 // =============================================================================
 // @ *test-document-prepend.mdtest:8 (glob)
 // -----------------------------------------------------------------------------

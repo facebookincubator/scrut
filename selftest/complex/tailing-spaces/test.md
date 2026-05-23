@@ -1,7 +1,7 @@
 # Tests show tailing white spaces
 
-```scrut
-$ $SCRUT_BIN test --match-markdown "*.mdtest" "$TESTDIR"/test.mdtest
+```mooncram
+$ $MOON_CRAM_BIN test --match-markdown "*.mdtest" "$TESTDIR"/test.mdtest
 // =============================================================================
 // @ *test.mdtest:15 (glob)
 // -----------------------------------------------------------------------------

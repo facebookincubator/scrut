@@ -1,5 +1,5 @@
 ---
-source: fbcode/clifoundation/scrut/src/renderers/structured.rs
+source: fbcode/clifoundation/mooncram/src/renderers/structured.rs
 assertion_line: 80
 expression: rendered
 ---

@@ -4,7 +4,7 @@ This file runs some failing tests and lastly skips with the custom skip code
 
 ## Run succeeding test
 
-```scrut {timeout: 5s}
+```mooncram {timeout: 5s}
 $ echo Before1 && sleep 0.5 && echo After1
 Before1
 After1
@@ -12,7 +12,7 @@ After1
 
 ## Run test that times out
 
-```scrut {timeout: 300ms}
+```mooncram {timeout: 300ms}
 $ echo Before2 && sleep 0.5 && echo After2
 Before2
 After2
@@ -22,7 +22,7 @@ No tests below this should run
 
 ## Run another succeeding test
 
-```scrut {timeout: 1s}
+```mooncram {timeout: 1s}
 $ echo Before3 && sleep 0.5 && echo After3
 Befre3
 After3
@@ -30,7 +30,7 @@ After3
 
 ## Run test that times out
 
-```scrut {timeout: 200ms}
+```mooncram {timeout: 200ms}
 $ echo Before4 && sleep 0.5 && echo After4
 Before4
 After4

@@ -4,8 +4,8 @@ This test proves that the `--work-directory` parameter runs in a single director
 
 ## Run test with temporary work directory
 
-```scrut
-$ "$SCRUT_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 // =============================================================================
 // @ *test.mdtest:4 (glob)
 // -----------------------------------------------------------------------------
@@ -23,26 +23,26 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 ```
 
 ## Copy the fixture
-```scrut
+```mooncram
 $ mkdir $TMPDIR/foo && touch $TMPDIR/foo/test-me.fixture
 ```
 
 ## Run test with custom work directory
 
-```scrut
-$ "$SCRUT_BIN" test --work-directory "$TMPDIR/foo" --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" test --work-directory "$TMPDIR/foo" --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 ## Run test with custom work directory (global)
 
-```scrut
-$ "$SCRUT_BIN" --work-directory "$TMPDIR/foo" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
+```mooncram
+$ "$MOON_CRAM_BIN" --work-directory "$TMPDIR/foo" test --match-markdown "*.mdtest" "$TESTDIR/test.mdtest"
 Result: 1 document(s) with 1 testcase(s): 1 succeeded, 0 failed and 0 skipped
 ```
 
 Ensure idempotent execution by cleaning up fixtures directory
 
-```scrut
+```mooncram
 $ rm -rf "$TESTDIR/fixtures/temp.*"
 ```

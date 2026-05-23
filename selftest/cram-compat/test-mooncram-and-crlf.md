@@ -1,6 +1,6 @@
-# Scrut doesn't care about CRLF
+# Moon Cram doesn't care about CRLF
 
-```scrut
+```mooncram
 $ echo -en 'Foo\r\nBar\r\nBaz\r\n'
 Foo
 Bar
