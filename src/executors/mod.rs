@@ -18,6 +18,7 @@
 //! - [`crate::executors::stateful_executor::StatefulExecutor`]
 
 use std::path::Path;
+use std::sync::LazyLock;
 
 pub mod bash_runner;
 pub mod bash_script_executor;
@@ -30,13 +31,13 @@ pub mod stateful_executor;
 pub mod subprocess_runner;
 pub mod util;
 
-lazy_static! {
-    static ref SHELL_PATH: String = if let Ok(value) = std::env::var("SCRUT_DEFAULT_SHELL") {
+static SHELL_PATH: LazyLock<String> = LazyLock::new(|| {
+    if let Ok(value) = std::env::var("SCRUT_DEFAULT_SHELL") {
         value
     } else if cfg!(target_os = "windows") {
         "bash".to_string()
     } else {
         "/bin/bash".to_string()
-    };
-    pub static ref DEFAULT_SHELL: &'static Path = Path::new(&*SHELL_PATH as &str);
-}
+    }
+});
+pub static DEFAULT_SHELL: LazyLock<&Path> = LazyLock::new(|| Path::new(&*SHELL_PATH as &str));

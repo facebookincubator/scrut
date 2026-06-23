@@ -6,6 +6,7 @@
  */
 
 use std::sync::Arc;
+use std::sync::LazyLock;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -20,15 +21,13 @@ use crate::validation::JsonSchemaBody;
 use crate::validation::OutputBody;
 use crate::validation::ValidationBody;
 
-lazy_static! {
-    /// Exit code expression matches an output line of the form:
-    ///
-    /// ```bnf
-    /// <exit-code-expression> ::= "[" <integer> "]"
-    /// ```
-    static ref EXIT_CODE_EXPRESSION: Regex =
-        Regex::new("^\\[([0-9]+)\\]$").expect("exit code expression must compile");
-}
+/// Exit code expression matches an output line of the form:
+///
+/// ```bnf
+/// <exit-code-expression> ::= "[" <integer> "]"
+/// ```
+static EXIT_CODE_EXPRESSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("^\\[([0-9]+)\\]$").expect("exit code expression must compile"));
 
 pub(super) enum CodeType {
     Config,

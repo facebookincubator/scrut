@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
 use anyhow::Result;
 use regex::Regex;
@@ -22,18 +23,18 @@ use crate::rules::registry::RuleRegistry;
 /// - `$$` produces a literal `$`
 /// - If a variable is not found in `env`, the original text is left unchanged
 pub fn interpolate_str(text: &str, env: &BTreeMap<String, String>) -> String {
-    lazy_static! {
-        static ref VAR_RE: Regex = Regex::new(
+    static VAR_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
             r"(?x)
-            \$                          # start with a $
-            (
-                \$ |                    # escaped $
-                \{([A-Za-z0-9]+)\} |    # wrapped variable ${VAR}
-                ([A-Za-z0-9_]+)         # plain variable $VAR
-            )"
+        \$                          # start with a $
+        (
+            \$ |                    # escaped $
+            \{([A-Za-z0-9]+)\} |    # wrapped variable ${VAR}
+            ([A-Za-z0-9_]+)         # plain variable $VAR
+        )",
         )
-        .unwrap();
-    }
+        .unwrap()
+    });
 
     VAR_RE
         .replace_all(text, |caps: &regex::Captures| {

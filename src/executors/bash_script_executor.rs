@@ -214,7 +214,7 @@ fn compile_testcase(testcases: &[&TestCase], context: &ExecutionContext) -> Resu
     let timeout = context
         .config
         .total_timeout
-        .unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
+        .unwrap_or(DEFAULT_TOTAL_TIMEOUT);
     if !timeout.is_zero() {
         config.timeout = Some(timeout);
     }

@@ -93,7 +93,7 @@ impl<'a> ExecutionSession<'a> {
         let timeout_duration = context
             .config
             .total_timeout
-            .unwrap_or(*DEFAULT_TOTAL_TIMEOUT);
+            .unwrap_or(DEFAULT_TOTAL_TIMEOUT);
         let timeout_at = if timeout_duration.is_zero() {
             None
         } else {

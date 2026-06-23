@@ -7,6 +7,7 @@
 
 use std::str::Lines;
 use std::sync::Arc;
+use std::sync::LazyLock;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -21,12 +22,10 @@ use crate::expectation::ExpectationMaker;
 use crate::parsers::line_parser::LineParser;
 use crate::testcase::TestCase;
 
-lazy_static! {
-    static ref PARAGRAPH_START: Regex =
-        Regex::new(r"^\p{L}+").expect("paragraph start expression must compile");
-    static ref HEADER_LINE: Regex =
-        Regex::new(r"^(#+\s+)(.+)$").expect("header start expression must compile");
-}
+static PARAGRAPH_START: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\p{L}+").expect("paragraph start expression must compile"));
+static HEADER_LINE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(#+\s+)(.+)$").expect("header start expression must compile"));
 
 pub const DEFAULT_MARKDOWN_LANGUAGES: &[&str] = &["scrut"];
 

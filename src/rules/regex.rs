@@ -6,6 +6,7 @@
  */
 
 use std::fmt::Display;
+use std::sync::LazyLock;
 
 use anyhow::Result;
 use regex::Captures;
@@ -56,12 +57,13 @@ impl RuleMaker for RegexRule {
     }
 }
 
-lazy_static! {
-    static ref VALID_REPETITION_QUANTIFIER: Regex = Regex::new("\\{([0-9]+(?:,[0-9]+)?)\\}")
-        .expect("valid repetition quantifier regex must compile");
-    static ref MOVED_REPETITION_QUANTIFIER: Regex =
-        Regex::new("<<<<(.+?)>>>>").expect("moved repetition quantifier regex must compile");
-}
+static VALID_REPETITION_QUANTIFIER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new("\\{([0-9]+(?:,[0-9]+)?)\\}")
+        .expect("valid repetition quantifier regex must compile")
+});
+static MOVED_REPETITION_QUANTIFIER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new("<<<<(.+?)>>>>").expect("moved repetition quantifier regex must compile")
+});
 
 /// Compensate for misuse of repetition quantifiers, where curly brackets are used
 /// as regular strings:

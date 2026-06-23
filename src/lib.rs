@@ -8,8 +8,6 @@
 /// Command Line Application Testing - with no fuzz
 #[macro_use]
 extern crate derivative;
-#[macro_use]
-extern crate lazy_static;
 
 pub mod config;
 pub mod debug;
