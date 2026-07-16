@@ -14,7 +14,7 @@ use crate::escaping::Escaper;
 use crate::output::Output;
 
 /// The state that describes what kind of timeout (i.e. per execution or over all)
-/// has occured.
+/// has occurred.
 #[derive(Debug, PartialEq)]
 pub enum ExecutionTimeout {
     /// Timeout of a specific execution (index: 0..n-1)
@@ -32,7 +32,7 @@ pub enum ExecutionTimeout {
 #[derivative(PartialEq)]
 pub enum ExecutionError {
     /// Returned if a specific [`crate::testcase::TestCase`] fails to execute.
-    /// This does not mean that that test iself failed, but that something went wrong.
+    /// This does not mean that that test itself failed, but that something went wrong.
     FailedExecution {
         /// The index of the failed testcase as it was passed to execute_all
         index: usize,
