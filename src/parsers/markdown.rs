@@ -273,7 +273,7 @@ impl Iterator for MarkdownIterator<'_> {
                 let config_lines: Vec<(usize, String)> = if let Some(config) = config
                     .strip_prefix('{')
                     .and_then(|s| s.strip_suffix('}'))
-                    .and_then(|s| if s.is_empty() { None } else { Some(s) })
+                    .filter(|&s| !s.is_empty())
                 {
                     vec![(self.line_index - 1, config.into())]
                 } else {
