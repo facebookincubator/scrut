@@ -39,7 +39,7 @@ shell-escape = "0.1.5"
 strip-ansi-escapes = "0.1.1"
 subprocess = "0.2.15"
 tempfile = "3.27.0"
-thiserror = "2.0.19"
+thiserror = "2.0.20"
 tracing = { version = "0.1.41", features = ["attributes", "valuable"] }
 tracing-subscriber = { version = "0.3.23", features = ["chrono", "env-filter", "json", "local-time", "parking_lot", "registry"] }
 unicode_categories = "0.1.1"
