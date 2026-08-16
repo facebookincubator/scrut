@@ -26,7 +26,7 @@ derivative = "2.2"
 derive_builder = { version = "0.20.2", features = ["alloc"] }
 dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 dunce = "1.0.5"
-globset = { version = "0.4.19", features = ["serde1"] }
+globset = { version = "0.4.20", features = ["serde1"] }
 humantime = "2.4.0"
 indicatif = { version = "0.18.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
 jsonschema = "0.17.0"
