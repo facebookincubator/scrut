@@ -21,10 +21,10 @@ path = "src/bin/main.rs"
 anyhow = "1.0.104"
 clap = { version = "4.6.2", features = ["derive", "env", "string", "unicode", "wrap_help"] }
 clap_complete = { version = "4.6.9", features = ["unstable-dynamic"] }
-console = "0.15.11"
+console = "0.16.4"
 derivative = "2.2"
 derive_builder = { version = "0.20.2", features = ["alloc"] }
-dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
+dialoguer = { version = "0.12.0", features = ["fuzzy-select"] }
 dunce = "1.0.5"
 globset = { version = "0.4.20", features = ["serde1"] }
 humantime = "2.4.0"
