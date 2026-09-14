@@ -50,7 +50,7 @@ wildmatch = "2.1"
 insta = { version = "1.48.0", features = ["colors", "console", "default", "glob", "globset", "json", "serde", "walkdir"] }
 
 [build-dependencies]
-vergen = "10.0.2"
+vergen = "10.0.3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nix = { version = "0.31.3", features = ["dir", "event", "hostname", "inotify", "ioctl", "mman", "mount", "net", "poll", "ptrace", "reboot", "resource", "sched", "signal", "term", "time", "user", "zerocopy"] }
