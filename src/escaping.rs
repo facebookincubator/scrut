@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::Context;
-use anyhow::Result;
 use clap::ValueEnum;
 use unicode_categories::UnicodeCategories;
 
@@ -152,13 +150,12 @@ fn has_unprintable_unicode(bytes: &[u8]) -> bool {
         .unwrap_or(true)
 }
 
-pub fn strip_colors(input: &str) -> Result<String> {
-    let stripped = strip_colors_bytes(input.as_bytes())?;
-    String::from_utf8(stripped).context("decode stripped bytes back to utf8 string")
+pub fn strip_colors(input: &str) -> String {
+    strip_ansi_escapes::strip_str(input)
 }
 
-pub fn strip_colors_bytes(input: &[u8]) -> Result<Vec<u8>> {
-    strip_ansi_escapes::strip(input).context("strip ansi escape sequences from rendered output")
+pub fn strip_colors_bytes(input: &[u8]) -> Vec<u8> {
+    strip_ansi_escapes::strip(input)
 }
 
 #[cfg(test)]

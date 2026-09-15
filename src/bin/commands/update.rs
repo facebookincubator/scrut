@@ -353,7 +353,7 @@ impl Args {
         pw.println("");
         pw.finish_and_clear();
 
-        self.print_summary(count_updated, count_skipped, count_unchanged)?;
+        self.print_summary(count_updated, count_skipped, count_unchanged);
 
         Ok(())
     }
@@ -446,13 +446,12 @@ impl Args {
         )
     }
 
-    fn print_summary(&self, updated: usize, skipped: usize, unchanged: usize) -> Result<()> {
+    fn print_summary(&self, updated: usize, skipped: usize, unchanged: usize) {
         let mut summary = self.render_summary(updated, skipped, unchanged);
         if self.global.no_color || !stdout().is_terminal() {
-            summary = strip_colors(&summary)?;
+            summary = strip_colors(&summary);
         }
         println!("{}", summary);
-        Ok(())
     }
 
     fn to_document_config(&self) -> DocumentConfig {

@@ -196,7 +196,7 @@ impl TestCase {
         };
 
         if self.config.strip_ansi_escaping == Some(true) {
-            Ok(Cow::Owned(strip_colors_bytes(&processed_output)?))
+            Ok(Cow::Owned(strip_colors_bytes(&processed_output)))
         } else {
             Ok(processed_output)
         }

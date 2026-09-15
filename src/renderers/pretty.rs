@@ -43,7 +43,7 @@ impl PrettyMonochromeRenderer {
 impl Renderer for PrettyMonochromeRenderer {
     fn render(&self, outcomes: &[&Outcome]) -> Result<String> {
         let rendered = self.0.render(outcomes)?;
-        strip_colors(&rendered)
+        Ok(strip_colors(&rendered))
     }
 }
 
