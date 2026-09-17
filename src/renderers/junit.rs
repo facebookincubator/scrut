@@ -23,6 +23,7 @@ use quick_xml::events::Event;
 use super::pretty::PrettyColorRenderer;
 use super::pretty::PrettyMonochromeRenderer;
 use super::renderer::Renderer;
+use crate::diff::DiffLine;
 use crate::escaping::Escaper;
 use crate::newline::BytesNewline;
 use crate::newline::SplitLinesByNewline;
@@ -218,7 +219,7 @@ fn to_case(outcome: &Outcome, classname: &str) -> Result<Case> {
     Ok(Case {
         name,
         classname: classname.to_string(),
-        line_number: outcome.testcase.line_number,
+        line_number: report_line(outcome),
         duration: outcome.output.duration,
         status: to_status(outcome)?,
         system_out: printable((&outcome.output.stdout).into(), &outcome.escaping),
@@ -339,6 +340,35 @@ fn report_path(location: &str, base_directory: Option<&Path>) -> String {
         // on unix a backslash is a legal filename character, not a separator
         rendered
     }
+}
+
+/// The document line an annotation should point at: the first expectation that
+/// did not match, so that a reviewer lands on the failing line instead of the
+/// top of the test case.
+///
+/// A test case occupies consecutive lines -- the shell expression, then one
+/// line per expectation -- so the line of expectation `index` follows from the
+/// test case's own line. Only a mismatched output expectation has a more
+/// precise line than the test case itself; everything else, including output
+/// that appeared where no expectation was left to match it, keeps pointing at
+/// the test case.
+fn report_line(outcome: &Outcome) -> usize {
+    let line_number = outcome.testcase.line_number;
+    let Err(TestCaseError::ValidationFailed(ValidationFailure::MalformedOutput(diff))) =
+        &outcome.result
+    else {
+        return line_number;
+    };
+
+    diff.lines
+        .iter()
+        .find_map(|line| match line {
+            DiffLine::UnmatchedExpectation { index, .. } => {
+                Some(line_number + outcome.testcase.shell_expression_lines() + index)
+            }
+            _ => None,
+        })
+        .unwrap_or(line_number)
 }
 
 /// The directory part of an already report-formatted location, or `None` for a
@@ -552,6 +582,8 @@ mod tests {
 
     use super::JunitRenderer;
     use super::is_legal_xml_char;
+    use crate::diff::Diff;
+    use crate::diff::DiffLine;
     use crate::escaping::Escaper;
     use crate::outcome::Outcome;
     use crate::output::ExitStatus;
@@ -563,6 +595,7 @@ mod tests {
     use crate::testcase::TestCaseError;
     use crate::validation::OutputBody;
     use crate::validation::ValidationBody;
+    use crate::validation::ValidationFailure;
 
     /// What a rendered report contains, recovered by parsing it back
     #[derive(Default)]
@@ -957,6 +990,67 @@ mod tests {
                 "{reason}"
             );
         }
+    }
+
+    /// A malformed-output failure whose expectation at `unmatched_index` did
+    /// not match, for a test case whose shell expression spans `command_lines`
+    fn malformed_output(unmatched_index: usize, command_lines: usize) -> Outcome {
+        let mut outcome = outcome(
+            Some("file.md"),
+            "the title",
+            10,
+            timed(("actual\n", "", Some(0)), 10),
+            Err(TestCaseError::ValidationFailed(
+                ValidationFailure::MalformedOutput(Diff::new(vec![
+                    DiffLine::UnmatchedExpectation {
+                        index: unmatched_index,
+                        expectation: test_expectation!("equal", "expected"),
+                    },
+                ])),
+            )),
+        );
+        outcome.testcase.shell_expression = vec!["echo actual"; command_lines].join("\n");
+        outcome
+    }
+
+    #[test]
+    fn test_failure_points_at_the_expectation_that_did_not_match() {
+        // test case on line 10, a single-line command, so expectations start on
+        // line 11 and the third of them is on line 13
+        let rendered = render(&[malformed_output(2, 1)]).expect("rendering succeeds");
+        assert!(
+            rendered.contains(r#"line="13""#),
+            "annotation points at the failing expectation, not the test case: {rendered}"
+        );
+    }
+
+    #[test]
+    fn test_multiline_command_shifts_the_expectation_line() {
+        // the command now occupies lines 10 to 12, so expectations start on 13
+        let rendered = render(&[malformed_output(0, 3)]).expect("rendering succeeds");
+        assert!(
+            rendered.contains(r#"line="13""#),
+            "continuation lines of the command are counted: {rendered}"
+        );
+    }
+
+    #[test]
+    fn test_non_output_failures_keep_the_test_case_line() {
+        let rendered = render(&[outcome(
+            Some("file.md"),
+            "the title",
+            10,
+            timed(("", "", Some(3)), 10),
+            Err(TestCaseError::InvalidExitCode {
+                actual: 3,
+                expected: 0,
+            }),
+        )])
+        .expect("rendering succeeds");
+        assert!(
+            rendered.contains(r#"line="10""#),
+            "a failure with no expectation to blame stays on the test case line: {rendered}"
+        );
     }
 
     #[test]

@@ -35,10 +35,14 @@ name="This test fails the output expectation"
 name="This test fails the exit code expectation"
 ```
 
+A failing output expectation points at the expectation itself (line 14), not at
+the test case it belongs to (line 13). The other two have no single expectation
+to blame, so they point at the test case.
+
 ```scrut
 $ grep -o 'line="[0-9]*"' report.xml
 line="6"
-line="13"
+line="14"
 line="20"
 ```
 
