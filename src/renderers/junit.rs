@@ -97,7 +97,9 @@ struct Case {
 /// uses, `detail` is the human readable explanation of the failure.
 enum Status {
     Success,
-    Skipped,
+    Skipped {
+        message: &'static str,
+    },
     Failure {
         kind: &'static str,
         message: String,
@@ -129,7 +131,7 @@ impl Counts {
             counts.time += case.duration.unwrap_or_default();
             match case.status {
                 Status::Success => {}
-                Status::Skipped => counts.skipped += 1,
+                Status::Skipped { .. } => counts.skipped += 1,
                 Status::Failure { .. } => counts.failures += 1,
                 Status::Error { .. } => counts.errors += 1,
             }
@@ -222,7 +224,15 @@ fn to_status(outcome: &Outcome) -> Result<Status> {
         ),
         TestCaseError::Timeout => ("timeout", "execution timed out".to_string()),
         TestCaseError::InternalError(err) => ("internal_error", err.to_string()),
-        TestCaseError::Skipped => return Ok(Status::Skipped),
+        // Scrut skips a test case either because the document opted out via the
+        // skip exit code, or because an earlier case timed out or tripped
+        // `fail_fast`. `TestCaseError::Skipped` does not say which, so the
+        // message states only what is true of both.
+        TestCaseError::Skipped => {
+            return Ok(Status::Skipped {
+                message: "test case was not executed",
+            });
+        }
     };
 
     // reuse the renderer that engineers already read in the terminal, so the
@@ -401,8 +411,11 @@ fn write_case<W: Write>(writer: &mut Writer<W>, case: &Case) -> io::Result<()> {
     element.write_inner_content(|writer| {
         match &case.status {
             Status::Success => {}
-            Status::Skipped => {
-                writer.create_element("skipped").write_empty()?;
+            Status::Skipped { message } => {
+                writer
+                    .create_element("skipped")
+                    .with_attribute(("message", *message))
+                    .write_empty()?;
             }
             Status::Failure {
                 kind,
