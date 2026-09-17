@@ -1,0 +1,11 @@
+---
+source: src/renderers/junit.rs
+assertion_line: 830
+expression: rendered
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.010">
+  <testsuite name="&lt;unknown&gt;" tests="1" failures="0" errors="0" skipped="0" time="0.010">
+    <testcase name="the title" classname="&lt;unknown&gt;" file="&lt;unknown&gt;" line="12" time="0.010"/>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,8 @@
+---
+source: src/renderers/junit.rs
+assertion_line: 817
+expression: rendered
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="0" failures="0" errors="0" skipped="0" time="0.000">
+</testsuites>

@@ -1,0 +1,21 @@
+---
+source: src/renderers/junit.rs
+assertion_line: 691
+expression: rendered
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="3" failures="0" errors="0" skipped="0" time="0.600">
+  <testsuite name="path/one.md" tests="2" failures="0" errors="0" skipped="0" time="0.400">
+    <testcase name="first" classname="path/one.md" file="path/one.md" line="3" time="0.100">
+      <system-out>out 1</system-out>
+    </testcase>
+    <testcase name="third" classname="path/one.md" file="path/one.md" line="9" time="0.300">
+      <system-out>out 3</system-out>
+    </testcase>
+  </testsuite>
+  <testsuite name="path/two.md" tests="1" failures="0" errors="0" skipped="0" time="0.200">
+    <testcase name="second" classname="path/two.md" file="path/two.md" line="4" time="0.200">
+      <system-out>out 2</system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

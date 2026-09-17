@@ -9,6 +9,7 @@
 //! executions.
 
 pub mod diff;
+pub mod junit;
 pub mod outcome;
 pub mod pretty;
 pub mod renderer;

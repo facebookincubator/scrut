@@ -30,6 +30,7 @@ globset = { version = "0.4.20", features = ["serde1"] }
 humantime = "2.4.0"
 indicatif = { version = "0.18.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
 jsonschema = "0.17.0"
+quick-xml = { version = "0.42.0", features = ["overlapped-lists", "serialize"] }
 rand = "0.10.2"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive", "rc"] }

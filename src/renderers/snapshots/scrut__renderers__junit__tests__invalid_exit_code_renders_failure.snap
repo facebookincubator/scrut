@@ -1,0 +1,30 @@
+---
+source: src/renderers/junit.rs
+assertion_line: 623
+expression: rendered
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="1" errors="0" skipped="0" time="0.250">
+  <testsuite name="path/file.md" tests="1" failures="1" errors="0" skipped="0" time="0.250">
+    <testcase name="the title" classname="path/file.md" file="path/file.md" line="12" time="0.250">
+      <failure type="invalid_exit_code" message="unexpected exit code: expected 0, but got 123">// =============================================================================
+// @ path/file.md:12
+// -----------------------------------------------------------------------------
+// # the title
+// -----------------------------------------------------------------------------
+// $ the command
+// =============================================================================
+
+unexpected exit code
+  expected: 0
+  actual:   123
+
+## STDOUT
+#&gt; the stdout
+## STDERR
+#&gt; the stderr</failure>
+      <system-out>the stdout</system-out>
+      <system-err>the stderr</system-err>
+    </testcase>
+  </testsuite>
+</testsuites>
