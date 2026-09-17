@@ -99,6 +99,7 @@ impl Executor for BashScriptExecutor {
                         stdout: remove_dividers_from_output(&output.stdout),
                         detached_process: None,
                         captured_env: BTreeMap::new(),
+                        duration: output.duration,
                     }],
                 ));
             }
@@ -123,6 +124,9 @@ impl Executor for BashScriptExecutor {
                     exit_code: ExitStatus::Code(exit_code),
                     detached_process: None,
                     captured_env: BTreeMap::new(),
+                    // the whole document runs in one shell process, so the
+                    // elapsed time cannot be attributed per testcase
+                    duration: None,
                 });
                 Ok(())
             },

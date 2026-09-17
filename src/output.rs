@@ -49,6 +49,11 @@ pub struct Output {
     /// Environment variables captured from the shell after execution.
     /// Used for interpolation of expectations.
     pub captured_env: BTreeMap<String, String>,
+
+    /// How long the execution took. `None` when the execution time cannot be
+    /// attributed to this single output, as is the case for the Cram executor
+    /// that runs a whole document in one shell process.
+    pub duration: Option<Duration>,
 }
 
 impl PartialEq for Output {
@@ -101,6 +106,7 @@ impl Default for Output {
             exit_code: ExitStatus::Unknown,
             detached_process: None,
             captured_env: BTreeMap::new(),
+            duration: None,
         }
     }
 }
@@ -110,11 +116,13 @@ impl Serialize for Output {
     where
         S: serde::Serializer,
     {
-        let count = if self.detached_process.is_some() {
-            5
-        } else {
-            3
-        };
+        let mut count = 3;
+        if self.detached_process.is_some() {
+            count += 2;
+        }
+        if self.duration.is_some() {
+            count += 1;
+        }
         let mut map = serializer.serialize_map(Some(count))?;
         map.serialize_entry("exit_code", &self.exit_code.to_string())?;
         map.serialize_entry("stdout", &lossy_string!((&self.stdout).into()))?;
@@ -122,6 +130,9 @@ impl Serialize for Output {
         if let Some(ref detached_process) = self.detached_process {
             map.serialize_entry("detached_process_pid", &detached_process.pid)?;
             map.serialize_entry("detached_process_signal", &detached_process.signal)?;
+        }
+        if let Some(duration) = self.duration {
+            map.serialize_entry("duration_ms", &duration.as_millis())?;
         }
         map.end()
     }
@@ -138,6 +149,7 @@ impl<T: ToString, U: ToString> From<(T, U, Option<i32>)> for Output {
             },
             detached_process: None,
             captured_env: BTreeMap::new(),
+            duration: None,
         }
     }
 }
@@ -156,6 +168,7 @@ impl From<Duration> for Output {
             exit_code: ExitStatus::Timeout(timeout),
             detached_process: None,
             captured_env: BTreeMap::new(),
+            duration: None,
         }
     }
 }
@@ -168,6 +181,7 @@ impl From<ExitStatus> for Output {
             exit_code: status,
             detached_process: None,
             captured_env: BTreeMap::new(),
+            duration: None,
         }
     }
 }

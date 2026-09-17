@@ -11,6 +11,7 @@ use std::io::Seek;
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -86,6 +87,7 @@ impl Runner for SubprocessRunner {
                 .stdin(Redirection::Pipe);
         }
 
+        let started = Instant::now();
         let mut process = exec.detached().popen().context("start process")?;
         let span = debug_span!("process", pid = ?process.pid());
         let _s = span.enter();
@@ -105,6 +107,7 @@ impl Runner for SubprocessRunner {
             return Ok(Output {
                 exit_code: OutputExitStatus::Detached,
                 detached_process,
+                duration: Some(started.elapsed()),
                 ..Default::default()
             });
         }
@@ -167,6 +170,7 @@ impl Runner for SubprocessRunner {
             exit_code,
             detached_process: None,
             captured_env: BTreeMap::new(),
+            duration: Some(started.elapsed()),
         })
     }
 }
