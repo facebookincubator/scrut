@@ -439,7 +439,9 @@ impl Args {
             ScrutRenderer::Diff => Box::<DiffRenderer>::default(),
             ScrutRenderer::Json => Box::<JsonRenderer>::default(),
             ScrutRenderer::Yaml => Box::<YamlRenderer>::default(),
-            ScrutRenderer::Junit => Box::<JunitRenderer>::default(),
+            ScrutRenderer::Junit => {
+                Box::new(JunitRenderer::new().with_base_directory(current_directory.clone()))
+            }
         };
 
         info!(

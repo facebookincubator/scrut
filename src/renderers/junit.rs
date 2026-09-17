@@ -8,6 +8,8 @@
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -33,17 +35,29 @@ const UNKNOWN_LOCATION: &str = "<unknown>";
 /// Renders outcomes as JUnit XML, the report format that CI test result
 /// collectors (GitHub Actions, Jenkins, GitLab, ..) consume.
 #[derive(Default)]
-pub struct JunitRenderer;
+pub struct JunitRenderer {
+    base_directory: Option<PathBuf>,
+}
 
 impl JunitRenderer {
     pub fn new() -> Self {
-        Self
+        Self::default()
+    }
+
+    /// Report document paths relative to `directory`. Annotation tooling maps
+    /// the `file` attribute onto files in the repository, which only works for
+    /// paths relative to the checkout -- but Scrut reports a document wherever
+    /// the invocation pointed at it, which may be absolute or reach out of the
+    /// working directory.
+    pub fn with_base_directory(mut self, directory: PathBuf) -> Self {
+        self.base_directory = Some(directory);
+        self
     }
 }
 
 impl Renderer for JunitRenderer {
     fn render(&self, outcomes: &[&Outcome]) -> Result<String> {
-        let suites = to_suites(outcomes)?;
+        let suites = to_suites(outcomes, self.base_directory.as_deref())?;
         let totals = Counts::of(suites.iter().flat_map(|suite| &suite.testcases));
 
         let mut writer = Writer::new_with_indent(Vec::new(), b' ', 2);
@@ -136,13 +150,14 @@ impl Counts {
 
 /// Groups outcomes into one suite per test document, preserving the order in
 /// which the documents were executed
-fn to_suites(outcomes: &[&Outcome]) -> Result<Vec<Suite>> {
+fn to_suites(outcomes: &[&Outcome], base_directory: Option<&Path>) -> Result<Vec<Suite>> {
     let mut suites: Vec<Suite> = vec![];
     for outcome in outcomes {
-        let name = attribute_text(
-            outcome.location.as_deref().unwrap_or(UNKNOWN_LOCATION),
-            &outcome.escaping,
-        );
+        let location = match outcome.location {
+            Some(ref location) => report_path(location, base_directory),
+            None => UNKNOWN_LOCATION.to_string(),
+        };
+        let name = attribute_text(&location, &outcome.escaping);
         let case = to_case(outcome, &name)?;
         match suites.iter_mut().find(|suite| suite.name == name) {
             Some(suite) => suite.testcases.push(case),
@@ -252,6 +267,33 @@ fn deduplicate_names(suite: &mut Suite) {
             counter += 1;
         };
         case.name = name;
+    }
+}
+
+/// Renders a document location for the report: relative to the base directory
+/// when it sits underneath it, and always with `/` separators, since that is
+/// what consumers expect regardless of the platform the tests ran on. A
+/// location that does not sit under the base directory is reported unchanged --
+/// a wrong relative path would be worse than an honest absolute one.
+///
+/// The comparison is lexical, on path components, so `.` segments and trailing
+/// separators do not throw it off. It does not touch the filesystem, which
+/// leaves one case unhandled: a document reached through a different symlink
+/// than the one the working directory was resolved to shares no prefix and so
+/// keeps its absolute path. Resolving that would mean canonicalizing inside the
+/// renderer, which is filesystem IO that can fail, that would make rendering
+/// non-deterministic, and that on Windows yields `\\?\` paths no consumer wants.
+fn report_path(location: &str, base_directory: Option<&Path>) -> String {
+    let path = Path::new(location);
+    let relative = base_directory
+        .and_then(|base| path.strip_prefix(base).ok())
+        .unwrap_or(path);
+    let rendered = relative.display().to_string();
+    if cfg!(windows) {
+        rendered.replace('\\', "/")
+    } else {
+        // on unix a backslash is a legal filename character, not a separator
+        rendered
     }
 }
 
@@ -406,6 +448,8 @@ fn write_stream<W: Write>(writer: &mut Writer<W>, element: &str, content: &str) 
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::path::Path;
+    use std::path::PathBuf;
     use std::time::Duration;
 
     use anyhow::Result;
@@ -772,6 +816,102 @@ mod tests {
             "testcase without a duration carries no time attribute: {testcase}"
         );
         insta::assert_snapshot!(rendered);
+    }
+
+    #[test]
+    fn test_report_path_strips_lexically() {
+        let tests = [
+            (
+                "/repo/checkout",
+                "/repo/checkout/tests/file.md",
+                "tests/file.md",
+                "a path under the base directory is made relative",
+            ),
+            (
+                "/repo/checkout/",
+                "/repo/checkout/tests/file.md",
+                "tests/file.md",
+                "a trailing separator on the base directory makes no difference",
+            ),
+            (
+                "/repo/checkout",
+                "/repo/checkout/./tests/file.md",
+                "tests/file.md",
+                "a `.` segment makes no difference",
+            ),
+            (
+                "/repo/checkout",
+                "/repo/checkout/tests/../tests/file.md",
+                "tests/../tests/file.md",
+                "a `..` segment is kept, since dropping it would change which file the path names",
+            ),
+            (
+                "/repo/checkout",
+                "tests/file.md",
+                "tests/file.md",
+                "an already relative path is left alone",
+            ),
+            (
+                "/repo/checkout",
+                "/elsewhere/file.md",
+                "/elsewhere/file.md",
+                "a path outside the base directory keeps its absolute form",
+            ),
+        ];
+
+        for (base, location, expected, reason) in tests {
+            assert_eq!(
+                expected,
+                &super::report_path(location, Some(Path::new(base))),
+                "{reason}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_paths_are_reported_relative_to_the_base_directory() {
+        let outcomes = [outcome(
+            Some("/repo/checkout/tests/cases/file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )];
+        let rendered = JunitRenderer::new()
+            .with_base_directory(PathBuf::from("/repo/checkout"))
+            .render(&outcomes.iter().collect::<Vec<_>>())
+            .expect("rendering succeeds");
+        parse_report(&rendered);
+
+        assert!(
+            rendered.contains(r#"file="tests/cases/file.md""#),
+            "path is reported relative to the base directory: {rendered}"
+        );
+        assert!(
+            !rendered.contains("/repo/checkout"),
+            "no absolute path leaks into the report: {rendered}"
+        );
+    }
+
+    #[test]
+    fn test_paths_outside_the_base_directory_are_left_alone() {
+        let outcomes = [outcome(
+            Some("/elsewhere/file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )];
+        let rendered = JunitRenderer::new()
+            .with_base_directory(PathBuf::from("/repo/checkout"))
+            .render(&outcomes.iter().collect::<Vec<_>>())
+            .expect("rendering succeeds");
+        parse_report(&rendered);
+
+        assert!(
+            rendered.contains(r#"file="/elsewhere/file.md""#),
+            "a path that is not under the base directory is reported unchanged: {rendered}"
+        );
     }
 
     #[test]
