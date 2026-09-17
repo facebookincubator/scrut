@@ -13,6 +13,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Result;
+use chrono::DateTime;
+use chrono::Local;
 use quick_xml::Writer;
 use quick_xml::events::BytesDecl;
 use quick_xml::events::BytesText;
@@ -37,11 +39,31 @@ const UNKNOWN_LOCATION: &str = "<unknown>";
 #[derive(Default)]
 pub struct JunitRenderer {
     base_directory: Option<PathBuf>,
+    timestamp: Option<DateTime<Local>>,
 }
 
 impl JunitRenderer {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Stamp every `<testsuite>` with `at`. One time is used for all of them:
+    /// Scrut records how long each test case took but not when it began, so
+    /// there is no per-document start time to report.
+    pub fn with_timestamp(mut self, at: DateTime<Local>) -> Self {
+        self.timestamp = Some(at);
+        self
+    }
+
+    /// [`Self::with_timestamp`] reading the clock, so that callers do not need
+    /// a dependency on `chrono` of their own. Tests pass a fixed time instead.
+    ///
+    /// The clock is read here, when the renderer is built, not when the report
+    /// is written. The CLI builds the renderer once the whole run is over, so
+    /// the stamp marks the end of the run.
+    pub fn with_current_timestamp(self) -> Self {
+        let now = Local::now();
+        self.with_timestamp(now)
     }
 
     /// Report document paths relative to `directory`. Annotation tooling maps
@@ -57,7 +79,7 @@ impl JunitRenderer {
 
 impl Renderer for JunitRenderer {
     fn render(&self, outcomes: &[&Outcome]) -> Result<String> {
-        let suites = to_suites(outcomes, self.base_directory.as_deref())?;
+        let suites = to_suites(outcomes, self.base_directory.as_deref(), self.timestamp)?;
         let totals = Counts::of(suites.iter().flat_map(|suite| &suite.testcases));
 
         let mut writer = Writer::new_with_indent(Vec::new(), b' ', 2);
@@ -83,6 +105,7 @@ struct Suite {
     /// Java package the attribute was designed for. Report viewers group by it.
     package: Option<String>,
     properties: Vec<(String, String)>,
+    timestamp: Option<DateTime<Local>>,
     testcases: Vec<Case>,
 }
 
@@ -156,7 +179,11 @@ impl Counts {
 
 /// Groups outcomes into one suite per test document, preserving the order in
 /// which the documents were executed
-fn to_suites(outcomes: &[&Outcome], base_directory: Option<&Path>) -> Result<Vec<Suite>> {
+fn to_suites(
+    outcomes: &[&Outcome],
+    base_directory: Option<&Path>,
+    timestamp: Option<DateTime<Local>>,
+) -> Result<Vec<Suite>> {
     let mut suites: Vec<Suite> = vec![];
     for outcome in outcomes {
         let location = match outcome.location {
@@ -171,6 +198,7 @@ fn to_suites(outcomes: &[&Outcome], base_directory: Option<&Path>) -> Result<Vec
                 package: package_of(&name),
                 name,
                 properties: vec![("scrut.format".to_string(), outcome.format.to_string())],
+                timestamp,
                 testcases: vec![case],
             }),
         }
@@ -389,6 +417,14 @@ fn write_suite<W: Write>(writer: &mut Writer<W>, suite: &Suite) -> io::Result<()
     if let Some(ref package) = suite.package {
         attrs.push(("package", package.clone()));
     }
+    if let Some(timestamp) = suite.timestamp {
+        // local time without an offset, as the Ant schema's `timestamp` pattern
+        // requires -- appending one makes the report fail strict validation
+        attrs.push((
+            "timestamp",
+            timestamp.format("%Y-%m-%dT%H:%M:%S").to_string(),
+        ));
+    }
     attrs.extend(Counts::of(&suite.testcases).attributes());
 
     writer
@@ -507,6 +543,8 @@ mod tests {
 
     use anyhow::Result;
     use anyhow::anyhow;
+    use chrono::Local;
+    use chrono::TimeZone;
     use quick_xml::Reader;
     use quick_xml::XmlVersion;
     use quick_xml::events::BytesStart;
@@ -919,6 +957,47 @@ mod tests {
                 "{reason}"
             );
         }
+    }
+
+    #[test]
+    fn test_suite_carries_timestamp_when_given() {
+        let at = Local
+            .with_ymd_and_hms(2026, 9, 17, 13, 45, 6)
+            .single()
+            .expect("unambiguous local time");
+        let outcomes = [outcome(
+            Some("file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )];
+        let rendered = JunitRenderer::new()
+            .with_timestamp(at)
+            .render(&outcomes.iter().collect::<Vec<_>>())
+            .expect("rendering succeeds");
+        parse_report(&rendered);
+
+        assert!(
+            rendered.contains(r#"timestamp="2026-09-17T13:45:06""#),
+            "timestamp is local time with no offset, per the Ant schema: {rendered}"
+        );
+    }
+
+    #[test]
+    fn test_suite_has_no_timestamp_by_default() {
+        let rendered = render(&[outcome(
+            Some("file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )])
+        .expect("rendering succeeds");
+        assert!(
+            !rendered.contains("timestamp="),
+            "no timestamp is invented when the caller did not supply one: {rendered}"
+        );
     }
 
     #[test]
