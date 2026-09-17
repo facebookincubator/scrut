@@ -1,0 +1,21 @@
+# Document for the JUnit renderer
+
+## This test passes
+
+```scrut
+$ echo foo
+foo
+```
+
+## This test fails the output expectation
+
+```scrut
+$ echo actual
+expected
+```
+
+## This test fails the exit code expectation
+
+```scrut
+$ ( exit 3 )
+```

@@ -42,6 +42,7 @@ pub enum ScrutRenderer {
     Diff,
     Json,
     Yaml,
+    Junit,
 }
 
 #[derive(Parser, Debug)]

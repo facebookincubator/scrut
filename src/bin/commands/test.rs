@@ -27,6 +27,7 @@ use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use scrut::parsers::parser::ParserType;
 use scrut::renderers::diff::DiffRenderer;
+use scrut::renderers::junit::JunitRenderer;
 use scrut::renderers::pretty::DEFAULT_MULTILINE_MATCHED_LINES;
 use scrut::renderers::pretty::DEFAULT_SURROUNDING_LINES;
 use scrut::renderers::pretty::PrettyColorRenderer;
@@ -97,8 +98,8 @@ pub struct Args {
     match_markdown: String,
 
     /// Which renderer to use for generating the result, with `diff` being the
-    /// best choice for human consumption and `json` or `yaml` for further
-    /// machine processing.
+    /// best choice for human consumption, `json` or `yaml` for further
+    /// machine processing and `junit` for CI test result collectors.
     #[clap(long, short, default_value = "auto", value_enum)]
     renderer: ScrutRenderer,
 
@@ -438,6 +439,7 @@ impl Args {
             ScrutRenderer::Diff => Box::<DiffRenderer>::default(),
             ScrutRenderer::Json => Box::<JsonRenderer>::default(),
             ScrutRenderer::Yaml => Box::<YamlRenderer>::default(),
+            ScrutRenderer::Junit => Box::<JunitRenderer>::default(),
         };
 
         info!(
