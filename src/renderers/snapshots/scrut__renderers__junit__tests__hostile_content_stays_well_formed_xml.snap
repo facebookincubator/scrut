@@ -1,11 +1,14 @@
 ---
 source: src/renderers/junit.rs
-assertion_line: 811
+assertion_line: 998
 expression: rendered
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="1" failures="0" errors="0" skipped="0" time="0.005">
-  <testsuite name="path/&lt;dir&gt; &amp; &quot;quoted&quot;/file.md" tests="1" failures="0" errors="0" skipped="0" time="0.005">
+  <testsuite name="path/&lt;dir&gt; &amp; &quot;quoted&quot;/file.md" package="path/&lt;dir&gt; &amp; &quot;quoted&quot;" tests="1" failures="0" errors="0" skipped="0" time="0.005">
+    <properties>
+      <property name="scrut.format" value="markdown"/>
+    </properties>
     <testcase name="a &quot;quoted&quot; &lt;title&gt; &amp; a bell \a and an escape \x1b" classname="path/&lt;dir&gt; &amp; &quot;quoted&quot;/file.md" file="path/&lt;dir&gt; &amp; &quot;quoted&quot;/file.md" line="12" time="0.005">
       <system-out>plain line
 markup &lt; &gt; &amp; &quot; &apos; and a ]]&gt; terminator

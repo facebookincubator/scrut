@@ -1,11 +1,14 @@
 ---
 source: src/renderers/junit.rs
-assertion_line: 636
+assertion_line: 740
 expression: rendered
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="1" failures="0" errors="1" skipped="0" time="0.900">
-  <testsuite name="path/file.md" tests="1" failures="0" errors="1" skipped="0" time="0.900">
+  <testsuite name="path/file.md" package="path" tests="1" failures="0" errors="1" skipped="0" time="0.900">
+    <properties>
+      <property name="scrut.format" value="markdown"/>
+    </properties>
     <testcase name="the title" classname="path/file.md" file="path/file.md" line="12" time="0.900">
       <error type="timeout" message="execution timed out">// =============================================================================
 // @ path/file.md:12

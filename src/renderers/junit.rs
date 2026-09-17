@@ -79,6 +79,10 @@ impl Renderer for JunitRenderer {
 /// A `<testsuite>`: all testcases of one test document
 struct Suite {
     name: String,
+    /// Directory the document lives in, the closest analogue Scrut has to the
+    /// Java package the attribute was designed for. Report viewers group by it.
+    package: Option<String>,
+    properties: Vec<(String, String)>,
     testcases: Vec<Case>,
 }
 
@@ -164,7 +168,9 @@ fn to_suites(outcomes: &[&Outcome], base_directory: Option<&Path>) -> Result<Vec
         match suites.iter_mut().find(|suite| suite.name == name) {
             Some(suite) => suite.testcases.push(case),
             None => suites.push(Suite {
+                package: package_of(&name),
                 name,
+                properties: vec![("scrut.format".to_string(), outcome.format.to_string())],
                 testcases: vec![case],
             }),
         }
@@ -307,6 +313,15 @@ fn report_path(location: &str, base_directory: Option<&Path>) -> String {
     }
 }
 
+/// The directory part of an already report-formatted location, or `None` for a
+/// document that sits at the root of the run and so has nothing to group under.
+fn package_of(location: &str) -> Option<String> {
+    location
+        .rsplit_once('/')
+        .map(|(directory, _)| directory.to_string())
+        .filter(|directory| !directory.is_empty())
+}
+
 /// Renders text so that it is valid XML character data. XML 1.0 forbids most
 /// control characters outright -- escaping them as entities does not make them
 /// legal -- and captured output need not even be valid UTF-8. Scrut's escaper
@@ -371,16 +386,41 @@ fn attributes<'a>(pairs: &'a [(&'static str, String)]) -> Vec<(&'static str, &'a
 
 fn write_suite<W: Write>(writer: &mut Writer<W>, suite: &Suite) -> io::Result<()> {
     let mut attrs = vec![("name", suite.name.clone())];
+    if let Some(ref package) = suite.package {
+        attrs.push(("package", package.clone()));
+    }
     attrs.extend(Counts::of(&suite.testcases).attributes());
 
     writer
         .create_element("testsuite")
         .with_attributes(attributes(&attrs))
         .write_inner_content(|writer| {
+            write_properties(writer, &suite.properties)?;
             suite
                 .testcases
                 .iter()
                 .try_for_each(|case| write_case(writer, case))
+        })?;
+    Ok(())
+}
+
+fn write_properties<W: Write>(
+    writer: &mut Writer<W>,
+    properties: &[(String, String)],
+) -> io::Result<()> {
+    if properties.is_empty() {
+        return Ok(());
+    }
+    writer
+        .create_element("properties")
+        .write_inner_content(|writer| {
+            properties.iter().try_for_each(|(key, value)| {
+                writer
+                    .create_element("property")
+                    .with_attributes([("name", key.as_str()), ("value", value.as_str())])
+                    .write_empty()
+                    .map(|_| ())
+            })
         })?;
     Ok(())
 }
@@ -879,6 +919,43 @@ mod tests {
                 "{reason}"
             );
         }
+    }
+
+    #[test]
+    fn test_suite_carries_package_and_properties() {
+        let rendered = render(&[outcome(
+            Some("tests/cases/file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )])
+        .expect("rendering succeeds");
+        assert!(
+            rendered.contains(r#"package="tests/cases""#),
+            "suite is grouped by the directory the document lives in: {rendered}"
+        );
+        assert!(
+            rendered.contains(r#"<property name="scrut.format" value="markdown"/>"#),
+            "suite records the format the document was written in: {rendered}"
+        );
+        insta::assert_snapshot!(rendered);
+    }
+
+    #[test]
+    fn test_document_at_the_root_has_no_package() {
+        let rendered = render(&[outcome(
+            Some("file.md"),
+            "the title",
+            12,
+            timed(("", "", Some(0)), 10),
+            Ok(()),
+        )])
+        .expect("rendering succeeds");
+        assert!(
+            !rendered.contains("package="),
+            "a document with no directory is not given an empty package: {rendered}"
+        );
     }
 
     #[test]

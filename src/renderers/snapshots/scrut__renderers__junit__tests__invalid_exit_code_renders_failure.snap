@@ -1,11 +1,14 @@
 ---
 source: src/renderers/junit.rs
-assertion_line: 623
+assertion_line: 727
 expression: rendered
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="1" failures="1" errors="0" skipped="0" time="0.250">
-  <testsuite name="path/file.md" tests="1" failures="1" errors="0" skipped="0" time="0.250">
+  <testsuite name="path/file.md" package="path" tests="1" failures="1" errors="0" skipped="0" time="0.250">
+    <properties>
+      <property name="scrut.format" value="markdown"/>
+    </properties>
     <testcase name="the title" classname="path/file.md" file="path/file.md" line="12" time="0.250">
       <failure type="invalid_exit_code" message="unexpected exit code: expected 0, but got 123">// =============================================================================
 // @ path/file.md:12

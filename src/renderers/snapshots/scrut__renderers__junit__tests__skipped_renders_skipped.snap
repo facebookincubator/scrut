@@ -1,11 +1,14 @@
 ---
 source: src/renderers/junit.rs
-assertion_line: 724
+assertion_line: 766
 expression: rendered
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="1" failures="0" errors="0" skipped="1" time="0.000">
-  <testsuite name="path/file.md" tests="1" failures="0" errors="0" skipped="1" time="0.000">
+  <testsuite name="path/file.md" package="path" tests="1" failures="0" errors="0" skipped="1" time="0.000">
+    <properties>
+      <property name="scrut.format" value="markdown"/>
+    </properties>
     <testcase name="the title" classname="path/file.md" file="path/file.md" line="12">
       <skipped message="test case was not executed"/>
     </testcase>
