@@ -19,6 +19,7 @@ use crate::formatln;
 use crate::lossy_string;
 use crate::newline::SplitLinesByNewline;
 use crate::signal::KillSignal;
+use crate::validation::ValidationFailure;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct DetachedProcess {
@@ -54,6 +55,14 @@ pub struct Output {
     /// attributed to this single output, as is the case for the Cram executor
     /// that runs a whole document in one shell process.
     pub duration: Option<Duration>,
+
+    /// Pre-computed validation outcome from the executor (e.g. interactive
+    /// mode, which validates directives live against the PTY session).
+    ///
+    /// `Some` carries the executor's verdict: [`TestCase::validate`] reports it
+    /// when it indicates failure and skips re-validating the body otherwise.
+    /// `None` for output-mode testcases and successful interactive testcases.
+    pub validation_result: Option<ValidationFailure>,
 }
 
 impl PartialEq for Output {
@@ -62,6 +71,7 @@ impl PartialEq for Output {
             && self.stdout == other.stdout
             && self.exit_code == other.exit_code
             && self.detached_process == other.detached_process
+        // validation_result excluded (like captured_env)
     }
 }
 
@@ -91,9 +101,7 @@ impl Debug for Output {
         write!(
             f,
             "# STDOUT\n{}\n# STDERR\n{}\n# EXITCODE: {}\n",
-            stdout,
-            stderr,
-            &self.exit_code.to_string(),
+            stdout, stderr, self.exit_code,
         )
     }
 }
@@ -107,6 +115,7 @@ impl Default for Output {
             detached_process: None,
             captured_env: BTreeMap::new(),
             duration: None,
+            validation_result: None,
         }
     }
 }
@@ -123,6 +132,9 @@ impl Serialize for Output {
         if self.duration.is_some() {
             count += 1;
         }
+        if self.validation_result.is_some() {
+            count += 1;
+        }
         let mut map = serializer.serialize_map(Some(count))?;
         map.serialize_entry("exit_code", &self.exit_code.to_string())?;
         map.serialize_entry("stdout", &lossy_string!((&self.stdout).into()))?;
@@ -133,6 +145,9 @@ impl Serialize for Output {
         }
         if let Some(duration) = self.duration {
             map.serialize_entry("duration_ms", &duration.as_millis())?;
+        }
+        if let Some(ref validation_result) = self.validation_result {
+            map.serialize_entry("validation_result", validation_result)?;
         }
         map.end()
     }
@@ -150,6 +165,7 @@ impl<T: ToString, U: ToString> From<(T, U, Option<i32>)> for Output {
             detached_process: None,
             captured_env: BTreeMap::new(),
             duration: None,
+            validation_result: None,
         }
     }
 }
@@ -169,6 +185,7 @@ impl From<Duration> for Output {
             detached_process: None,
             captured_env: BTreeMap::new(),
             duration: None,
+            validation_result: None,
         }
     }
 }
@@ -182,6 +199,7 @@ impl From<ExitStatus> for Output {
             detached_process: None,
             captured_env: BTreeMap::new(),
             duration: None,
+            validation_result: None,
         }
     }
 }

@@ -171,6 +171,7 @@ impl Runner for SubprocessRunner {
             detached_process: None,
             captured_env: BTreeMap::new(),
             duration: Some(started.elapsed()),
+            validation_result: None,
         })
     }
 }

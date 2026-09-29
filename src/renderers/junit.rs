@@ -253,6 +253,10 @@ fn to_status(outcome: &Outcome) -> Result<Status> {
                 ),
             }
         }
+        TestCaseError::ValidationFailed(ValidationFailure::InteractiveFailed(_)) => (
+            "interactive_failed",
+            "interactive directives failed".to_string(),
+        ),
         TestCaseError::InvalidExitCode { actual, expected } => (
             "invalid_exit_code",
             format!("unexpected exit code: expected {expected}, but got {actual}"),
@@ -1199,6 +1203,7 @@ mod tests {
                 detached_process: None,
                 captured_env: BTreeMap::new(),
                 duration: Some(Duration::from_millis(5)),
+                validation_result: None,
             },
             Ok(()),
         );

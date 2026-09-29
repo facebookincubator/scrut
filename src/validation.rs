@@ -17,6 +17,8 @@ use serde::ser::SerializeMap;
 
 use crate::diff::Diff;
 use crate::expectation::Expectation;
+use crate::interactive::InteractiveDiff;
+use crate::interactive::InteractiveDirective;
 
 /// Mode-specific test body, replacing flat `expectations` + `interactive_directives`
 /// fields on [`crate::testcase::TestCase`].
@@ -26,6 +28,8 @@ pub enum ValidationBody {
     Output(OutputBody),
     /// JSON Schema mode: validate command output against a JSON Schema.
     JsonSchema(JsonSchemaBody),
+    /// Interactive mode: PTY directives executed against a live session.
+    Interactive(InteractiveBody),
 }
 
 impl Default for ValidationBody {
@@ -39,6 +43,7 @@ impl PartialEq for ValidationBody {
         match (self, other) {
             (Self::Output(a), Self::Output(b)) => a == b,
             (Self::JsonSchema(a), Self::JsonSchema(b)) => a == b,
+            (Self::Interactive(a), Self::Interactive(b)) => a == b,
             _ => false,
         }
     }
@@ -53,6 +58,8 @@ impl Serialize for ValidationBody {
             Self::Output(body) => body.expectations.serialize(serializer),
             // JSON Schema body is not serialized as expectations
             Self::JsonSchema(_) => serializer.serialize_none(),
+            // Interactive directives are not serialized (matching prior #[serde(skip)] behavior)
+            Self::Interactive(_) => serializer.serialize_none(),
         }
     }
 }
@@ -95,6 +102,13 @@ pub struct JsonSchemaFailure {
     pub schema_source: String,
 }
 
+/// Body for interactive-mode test cases.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct InteractiveBody {
+    /// PTY directives (WAIT, SEND_KEYS, ASSERT, WRITE) to execute.
+    pub directives: Vec<InteractiveDirective>,
+}
+
 /// Mode-specific validation failure, replacing separate `MalformedOutput` and
 /// `InteractiveFailed` variants on [`crate::testcase::TestCaseError`].
 #[derive(Clone, Debug)]
@@ -103,6 +117,8 @@ pub enum ValidationFailure {
     MalformedOutput(Diff),
     /// JSON Schema validation failed.
     JsonSchemaFailed(JsonSchemaFailure),
+    /// An interactive directive failed during execution.
+    InteractiveFailed(InteractiveDiff),
 }
 
 impl PartialEq for ValidationFailure {
@@ -110,6 +126,7 @@ impl PartialEq for ValidationFailure {
         match (self, other) {
             (Self::MalformedOutput(a), Self::MalformedOutput(b)) => a == b,
             (Self::JsonSchemaFailed(a), Self::JsonSchemaFailed(b)) => a == b,
+            (Self::InteractiveFailed(a), Self::InteractiveFailed(b)) => a == b,
             _ => false,
         }
     }
@@ -137,6 +154,12 @@ impl Serialize for ValidationFailure {
                 map.serialize_entry("kind", kind)?;
                 map.serialize_entry("errors", &failure.errors)?;
                 map.serialize_entry("output", &failure.output)?;
+                map.end()
+            }
+            Self::InteractiveFailed(diff) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("kind", "interactive_failed")?;
+                map.serialize_entry("diff", diff)?;
                 map.end()
             }
         }

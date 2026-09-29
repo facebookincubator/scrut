@@ -64,6 +64,9 @@ impl TestCase {
     /// outcome in regards to exit code and (STDOUT) output, or return an
     /// [`TestCaseError`]
     pub fn validate(&self, output: &Output) -> Result<()> {
+        // The exit code is validated for every output, including ones with a
+        // pre-computed `validation_result`: an interactive session that failed
+        // its directives *and* exited non-zero reports both, exit code first.
         if let ExitStatus::Code(exit_code) = output.exit_code {
             let expected = self.exit_code.unwrap_or(0);
             if exit_code != expected {
@@ -72,6 +75,19 @@ impl TestCase {
                     expected,
                 });
             }
+        }
+
+        // If the executor pre-computed a validation outcome (e.g. interactive
+        // mode), it takes precedence over re-validating the body.
+        if let Some(ref failure) = output.validation_result {
+            if match failure {
+                ValidationFailure::MalformedOutput(diff) => diff.has_differences(),
+                ValidationFailure::InteractiveFailed(diff) => diff.has_failures(),
+                ValidationFailure::JsonSchemaFailed(_) => true,
+            } {
+                return Err(TestCaseError::ValidationFailed(failure.clone()));
+            }
+            return Ok(());
         }
 
         match &self.body {
@@ -106,6 +122,11 @@ impl TestCase {
                 }
             }
             ValidationBody::JsonSchema(body) => self.validate_json_schema(body, output),
+            ValidationBody::Interactive(_) => {
+                // Interactive results are pre-computed; reaching here with
+                // validation_result == None means the testcase passed.
+                Ok(())
+            }
         }
     }
 
@@ -178,10 +199,12 @@ impl TestCase {
     }
 
     /// Returns the output expectations for this test case.
+    /// Returns an empty slice for interactive-mode test cases.
     pub fn expectations(&self) -> &[Expectation] {
         match &self.body {
             ValidationBody::Output(body) => &body.expectations,
             ValidationBody::JsonSchema(_) => &[],
+            ValidationBody::Interactive(_) => &[],
         }
     }
 

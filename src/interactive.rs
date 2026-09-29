@@ -109,6 +109,11 @@ pub struct InteractiveDiff {
 
 impl InteractiveDiff {
     /// Returns true if any directive failed.
+    ///
+    /// `Skipped` lines never fail on their own: the executor only emits them
+    /// after a failure (remaining directives after a failed one) or for a
+    /// conditional `SEND_KEYS` whose condition evaluated to false (keys
+    /// intentionally not sent). An all-`Skipped` diff therefore reports a pass.
     pub fn has_failures(&self) -> bool {
         self.lines
             .iter()

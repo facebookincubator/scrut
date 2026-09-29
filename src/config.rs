@@ -37,6 +37,10 @@ pub enum TestMode {
     /// validate it against a JSON Schema provided inline as YAML.
     #[serde(rename = "jsonschema")]
     JsonSchema,
+    /// Interactive validation mode: drive a PTY session with WAIT/SEND_KEYS/ASSERT
+    /// directives. Used for testing interactive CLI tools (menus, prompts, etc.).
+    /// Only available for Markdown tests.
+    Interactive,
 }
 
 /// The exit code that any test execution can return to skip all tests in one document
@@ -534,6 +538,7 @@ impl TestCaseConfig {
                 match mode {
                     TestMode::Output => "output",
                     TestMode::JsonSchema => "jsonschema",
+                    TestMode::Interactive => "interactive",
                 }
             ));
         }
@@ -552,6 +557,11 @@ impl TestCaseConfig {
     /// Returns true if this test case is configured for JSON Schema validation mode
     pub fn is_json_schema(&self) -> bool {
         matches!(self.mode, Some(TestMode::JsonSchema))
+    }
+
+    /// Returns true if this test case is configured for interactive mode
+    pub fn is_interactive(&self) -> bool {
+        matches!(self.mode, Some(TestMode::Interactive))
     }
 }
 

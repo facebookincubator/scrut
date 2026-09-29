@@ -100,6 +100,9 @@ impl OutcomeTestGenerator for Outcome {
                     ValidationFailure::JsonSchemaFailed(_) => {
                         bail!("cannot generate json_schema testcase")
                     }
+                    ValidationFailure::InteractiveFailed(_) => {
+                        bail!("cannot generate interactive testcase")
+                    }
                 },
                 TestCaseError::InvalidExitCode {
                     actual,

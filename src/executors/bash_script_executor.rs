@@ -100,6 +100,7 @@ impl Executor for BashScriptExecutor {
                         detached_process: None,
                         captured_env: BTreeMap::new(),
                         duration: output.duration,
+                        validation_result: None,
                     }],
                 ));
             }
@@ -127,6 +128,7 @@ impl Executor for BashScriptExecutor {
                     // the whole document runs in one shell process, so the
                     // elapsed time cannot be attributed per testcase
                     duration: None,
+                    validation_result: None,
                 });
                 Ok(())
             },

@@ -6,8 +6,10 @@
  */
 
 use anyhow::Result;
+use anyhow::bail;
 
 use crate::diff::Diff;
+use crate::interactive::InteractiveDiff;
 use crate::outcome::Outcome;
 use crate::testcase::TestCaseError;
 use crate::validation::JsonSchemaFailure;
@@ -46,6 +48,9 @@ pub(super) trait ErrorRenderer: Renderer {
             ValidationFailure::JsonSchemaFailed(failure) => {
                 self.render_json_schema_failed(outcome, failure)
             }
+            ValidationFailure::InteractiveFailed(diff) => {
+                self.render_interactive_failed(outcome, diff)
+            }
         }
     }
 
@@ -69,4 +74,12 @@ pub(super) trait ErrorRenderer: Renderer {
         outcome: &Outcome,
         failure: &JsonSchemaFailure,
     ) -> Result<String>;
+
+    fn render_interactive_failed(
+        &self,
+        _outcome: &Outcome,
+        _diff: &InteractiveDiff,
+    ) -> Result<String> {
+        bail!("interactive rendering not yet implemented")
+    }
 }
