@@ -54,6 +54,14 @@ impl Expectation {
     pub fn original_string(&self) -> String {
         self.original.clone()
     }
+
+    /// The expression text used for matching (without the rule kind suffix)
+    pub fn expression(&self) -> String {
+        // Take only the expression bytes from the rule directly: going through
+        // `Expectation::unmake()` would also clone the rule kind (and copy the
+        // flags) only to discard them.
+        String::from_utf8_lossy(&self.rule.unmake().1).to_string()
+    }
 }
 
 impl Display for Expectation {
