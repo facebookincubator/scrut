@@ -15,6 +15,7 @@
 //! - Cram file syntax: [`cram::CramParser`]
 
 pub mod cram;
+pub(crate) mod interactive_parser;
 pub(super) mod line_parser;
 pub mod markdown;
 pub mod parser;

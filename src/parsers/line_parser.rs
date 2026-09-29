@@ -16,7 +16,10 @@ use regex::Regex;
 use crate::config::TestCaseConfig;
 use crate::expectation::Expectation;
 use crate::expectation::ExpectationMaker;
+use crate::interactive::InteractiveDirective;
+use crate::parsers::interactive_parser::InteractiveBodyParser;
 use crate::testcase::TestCase;
+use crate::validation::InteractiveBody;
 use crate::validation::JsonSchemaBody;
 use crate::validation::OutputBody;
 use crate::validation::ValidationBody;
@@ -70,11 +73,11 @@ pub(super) struct LineParser {
     output_start_index: Option<usize>,
     default_config: TestCaseConfig,
     config: Option<TestCaseConfig>,
-    /// Whether the current testcase is in JSON Schema mode, determined when
-    /// the `$` command line is encountered (from fence config or `%` config).
     json_schema_mode: bool,
-    /// Accumulated body lines for JSON Schema mode.
     json_schema_lines: Vec<String>,
+    interactive_directives: Vec<InteractiveDirective>,
+    interactive_body_parser: InteractiveBodyParser,
+    interactive_mode: bool,
 }
 
 impl LineParser {
@@ -84,6 +87,7 @@ impl LineParser {
         allow_multiple_commands: bool,
         allow_multiline_config: bool,
     ) -> Self {
+        let interactive_body_parser = InteractiveBodyParser::new(expectation_maker.clone());
         Self {
             expectation_maker,
             title: None,
@@ -100,6 +104,9 @@ impl LineParser {
             config: None,
             json_schema_mode: false,
             json_schema_lines: vec![],
+            interactive_directives: vec![],
+            interactive_body_parser,
+            interactive_mode: false,
         }
     }
 
@@ -134,6 +141,11 @@ impl LineParser {
                 // detect json schema mode from accumulated config lines and/or
                 // fence config set via set_testcase_config()
                 self.detect_json_schema_mode();
+
+                // detect interactive mode from accumulated config lines and/or
+                // fence config set via set_testcase_config()
+                self.detect_interactive_mode()
+                    .with_context(|| format!("line {}: parse testcase config lines", index + 1))?;
                 // mark the starting index and store the command line
                 self.output_start_index = Some(index);
                 self.command_lines.push(line.into());
@@ -154,10 +166,10 @@ impl LineParser {
             return Ok(CodeType::CommandContinue);
         }
 
-        // body part, where output expectations are
+        // body part, where output expectations or interactive directives are
         self.position = LineParserPosition::Body;
 
-        // exit code notation
+        // exit code notation (supported in both modes)
         if let Some(exit_code) = extract_exit_code(line) {
             if self.exit_code.is_some() {
                 bail!("line {}: exit code provided multiple times", index + 1)
@@ -169,6 +181,20 @@ impl LineParser {
         // JSON Schema mode: collect all body lines verbatim
         if self.json_schema_mode {
             self.json_schema_lines.push(line.to_string());
+            return Ok(CodeType::Expectation);
+        }
+
+        // Interactive mode: parse as interactive directives
+        if self.interactive_mode {
+            if let Some(directive) = self
+                .interactive_body_parser
+                .parse_line(line, index)
+                .with_context(|| {
+                    format!("parsing interactive directive line {}: {}", index + 1, line)
+                })?
+            {
+                self.interactive_directives.push(directive);
+            }
             return Ok(CodeType::Expectation);
         }
 
@@ -215,11 +241,22 @@ impl LineParser {
             self.config = Some(config.with_defaults_from(&from));
         }
 
+        // Finalize interactive body parser state if interactive mode was active
+        if self.interactive_mode {
+            self.interactive_body_parser
+                .finish()
+                .context("finalizing interactive directives")?;
+        }
+
         self.testcases.push(TestCase {
             title: self.title.to_owned().unwrap_or_default(),
             shell_expression: self.command_lines.join("\n"),
             exit_code: self.exit_code,
-            body: if self.json_schema_mode {
+            body: if self.interactive_mode {
+                ValidationBody::Interactive(InteractiveBody {
+                    directives: self.interactive_directives.clone(),
+                })
+            } else if self.json_schema_mode {
                 ValidationBody::JsonSchema(JsonSchemaBody {
                     schema_source: self.json_schema_lines.join("\n"),
                 })
@@ -244,10 +281,6 @@ impl LineParser {
     }
 
     /// Detect whether the current testcase is in JSON Schema validation mode.
-    ///
-    /// Checks both the fence config (set via `set_testcase_config`) and any
-    /// accumulated `%` multiline config lines. Called when the `$` command line
-    /// is encountered, before body lines are processed.
     fn detect_json_schema_mode(&mut self) {
         // Check fence config first
         if let Some(ref config) = self.config {
@@ -275,6 +308,34 @@ impl LineParser {
         }
     }
 
+    /// Detect whether the current testcase is in interactive mode.
+    fn detect_interactive_mode(&mut self) -> Result<()> {
+        // Check fence config first
+        if let Some(ref config) = self.config {
+            if config.is_interactive() {
+                self.interactive_mode = true;
+                return Ok(());
+            }
+        }
+
+        // Check accumulated % config lines for mode: interactive. Invalid YAML
+        // must fail here: treating it as "not interactive" would parse the body
+        // in the wrong mode.
+        if !self.config_lines.is_empty() {
+            let config = serde_yaml::from_str::<TestCaseConfig>(&self.config_lines.join("\n"))?;
+            if config.is_interactive() {
+                self.interactive_mode = true;
+                return Ok(());
+            }
+        }
+
+        // Check default config
+        if self.default_config.is_interactive() {
+            self.interactive_mode = true;
+        }
+        Ok(())
+    }
+
     fn flush(&mut self) {
         self.title = None;
         self.command_lines = vec![];
@@ -286,6 +347,9 @@ impl LineParser {
         self.config = None;
         self.json_schema_mode = false;
         self.json_schema_lines = vec![];
+        self.interactive_directives = vec![];
+        self.interactive_body_parser.reset();
+        self.interactive_mode = false;
     }
 }
 
@@ -746,6 +810,21 @@ mod tests {
                 schema_source: "type: object".to_string(),
             }),
             "exit code line should not be in schema body"
+        );
+    }
+
+    #[test]
+    fn test_invalid_multiline_config_fails_at_command() {
+        let mut engine = engine(false, true, None);
+        engine
+            .add_testcase_body("% mode: [interactive", 1)
+            .expect("config lines are only collected");
+        let Err(err) = engine.add_testcase_body("$ cmd", 2) else {
+            panic!("invalid config YAML must not be treated as non-interactive");
+        };
+        assert!(
+            format!("{err:#}").contains("line 3: parse testcase config lines"),
+            "error should name the command line, got: {err:#}"
         );
     }
 }

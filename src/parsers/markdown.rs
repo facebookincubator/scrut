@@ -131,14 +131,16 @@ impl Parser for MarkdownParser {
                         serde_yaml::from_str(&format!("{{{}}}", config_lines.join_newline()))
                             .context("parse testcase config")?
                     };
-                    for (index, line) in &code_lines {
-                        line_parser.add_testcase_body(line, *index)?;
-                    }
+                    // Set config BEFORE processing body lines so that interactive
+                    // mode detection works in LineParser when the `$` command is seen
                     line_parser.set_testcase_config(
                         parsed_config
                             .with_defaults_from(&config.defaults)
                             .with_defaults_from(&self.base_testcase_config),
                     );
+                    for (index, line) in &code_lines {
+                        line_parser.add_testcase_body(line, *index)?;
+                    }
                     line_parser.end_testcase(code_lines[code_lines.len() - 1].0)?;
                     title_paragraph.clear();
                 }
