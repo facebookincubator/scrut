@@ -1,0 +1,34 @@
+# Guards the ShipIt export: the repository root declares a path dependency on
+# the `scrutty/` sub-crate, which arrives from a separate internal directory.
+# Nothing else builds Rust on `main` — every other workflow is `pull_request`
+# or `tags: v*` — so without this a broken export would surface only at the
+# next release.
+name: Verify Export
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  manifests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v0-rust-v1
+          shared-key: verify-export
+      - name: Resolve all three manifests
+        run: |
+          set -euo pipefail
+          for manifest in Cargo.toml scrutty/Cargo.toml scrutty/scrutty_macros/Cargo.toml; do
+            test -f "$manifest" || { echo "missing $manifest"; exit 1; }
+            cargo metadata --format-version 1 --manifest-path "$manifest" >/dev/null
+          done
+      - name: Check
+        run: cargo check --all-targets
