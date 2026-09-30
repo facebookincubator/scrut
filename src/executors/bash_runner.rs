@@ -12,7 +12,6 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use tracing::trace;
-use tracing::warn;
 
 use super::context::Context as ExecutionContext;
 use super::runner::Runner;

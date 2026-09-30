@@ -26,6 +26,7 @@ pub mod context;
 pub mod error;
 pub mod execution;
 pub mod executor;
+pub mod interactive_executor;
 pub mod runner;
 pub mod stateful_executor;
 pub mod subprocess_runner;

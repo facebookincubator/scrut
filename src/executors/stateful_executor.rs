@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::ops::Add;
 use std::path::Path;
 use std::thread::sleep;
@@ -23,10 +24,12 @@ use super::executor::DEFAULT_TOTAL_TIMEOUT;
 use super::executor::Executor;
 use super::executor::Result;
 use super::runner::Runner;
+use crate::config::TestMode;
 use crate::executors::error::ExecutionTimeout;
 use crate::output::ExitStatus;
 use crate::output::Output;
 use crate::testcase::TestCase;
+use crate::validation::ValidationFailure;
 
 /// A generator that creates a new instance of a [`super::runner::Runner`] that is provided with a
 /// shared directory.
@@ -111,11 +114,11 @@ impl<'a> ExecutionSession<'a> {
         }
     }
 
-    /// Main loop: prepare, run, check done.
+    /// Main loop: prepare, dispatch, check done.
     fn run_all(&mut self, testcases: &[&TestCase]) -> Result<Vec<Output>> {
         for (index, testcase) in testcases.iter().enumerate() {
             let (testcase, is_global_timeout) = self.prepare(testcase, index);
-            self.run_output(&testcase, index, is_global_timeout, testcases.len())?;
+            self.dispatch(&testcase, index, is_global_timeout, testcases.len())?;
             if self.done {
                 break;
             }
@@ -178,6 +181,58 @@ impl<'a> ExecutionSession<'a> {
         );
 
         (testcase, is_global_timeout)
+    }
+
+    /// Route to mode-specific handler.
+    fn dispatch(
+        &mut self,
+        testcase: &TestCase,
+        index: usize,
+        is_global_timeout: bool,
+        total: usize,
+    ) -> Result<()> {
+        match testcase.config.mode {
+            Some(TestMode::Interactive) => self.run_interactive(testcase, index),
+            _ => self.run_output(testcase, index, is_global_timeout, total),
+        }
+    }
+
+    /// Interactive mode: PTY-based execution via interactive_executor.
+    fn run_interactive(&mut self, testcase: &TestCase, index: usize) -> Result<()> {
+        trace!("executing interactive testcase: {}", &testcase.config);
+        let accumulated_env: BTreeMap<String, String> = self
+            .outputs
+            .iter()
+            .flat_map(|o: &Output| o.captured_env.iter())
+            .map(|(k, v): (&String, &String)| (k.clone(), v.clone()))
+            .collect();
+        let context = self.context.to_owned();
+        match super::interactive_executor::execute_interactive(testcase, context, &accumulated_env)
+        {
+            Ok(output) => {
+                self.outputs.push(output);
+            }
+            Err(super::interactive_executor::InteractiveError::DirectivesFailed(diff)) => {
+                self.outputs.push(Output {
+                    validation_result: Some(ValidationFailure::InteractiveFailed(diff)),
+                    ..Default::default()
+                });
+                if testcase.config.get_fail_fast() {
+                    return Err(ExecutionError::Failed(
+                        index,
+                        std::mem::take(&mut self.outputs),
+                    ));
+                }
+            }
+            Err(super::interactive_executor::InteractiveError::Internal(msg)) => {
+                return Err(ExecutionError::Interactive(
+                    index,
+                    super::interactive_executor::InteractiveError::Internal(msg),
+                    std::mem::take(&mut self.outputs),
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Standard output mode: BashRunner execution + exit status handling.

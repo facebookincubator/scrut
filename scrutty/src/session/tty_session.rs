@@ -241,6 +241,15 @@ impl TtySession {
         Ok(())
     }
 
+    /// Write raw bytes to the session, e.g. single non-UTF-8 bytes from
+    /// `#xx` hex key tokens that cannot be represented as `&str`.
+    pub fn write_bytes(&self, data: &[u8]) -> Result<()> {
+        let mut writer = self.writer.lock().unwrap();
+        writer.write_all(data).context("Failed to write to PTY")?;
+        writer.flush()?;
+        Ok(())
+    }
+
     /// Send a single key to the session
     ///
     /// Accepts either raw escape sequences or human-readable names like "ENTER", "CTRL+C"

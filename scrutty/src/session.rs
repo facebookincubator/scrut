@@ -20,6 +20,7 @@ mod tty_session;
 
 pub use expect::ExpectChain;
 pub use keys::Keys;
+pub use keys::key_name_to_sequence;
 pub use output::clean_tty_output;
 pub use output::strip_ansi_codes;
 pub use piped_session::PipedOutput;

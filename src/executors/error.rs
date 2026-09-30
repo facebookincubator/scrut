@@ -11,6 +11,7 @@ use std::fmt::Display;
 use anyhow::anyhow;
 
 use crate::escaping::Escaper;
+use crate::executors::interactive_executor::InteractiveError;
 use crate::output::Output;
 
 /// The state that describes what kind of timeout (i.e. per execution or over all)
@@ -66,6 +67,10 @@ pub enum ExecutionError {
     /// intentionally skipped by the user.
     /// This is not a final error.
     Skipped(usize),
+
+    /// Returned if a specific [`crate::testcase::TestCase`] execution is failing
+    /// in interactive mode
+    Interactive(usize, InteractiveError, Vec<Output>),
 }
 
 fn stringable_cmp<T: ToString>(a: T, b: T) -> bool {
@@ -137,6 +142,9 @@ impl Display for ExecutionError {
                 write!(f, "test {} failed with fail_fast enabled", idx + 1)
             }
             ExecutionError::Skipped(idx) => write!(f, "skipped test {}", idx + 1),
+            ExecutionError::Interactive(idx, error, _outputs) => {
+                write!(f, "interactive test {} failed: {}", idx + 1, error)
+            }
         }
     }
 }
