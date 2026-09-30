@@ -25,7 +25,7 @@ jobs:
         uses: facebook/install-dotslash@latest
       - name: Download Scrut DotSlash Wrapper
         env:
-          SCRUT_VERSION: v0.3.0
+          SCRUT_VERSION: v0.5.0
         run: |
           curl --proto '=https' --tlsv1.2 -LsSf \
             "https://github.com/facebookincubator/scrut/releases/download/$SCRUT_VERSION/scrut" \

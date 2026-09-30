@@ -12,7 +12,7 @@ Assuming `dotslash` is installed in your system, then you can:
 
 ```bash
 # decide on the version
-$ export SCRUT_VERSION=v0.3.0
+$ export SCRUT_VERSION=v0.5.0
 
 # Download the latest (or specific version) of the Scrut Dotslash file
 $ curl -L https://github.com/facebookincubator/scrut/releases/download/${SCRUT_VERSION}/scrut > scrut

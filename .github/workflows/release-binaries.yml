@@ -80,8 +80,26 @@ jobs:
             echo "ASSET=$archivename.tar.gz" >> $GITHUB_ENV
           fi
 
+      - name: Extract Release Notes
+        shell: bash
+        run: |
+          version="${VERSION#v}"
+          awk -v heading="## [$version] - " '
+            index($0, heading) == 1 { found = 1; next }
+            found && (/^## \[/ || /^\[[^]]+\]: /) { exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if ! grep -q '[^[:space:]]' RELEASE_NOTES.md; then
+            echo "::error::CHANGELOG.md has no entry for $version"
+            exit 1
+          fi
+          # reference-style links such as [@user] are defined at the end of the file
+          echo >> RELEASE_NOTES.md
+          grep -E '^\[[^]]+\]: ' CHANGELOG.md >> RELEASE_NOTES.md
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: RELEASE_NOTES.md
           files: |
             ${{ env.ASSET }}
