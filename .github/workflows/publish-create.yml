@@ -14,7 +14,30 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Publish to crates.io
-        uses: katyo/publish-crates@v2
-        with:
-          registry-token: ${{ secrets.CRATES_IO_REGISTRY_TOKEN }}
+      # The three crates are separate Cargo packages, not workspace members:
+      # `scrut` declares `version` on its path dependency on `scrutty`, which
+      # declares one on `scrutty_macros`, so each must exist on the index
+      # before the one above it is verified. `cargo publish` waits for the
+      # index itself, so publishing bottom-up in sequence is sufficient.
+      # A release need not bump every crate, and crates.io rejects re-uploading
+      # a version, so versions that are already published are skipped.
+      - name: Publish crates
+        shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_REGISTRY_TOKEN }}
+        run: |
+          for manifest in scrutty/scrutty_macros/Cargo.toml scrutty/Cargo.toml Cargo.toml; do
+            package=$(cargo metadata --no-deps --format-version 1 --manifest-path "$manifest" \
+              | jq -er --arg path "$(realpath "$manifest")" \
+                '.packages[] | select(.manifest_path == $path) | "\(.name) \(.version)"')
+            name=${package% *}
+            version=${package#* }
+            status=$(curl -s -o /dev/null -w '%{http_code}' \
+              -A 'scrut-release (https://github.com/facebookincubator/scrut)' \
+              "https://crates.io/api/v1/crates/$name/$version")
+            case "$status" in
+              200) echo "$name $version is already on crates.io, skipping" ;;
+              404) cargo publish --manifest-path "$manifest" ;;
+              *) echo "::error::crates.io returned HTTP $status for $name $version"; exit 1 ;;
+            esac
+          done
