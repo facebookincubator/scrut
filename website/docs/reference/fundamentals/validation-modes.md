@@ -110,3 +110,20 @@ You may include a `$schema` URL in the YAML block, but it is not required:
 "$schema": http://json-schema.org/draft-04/schema#
 type: object
 ```
+
+## `interactive`
+
+Interactive mode tests CLI programs that require live user interaction via a pseudo-terminal (PTY). Instead of comparing captured output, interactive tests drive a terminal session through directives — `WAIT`, `WRITE`, `SEND_KEYS`, and `ASSERT`.
+
+**Example:**
+
+````markdown
+```scrut {mode: interactive}
+$ bash -c 'read -p "Name: " name && echo "Hello $name"'
+WAIT: Name:
+WRITE: Alice
+WAIT: Hello Alice
+```
+````
+
+See [Interactive Mode](/docs/reference/fundamentals/interactive-mode/) for the full directive reference, pattern matching, and configuration options.

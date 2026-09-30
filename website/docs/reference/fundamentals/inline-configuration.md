@@ -328,7 +328,7 @@ Give CRLF\r (escape)
 
 ### `mode`
 
-- Type: **enum(`output`, `jsonschema`)**
+- Type: **enum(`output`, `jsonschema`, `interactive`)**
 - Command Line Parameter: **n/a**
 - Default: **`output`** (implicit)
 
@@ -338,6 +338,7 @@ The `mode` configuration selects the [validation mode](/docs/reference/fundament
 |------|-------------|
 | `output` | Line-by-line diff against output expectations (default) |
 | `jsonschema` | Validate JSON output against an inline YAML schema |
+| `interactive` | Drive a PTY session through directives (WAIT, WRITE, SEND_KEYS, ASSERT) |
 
 See [Validation Modes](/docs/reference/fundamentals/validation-modes/) for full syntax and examples.
 

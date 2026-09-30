@@ -22,6 +22,7 @@ use scrut::config::TestCaseConfig;
 use scrut::executors::context::ContextBuilder;
 use scrut::executors::error::ExecutionError;
 use scrut::executors::error::ExecutionTimeout;
+use scrut::executors::interactive_executor::InteractiveError;
 use scrut::outcome::Outcome;
 use scrut::output::ExitStatus;
 use scrut::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
@@ -37,6 +38,7 @@ use scrut::renderers::structured::JsonRenderer;
 use scrut::renderers::structured::YamlRenderer;
 use scrut::testcase::TestCase;
 use scrut::testcase::TestCaseError;
+use scrut::validation::ValidationFailure;
 use tracing::debug;
 use tracing::debug_span;
 use tracing::info;
@@ -358,7 +360,75 @@ impl Args {
                         continue;
                     }
 
-                    // ... because of a final error
+                    // ... because interactive test failed
+                    ExecutionError::Interactive(index, error, outputs) => {
+                        // validate outputs for testcases that ran before the failure
+                        handle_early_termination(
+                            &outputs,
+                            &testcases,
+                            &mut outcomes,
+                            test.path.display().to_string(),
+                            escaping.clone(),
+                            test.parser_type,
+                            &mut count_success,
+                            &mut count_failed,
+                            &mut count_skipped,
+                            |output, testcase| testcase.validate(output),
+                        );
+
+                        // the failed interactive testcase itself
+                        match error {
+                            InteractiveError::DirectivesFailed(diff) => {
+                                count_failed += 1;
+                                outcomes.push(Outcome {
+                                    location: Some(test.path.display().to_string()),
+                                    testcase: testcases[index].clone(),
+                                    output: ("", "", None).into(),
+                                    escaping: escaping.clone(),
+                                    format: test.parser_type,
+                                    result: Err(TestCaseError::ValidationFailed(
+                                        ValidationFailure::InteractiveFailed(diff),
+                                    )),
+                                });
+                            }
+                            InteractiveError::Internal(msg) => {
+                                count_failed += 1;
+                                outcomes.push(Outcome {
+                                    location: Some(test.path.display().to_string()),
+                                    testcase: testcases[index].clone(),
+                                    output: ("", "", None).into(),
+                                    escaping: escaping.clone(),
+                                    format: test.parser_type,
+                                    result: Err(TestCaseError::InternalError(anyhow::anyhow!(
+                                        "{}", msg
+                                    ))),
+                                });
+                            }
+                        }
+
+                        // mark remaining testcases as skipped
+                        let remaining = testcases.len() - (outputs.len() + 1);
+                        if remaining > 0 {
+                            outcomes.extend(testcases.iter().skip(outputs.len() + 1).map(
+                                |testcase| Outcome {
+                                    location: Some(test.path.display().to_string()),
+                                    testcase: (*testcase).clone(),
+                                    output: ("", "", None).into(),
+                                    escaping: escaping.clone(),
+                                    format: test.parser_type,
+                                    result: Err(TestCaseError::Skipped),
+                                },
+                            ));
+                            count_skipped += remaining;
+                        }
+
+                        pw.println(format!(
+                            "❌ {}: interactive test #{} failed",
+                            style(test.path.to_string_lossy()).red(),
+                            index + 1,
+                        ));
+                        continue;
+                    }
                     _ => bail!("failing in {:?}: {}", test.path, err),
                 },
 

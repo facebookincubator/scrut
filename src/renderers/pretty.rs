@@ -17,6 +17,8 @@ use crate::diff::Diff;
 use crate::diff::DiffLine;
 use crate::escaping::strip_colors;
 use crate::formatln;
+use crate::interactive::InteractiveDiff;
+use crate::interactive::InteractiveDiffLine;
 use crate::newline::BytesNewline;
 use crate::newline::StringNewline;
 use crate::outcome::Outcome;
@@ -395,6 +397,82 @@ impl ErrorRenderer for PrettyColorRenderer {
             out.push_str(&formatln!(""));
             out.push_str(&formatln!("{}", style("actual output:").underlined()));
             for line in failure.output.lines() {
+                out.push_str(&formatln!("  {}", line));
+            }
+        }
+
+        Ok(out)
+    }
+
+    fn render_interactive_failed(
+        &self,
+        _outcome: &Outcome,
+        diff: &InteractiveDiff,
+    ) -> Result<String> {
+        let max_line_num = diff
+            .lines
+            .iter()
+            .map(|line| line.line_number())
+            .max()
+            .unwrap_or(0);
+        let decorator = Decorator::new(max_line_num);
+
+        let mut out = String::new();
+        for line in &diff.lines {
+            match line {
+                InteractiveDiffLine::Passed { directive } => {
+                    out.push_str(
+                        &decorator
+                            .line(
+                                Some(directive.line_number()),
+                                None,
+                                false,
+                                " ",
+                                &format!("\u{2713} {}", directive),
+                            )
+                            .assure_newline(),
+                    );
+                }
+                InteractiveDiffLine::Failed {
+                    directive, error, ..
+                } => {
+                    out.push_str(
+                        &decorator
+                            .line(
+                                Some(directive.line_number()),
+                                None,
+                                false,
+                                "-",
+                                &format!("\u{2717} {}", directive),
+                            )
+                            .assure_newline(),
+                    );
+                    out.push_str(
+                        &decorator
+                            .line(None, None, false, "-", &format!("  {}", error))
+                            .assure_newline(),
+                    );
+                }
+                InteractiveDiffLine::Skipped { directive } => {
+                    out.push_str(
+                        &decorator
+                            .line(
+                                Some(directive.line_number()),
+                                None,
+                                false,
+                                " ",
+                                &format!("\u{2298} {}", directive),
+                            )
+                            .assure_newline(),
+                    );
+                }
+            }
+        }
+
+        if !diff.terminal_output.is_empty() {
+            out.push('\n');
+            out.push_str(&formatln!("terminal output:"));
+            for line in diff.terminal_output.lines() {
                 out.push_str(&formatln!("  {}", line));
             }
         }

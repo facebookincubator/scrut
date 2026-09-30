@@ -16,6 +16,8 @@ use super::renderer::Renderer;
 use crate::diff::Diff;
 use crate::diff::DiffLine;
 use crate::formatln;
+use crate::interactive::InteractiveDiff;
+use crate::interactive::InteractiveDiffLine;
 use crate::newline::BytesNewline;
 use crate::outcome::Outcome;
 use crate::parsers::parser::ParserType;
@@ -180,6 +182,58 @@ impl ErrorRenderer for DiffRenderer {
             output.push_str(&format!("# {line}\n"));
         }
         output.push_str("# ---- JSON SCHEMA VALIDATION FAILED ----\n");
+        Ok(output)
+    }
+
+    fn render_interactive_failed(
+        &self,
+        outcome: &Outcome,
+        diff: &InteractiveDiff,
+    ) -> Result<String> {
+        let title = join_multiline(&outcome.testcase.title, " * ");
+        let mut output = String::new();
+        output.push_str("# ---- INTERACTIVE TEST FAILED ----\n");
+        if let Some(ref location) = outcome.location {
+            output.push_str(&format!("# PATH:  {location}\n"));
+        }
+        output.push_str(&format!("# TITLE: {title}\n"));
+        for line in &diff.lines {
+            match line {
+                InteractiveDiffLine::Passed { directive } => {
+                    output.push_str(&format!(
+                        "# PASS:  [line {}] {}\n",
+                        directive.line_number(),
+                        directive
+                    ));
+                }
+                InteractiveDiffLine::Failed {
+                    directive, error, ..
+                } => {
+                    output.push_str(&format!(
+                        "# FAIL:  [line {}] {}\n",
+                        directive.line_number(),
+                        directive
+                    ));
+                    for err_line in error.lines() {
+                        output.push_str(&format!("# ERROR: {err_line}\n"));
+                    }
+                }
+                InteractiveDiffLine::Skipped { directive } => {
+                    output.push_str(&format!(
+                        "# SKIP:  [line {}] {}\n",
+                        directive.line_number(),
+                        directive
+                    ));
+                }
+            }
+        }
+        if !diff.terminal_output.is_empty() {
+            output.push_str("# TERMINAL OUTPUT:\n");
+            for line in diff.terminal_output.lines() {
+                output.push_str(&format!("# {line}\n"));
+            }
+        }
+        output.push_str("# ---- INTERACTIVE TEST FAILED ----\n");
         Ok(output)
     }
 }
