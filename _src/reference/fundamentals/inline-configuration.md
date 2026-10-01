@@ -41,6 +41,16 @@ Hello Two
 ```
 
 The above test contains per-test configuration
+
+The same configuration can also be expressed in multi-line syntax using `%` prefixed lines before the shell expression:
+
+```scrut
+% timeout: 10s
+$ echo Hello Two
+Hello Two
+```
+
+Both syntaxes are equivalent and can be used interchangeably.
 ````
 
 Some inline-configuration attribute can overwritten by parameters provided on the command-line (see below). The order of precedence is:
@@ -156,6 +166,25 @@ total_timeout: "30m"
 
 All configuration that can be applied *per test case* in Markdown test documents.
 
+Per-test-case configuration can be provided in two ways:
+
+1. **Inline syntax** — a single-line YAML flow mapping in curly braces on the opening fence line:
+   ````markdown
+   ```scrut {timeout: 10s, environment: {"FOO": "bar"}}
+   $ the-command
+   ````
+
+2. **Multiline syntax** — YAML lines prefixed with `% ` before the shell expression inside the code block:
+   ````markdown
+   ```scrut
+   % timeout: 10s
+   % environment:
+   %   FOO: bar
+   $ the-command
+   ````
+
+Both syntaxes are YAML and produce the same result. The multiline syntax is especially useful when configuration is long or contains nested structures, improving readability.
+
 :::note
 
 Mind that [Cram](/docs/reference/formats/cram-format/) does not support per-test-case configuration and that defaults for [Markdown](/docs/reference/formats/markdown-format/) and Cram have slightly different default values. If they differ then *Markdown Default* and *Cram Default* are provided below, if they are the same then only *Default* is mentioned.
@@ -200,6 +229,24 @@ Kill signals are only supported on Linux and MacOS. They are ignored (but valida
 
 :::
 
+### `fail_fast`
+
+- Type: **boolean**
+- Command Line Parameter: **n/a**
+- Default: **`false`**
+
+If set to `true`, stops execution of the entire test document immediately if this test case fails for any reason (exit status, snapshot validation, etc.). All remaining test cases in the document will be marked as skipped. This is useful when a critical test fails and subsequent tests are not meaningful or would fail anyway.
+
+**Example:**
+
+````markdown showLineNumbers
+```scrut {fail_fast: true}
+$ critical-setup-command
+```
+````
+
+In this example, if `critical-setup-command` fails, all subsequent tests in the document are skipped.
+
 ### `environment`
 
 - Type: **object**
@@ -217,6 +264,50 @@ bar
 ```
 ````
 
+Or equivalently, using multiline syntax:
+
+````markdown
+```scrut
+% environment:
+%   FOO: bar
+$ echo $FOO
+bar
+```
+````
+
+### `interpolated`
+
+- Type: **boolean**
+- Command Line Parameter: **n/a**
+- Default: **`false`**
+
+When set to `true`, environment variables referenced in output expectations are interpolated (replaced with their values) before matching against actual output. This supports `$VAR` and `${VAR}` syntax. Use `$$` for a literal dollar sign.
+
+Variables are resolved from the shell environment at the time of test execution, including variables exported in prior test cases.
+
+**Example:**
+
+````markdown showLineNumbers
+Export a variable
+
+```scrut
+$ export GREETING="Hello World"
+```
+
+Use it in expectations
+
+```scrut {interpolated: true}
+$ echo $GREETING
+$GREETING
+```
+````
+
+:::warning
+
+`scrut update` does not preserve variable references in interpolated expectations. Updated expectations will contain literal values. You will need to manually restore `$VAR` references after updating.
+
+:::
+
 ### `keep_crlf`
 
 - Type: **boolean**
@@ -232,6 +323,35 @@ This configuration determines whether carriage return and line feed (CRLF) seque
 ```scrut {keep_crlf: 42}
 $ echo -e "Give CRLF\r\n"
 Give CRLF\r (escape)
+```
+````
+
+### `mode`
+
+- Type: **enum(`output`, `jsonschema`, `interactive`)**
+- Command Line Parameter: **n/a**
+- Default: **`output`** (implicit)
+
+The `mode` configuration selects the [validation mode](/docs/reference/fundamentals/validation-modes/) for the test case. Each mode changes how scrut interprets the expectation body and validates command output.
+
+| Mode | Description |
+|------|-------------|
+| `output` | Line-by-line diff against output expectations (default) |
+| `jsonschema` | Validate JSON output against an inline YAML schema |
+| `interactive` | Drive a PTY session through directives (WAIT, WRITE, SEND_KEYS, ASSERT) |
+
+See [Validation Modes](/docs/reference/fundamentals/validation-modes/) for full syntax and examples.
+
+**Example (JSON Schema mode):**
+
+````markdown showLineNumbers
+```scrut {mode: jsonschema}
+$ echo '{"count": 42}'
+---
+type: object
+properties:
+  count:
+    type: integer
 ```
 ````
 

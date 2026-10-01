@@ -323,3 +323,9 @@ The string `Hello (equal) (equal)` will be read by Scrut as following:
 - If the output of the `my-cli --some arg` is exactly `Hello (equal)`, then the test passes
 
 Meaning: By giving Scrut the explicit ` (equal)` suffix, it will be able to distinguish between the output expectation and the output itself.
+
+## Variable Interpolation
+
+Output expectations can reference environment variables using `$VAR` or `${VAR}` syntax when the test case is configured with `{interpolated: true}`.
+
+See [Inline Configuration](/docs/reference/fundamentals/inline-configuration/#interpolated) for details.

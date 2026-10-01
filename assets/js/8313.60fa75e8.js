@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkstaticdocs_starter=self.webpackChunkstaticdocs_starter||[]).push([[8313],{58313:(e,s,t)=>{t.d(s,{createPacketServices:()=>c.$});var c=t(59923);t(73579)}}]);

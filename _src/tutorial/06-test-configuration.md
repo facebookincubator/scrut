@@ -48,7 +48,12 @@ $ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 
 ### Per-Test-Case Configuration
 
-Per-testcase configuration allows for much more granular control. This configuration must be provided as one-line YAML that is wrapped in curly brackets `{}`. The following example constraints the first test case execution to 10 seconds and the second one to twenty seconds.
+Per-testcase configuration allows for much more granular control. It can be provided in two ways:
+
+1. **Inline syntax**: one-line YAML wrapped in curly brackets `{}` on the opening fence line.
+2. **Multiline syntax**: YAML lines prefixed with `% ` before the shell expression inside the code block.
+
+The following example uses inline syntax to constrain the first test case execution to 10 seconds and the second one to twenty seconds.
 
 ````markdown title="tests/timeout.md" showLineNumbers {3,11}
 # Test One
@@ -62,6 +67,28 @@ $ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
 # Test Two
 
 ```scrut {timeout: 20s}
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
+    jq -r '.[] | .some-other | valid-expression'
+* (glob+)
+```
+````
+
+The same configuration using multiline syntax:
+
+````markdown title="tests/timeout.md" showLineNumbers
+# Test One
+
+```scrut
+% timeout: 10s
+$ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
+    jq -r '.[] | .commit.committer.date + "," + .commit.author.name'
+* (glob+)
+```
+
+# Test Two
+
+```scrut
+% timeout: 20s
 $ curl 'https://api.github.com/repos/jqlang/jq/commits?per_page=5' | \
     jq -r '.[] | .some-other | valid-expression'
 * (glob+)

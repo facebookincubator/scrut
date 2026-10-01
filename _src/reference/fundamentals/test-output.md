@@ -194,6 +194,85 @@ The created diff is compatible with the `patch` command line tool (e.g. `patch -
 
 :::
 
+## JUnit renderer
+
+The `junit` renderer, that can be enabled with `--renderer junit` (or `-r junit`), prints a JUnit XML report, the format that CI test result collectors (GitHub Actions, Jenkins, GitLab, ...) consume.
+
+The report is written to STDOUT, and progress and log messages to STDERR, so it can be redirected into a file:
+
+```bash title="Terminal"
+$ scrut test -r junit tests/example.md > report.xml
+```
+
+Given a document with one passing and one failing test case, the report reads:
+
+```xml title="report.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="2" failures="1" errors="0" skipped="0" time="0.030">
+  <testsuite name="tests/example.md" package="tests" timestamp="2026-09-29T09:41:57" tests="2" failures="1" errors="0" skipped="0" time="0.030">
+    <properties>
+      <property name="scrut.format" value="markdown"/>
+    </properties>
+    <testcase name="Greets the world" classname="tests/example.md" file="tests/example.md" line="6" time="0.014">
+      <system-out>Hello World</system-out>
+    </testcase>
+    <testcase name="Prints the wrong thing" classname="tests/example.md" file="tests/example.md" line="14" time="0.015">
+      <failure type="malformed_output" message="output does not match expectations">// =============================================================================
+// @ tests/example.md:13
+// -----------------------------------------------------------------------------
+// # Prints the wrong thing
+// -----------------------------------------------------------------------------
+// $ echo &quot;Hello Moon&quot;
+// =============================================================================
+
+1     | - Hello World
+   1  | + Hello Moon</failure>
+      <system-out>Hello Moon</system-out>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+**Test suites**
+
+Each [test document](/docs/reference/fundamentals/test-document/) becomes one `<testsuite>`:
+
+- `name` is the path of the document, relative to the current working directory and with `/` separators on all platforms. A document outside the working directory keeps the path it was given.
+- `package` is the directory of the document. It is omitted for documents in the working directory itself.
+- `timestamp` is the local time, without offset, at which the run finished. All suites of one run carry the same value.
+- The `scrut.format` property is the format of the document: `markdown` or `cram`.
+
+**Test cases**
+
+Each [test case](/docs/reference/fundamentals/test-case/) becomes one `<testcase>`:
+
+- `name` is the title of the test case, or `line <number>` if it has none. Duplicate titles within a document get a numeric suffix (`My test #2`), because report consumers identify test cases by `classname` and `name`.
+- `classname` and `file` are the path of the document, as in the suite `name`.
+- `line` is the line of the first [output expectation](/docs/reference/fundamentals/output-expectations/) that did not match, so that annotations point at the failing line. For all other outcomes it is the line of the [shell expression](/docs/reference/fundamentals/shell-expression/).
+- `time` is the execution duration in seconds. It is omitted when the duration is unknown, which is the case for Cram documents and with `--cram-compat`.
+- `<system-out>` and `<system-err>` contain the captured output. Non-printable characters are escaped.
+
+**Outcomes**
+
+| Outcome | Element | `type` |
+| --- | --- | --- |
+| Success | (none) | |
+| Output did not match | `<failure>` | `malformed_output` |
+| Unexpected [exit code](/docs/reference/behavior/exit-codes/) | `<failure>` | `invalid_exit_code` |
+| [JSON Schema](/docs/reference/fundamentals/validation-modes/) invalid, output not JSON, or output does not conform | `<failure>` | `json_schema_invalid_schema`, `json_schema_invalid_json`, `json_schema_validation_errors` |
+| [Interactive](/docs/reference/fundamentals/interactive-mode/) directive failed | `<failure>` | `interactive_failed` |
+| Timeout | `<error>` | `timeout` |
+| Internal error | `<error>` | `internal_error` |
+| Not executed | `<skipped>` | |
+
+The body of `<failure>` and `<error>` is the same explanation the `pretty` renderer prints. A test case is not executed if a test case in the document exits with the [skip exit code](/docs/reference/behavior/exit-codes/#skip-tests-with-exit-code-80), or if an earlier test case timed out or failed with [`fail_fast`](/docs/reference/fundamentals/inline-configuration/#fail_fast) enabled.
+
+:::tip
+
+`scrut test` still exits with code `50` when a test fails. In CI, make sure the step that uploads or publishes `report.xml` also runs when the test step failed (e.g. `if: always()` or `if: failure()` in GitHub Actions).
+
+:::
+
 ## JSON and YAML renderer
 
 These renderer are primarily intended for automation and are to be **considered experimental**.
