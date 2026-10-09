@@ -22,7 +22,7 @@ $ scrut_test "$TESTDIR"/test-document-total-timeout.mdtest 2>&1
 // -----------------------------------------------------------------------------
 // # Run the second test
 // -----------------------------------------------------------------------------
-// $ echo TestB && sleep 0.5 && echo Test2
+// $ echo TestB && sleep 2 && echo Test2
 // =============================================================================
 
 timeout in execution
@@ -45,7 +45,7 @@ $ scrut_test "$TESTDIR"/test-document-total-no-timeout.mdtest --timeout-seconds 
 // -----------------------------------------------------------------------------
 // # Run the second test
 // -----------------------------------------------------------------------------
-// $ echo TestB && sleep 0.5 && echo Test2
+// $ echo TestB && sleep 2 && echo Test2
 // =============================================================================
 
 timeout in execution
