@@ -17,7 +17,6 @@ use anyhow::Context;
 use anyhow::Result;
 use subprocess::Exec;
 use subprocess::ExitStatus;
-use subprocess::NullFile;
 use subprocess::Redirection;
 use tempfile::tempfile_in;
 use tracing::debug;
@@ -55,7 +54,7 @@ impl Runner for SubprocessRunner {
         envs.insert("SHELL".into(), shell.to_string_lossy().to_string());
 
         let mut exec = Exec::cmd(shell)
-            .env_extend(&Vec::from_iter(envs.iter()))
+            .env_extend(&envs)
             .cwd(&context.work_directory);
 
         let input = &testcase.shell_expression as &str;
@@ -69,8 +68,8 @@ impl Runner for SubprocessRunner {
             tmp.seek(std::io::SeekFrom::Start(0))
                 .context("reset STDIN file")?;
             exec = exec
-                .stdout(NullFile)
-                .stderr(NullFile)
+                .stdout(Redirection::Null)
+                .stderr(Redirection::Null)
                 .stdin(Redirection::File(tmp));
         } else {
             exec = exec
@@ -84,11 +83,11 @@ impl Runner for SubprocessRunner {
                         Redirection::Pipe
                     },
                 )
-                .stdin(Redirection::Pipe);
+                .stdin(input.as_bytes().to_vec());
         }
 
         let started = Instant::now();
-        let mut process = exec.detached().popen().context("start process")?;
+        let mut process = exec.detached().start().context("start process")?;
         let span = debug_span!("process", pid = ?process.pid());
         let _s = span.enter();
         trace!(testcase = %&testcase, "running testcase in subprocess");
@@ -96,10 +95,14 @@ impl Runner for SubprocessRunner {
         // when detaching, do not wait for the process to finish
         if is_detached {
             let detached_process =
-                match (process.pid(), testcase.config.detached_kill_signal.clone()) {
-                    (Some(pid), Some(signal)) => Some(DetachedProcess { pid, signal }),
-                    (_, _) => None,
-                };
+                testcase
+                    .config
+                    .detached_kill_signal
+                    .clone()
+                    .map(|signal| DetachedProcess {
+                        pid: process.pid(),
+                        signal,
+                    });
             debug!(
                 "detaching, not waiting for output, marking for kill = {}",
                 detached_process.is_some(),
@@ -113,7 +116,7 @@ impl Runner for SubprocessRunner {
         }
 
         // constraint max execution time?
-        let mut comm = process.communicate_start(Some(input.as_bytes().to_vec()));
+        let mut comm = process.communicate().context("communicate with process")?;
         if let Some(timeout) = testcase.config.timeout {
             comm = comm.limit_time(timeout);
             debug!(
@@ -124,27 +127,24 @@ impl Runner for SubprocessRunner {
             debug!("waiting for output (no timeout)");
         }
 
-        // wait for the process to finish and handle the result
-        let (stdout, stderr, exit_code) = match comm.read() {
+        // wait for the process to finish and handle the result; on error, the
+        // output read until then is kept
+        let (mut stdout, mut stderr) = (vec![], vec![]);
+        let exit_code = match comm.read_to(&mut stdout, &mut stderr) {
             // successs! we are happy!
-            Ok((stdout, stderr)) => (
-                stdout,
-                stderr,
-                process.wait().context("capture process exit")?.into(),
-            ),
+            Ok(()) => process.wait().context("capture process exit")?.into(),
 
             // bummer, a sad thing happened
             Err(err) => {
                 let kind = err.kind();
-                let (stdout, stderr) = err.capture;
 
                 // windows execution returns [`ErrorKind::BrokenPipe`] in case
                 // anything explicitly runs `exit <code>`
-                let exit = if cfg!(windows) {
-                    let process_result = process.wait().unwrap_or(ExitStatus::Undetermined);
+                if cfg!(windows) {
+                    let process_code = process.wait().ok().and_then(|status| status.code());
                     if kind == ErrorKind::TimedOut {
                         OutputExitStatus::Timeout(testcase.config.timeout.unwrap_or_default())
-                    } else if let ExitStatus::Exited(code) = process_result {
+                    } else if let Some(code) = process_code {
                         (code as i32).into()
                     } else {
                         OutputExitStatus::Unknown
@@ -153,20 +153,13 @@ impl Runner for SubprocessRunner {
                     OutputExitStatus::Timeout(testcase.config.timeout.unwrap_or_default())
                 } else {
                     OutputExitStatus::Unknown
-                };
-                (stdout, stderr, exit)
+                }
             }
         };
 
         Ok(Output {
-            stderr: testcase
-                .render_output(&stderr.unwrap_or_default()[..])?
-                .to_vec()
-                .into(),
-            stdout: testcase
-                .render_output(&stdout.unwrap_or_default()[..])?
-                .to_vec()
-                .into(),
+            stderr: testcase.render_output(&stderr[..])?.to_vec().into(),
+            stdout: testcase.render_output(&stdout[..])?.to_vec().into(),
             exit_code,
             detached_process: None,
             captured_env: BTreeMap::new(),
@@ -184,11 +177,9 @@ impl Default for SubprocessRunner {
 
 impl From<ExitStatus> for OutputExitStatus {
     fn from(value: ExitStatus) -> Self {
-        match value {
-            ExitStatus::Exited(code) => OutputExitStatus::Code(code as i32),
-            ExitStatus::Signaled(_) => OutputExitStatus::Unknown,
-            ExitStatus::Other(code) => OutputExitStatus::Code(code),
-            ExitStatus::Undetermined => OutputExitStatus::Unknown,
+        match value.code() {
+            Some(code) => OutputExitStatus::Code(code as i32),
+            None => OutputExitStatus::Unknown,
         }
     }
 }
