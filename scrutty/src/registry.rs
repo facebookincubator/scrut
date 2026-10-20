@@ -214,8 +214,8 @@ mod tests {
 
     #[test]
     fn test_collect_resource_ids_partial_match() {
-        // "alph" should match "alpha" via contains()
-        let ids = test_resources(collect_resource_ids(Some("alph")));
+        // "alph" should match "alpha" via contains() // typos:ignore-line
+        let ids = test_resources(collect_resource_ids(Some("alph"))); // typos:ignore-line
         assert!(ids.contains(&"resource:alpha_only"));
         assert!(!ids.contains(&"resource:beta_only"));
     }
