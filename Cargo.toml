@@ -36,7 +36,7 @@ rand = "0.10.3"
 regex = "1.13.1"
 scrutty = { version = "0.1.1", path = "scrutty" }
 serde = { version = "1.0.229", features = ["derive", "rc"] }
-serde_json = { version = "1.0.151", features = ["alloc", "float_roundtrip", "raw_value", "unbounded_depth"] }
+serde_json = { version = "1.0.154", features = ["alloc", "float_roundtrip", "raw_value", "unbounded_depth"] }
 serde_yaml = "0.9.25"
 shell-escape = "0.1.5"
 strip-ansi-escapes = "0.2.1"
