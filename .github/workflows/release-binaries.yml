@@ -56,7 +56,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build Binary
-        run: cargo build --release
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Build Archive
         shell: bash
@@ -67,9 +67,9 @@ jobs:
 
           mkdir -p "$dirname"
           if [ "${{ matrix.os }}" = "windows-2022" ]; then
-            mv "target/release/$binary_name.exe" "$dirname"
+            mv "target/${{ matrix.target }}/release/$binary_name.exe" "$dirname"
           else
-            mv "target/release/$binary_name" "$dirname"
+            mv "target/${{ matrix.target }}/release/$binary_name" "$dirname"
           fi
 
           if [ "${{ matrix.os }}" = "windows-2022" ]; then
