@@ -15,7 +15,7 @@ categories = ["development-tools::testing"]
 [dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.2", features = ["derive"] }
-inventory = "0.3.24"
+inventory = "0.3.25"
 portable-pty = "0.8.1"
 regex = "1.13.1"
 scrutty_macros = { version = "0.1.1", path = "scrutty_macros" }
