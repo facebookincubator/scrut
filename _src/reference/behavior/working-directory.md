@@ -18,7 +18,7 @@ $ test -f "$(pwd)/file"
 ```
 ````
 
-The directory within which tests are being executed can be explicitly set using the `--work-directory` parameter for the `test` and `update` commands. If that parameter is set then *all tests* from *all test files* are executed run within that directory, and the directory is *not removed* afterwards.
+The directory within which tests are being executed can be explicitly set using the `--work-directory` parameter for the `test` and `update` commands. If that parameter is set then *all tests* from *all test files* are executed within that directory, and the directory is *not removed* afterwards.
 
 :::note
 
