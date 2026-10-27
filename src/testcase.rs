@@ -157,7 +157,7 @@ impl TestCase {
             })?;
 
         // Build validator
-        let compiled = jsonschema::JSONSchema::compile(&schema_value).map_err(|e| {
+        let compiled = jsonschema::Validator::new(&schema_value).map_err(|e| {
             TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(
                 JsonSchemaFailure {
                     kind: JsonSchemaFailureKind::InvalidSchema,
