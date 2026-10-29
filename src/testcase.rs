@@ -184,8 +184,11 @@ impl TestCase {
         // Validate output against schema
         match compiled.validate(&output_value) {
             Ok(()) => Ok(()),
-            Err(error_iter) => {
-                let errors: Vec<String> = error_iter.map(|e| e.to_string()).collect();
+            Err(_) => {
+                let errors: Vec<String> = compiled
+                    .iter_errors(&output_value)
+                    .map(|e| e.to_string())
+                    .collect();
                 Err(TestCaseError::ValidationFailed(
                     ValidationFailure::JsonSchemaFailed(JsonSchemaFailure {
                         kind: JsonSchemaFailureKind::ValidationErrors,
