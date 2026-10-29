@@ -30,7 +30,7 @@ dunce = "1.0.5"
 globset = { version = "0.4.20", features = ["serde1"] }
 humantime = "2.4.0"
 indicatif = { version = "0.18.6", features = ["futures", "improved_unicode", "rayon", "tokio"] }
-jsonschema = "0.42.2"
+jsonschema = "0.43.0"
 quick-xml = { version = "0.42.0", features = ["overlapped-lists", "serialize"] }
 rand = "0.10.3"
 regex = "1.13.1"
