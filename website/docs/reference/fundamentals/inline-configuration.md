@@ -320,9 +320,9 @@ This configuration determines whether carriage return and line feed (CRLF) seque
 **Example:**
 
 ````markdown showLineNumbers
-```scrut {keep_crlf: 42}
-$ echo -e "Give CRLF\r\n"
-Give CRLF\r (escape)
+```scrut {keep_crlf: true}
+$ echo -e "Give CRLF\r"
+Give CRLF\r (escaped)
 ```
 ````
 

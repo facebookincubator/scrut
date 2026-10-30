@@ -56,7 +56,8 @@ The following **constraints** apply:
 
 - A markdown document can contain as many [test cases](/docs/reference/fundamentals/test-case/) as needed (0..n)
 - Each code block in a [test case](/docs/reference/fundamentals/test-case/) may only have *one* (1) [shell expression](/docs/reference/fundamentals/shell-expression/) (each [test case](/docs/reference/fundamentals/test-case/) is considered atomic)
-- Code blocks that do not denote a language (or a different language than `scrut`) will be ignored
+- Code blocks that denote a language other than `scrut` will be ignored
+- Code blocks that do not denote any language are an error: Scrut will not parse the document until a language is added (`scrut` to make the block a test case, or any other language to have it ignored)
 
 With that in mind, consider the following markdown document that contains not only [test cases](/docs/reference/fundamentals/test-case/) but arbitrary other text and other code blocks. This is idiomatic Scrut markdown document that combines tests and documentation:
 
