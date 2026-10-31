@@ -115,7 +115,7 @@ impl Parser for MarkdownParser {
                 } => {
                     if language.is_empty() {
                         anyhow::bail!(MarkdownParserError::MissingLanguageSpecifier {
-                            line: starting_line_number,
+                            line: starting_line_number + 1,
                         });
                     }
                 }
@@ -892,5 +892,40 @@ world
     #[test]
     fn test_extract_code_block_start_without_language() {
         assert_eq!(Some(("```", "", "")), extract_code_block_start("```"));
+    }
+
+    #[test]
+    fn test_missing_language_error_reports_line_of_fence() {
+        let markdown_test = r#"
+This is a title
+
+```
+$ echo hello
+hello
+```
+"#;
+        let err = parser().parse(markdown_test).unwrap_err();
+        assert_eq!(
+            "Code block starting at line 4 is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block.",
+            err.to_string()
+        );
+    }
+
+    #[test]
+    fn test_missing_language_error_counts_front_matter_lines() {
+        let markdown_test = r#"---
+total_timeout: 3m 3s
+---
+
+```
+$ echo hello
+hello
+```
+"#;
+        let err = parser().parse(markdown_test).unwrap_err();
+        assert_eq!(
+            "Code block starting at line 5 is missing language specifier. Use ```scrut to make this block a Scrut test, or any other language to make Scrut skip this block.",
+            err.to_string()
+        );
     }
 }
