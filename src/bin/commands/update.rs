@@ -289,12 +289,7 @@ impl Args {
 
                     // determine new location
                     let output_path = if is_conversion {
-                        let stripped_path = test
-                            .path
-                            .file_stem()
-                            .map_or(&test.path as &Path, Path::new)
-                            .to_path_buf();
-                        stripped_path.with_extension(output_type.file_extension())
+                        test.path.with_extension(output_type.file_extension())
                     } else if self.replace {
                         test.path.clone()
                     } else {
