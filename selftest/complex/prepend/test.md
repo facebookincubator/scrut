@@ -25,6 +25,6 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 ## Run test with prepend should make it succeed
 
 ```scrut
-$ "${SCRUT_BIN}" test --match-markdown "*.mdtest" --prepend-test-file-paths "$TESTDIR/prepend.mdtest" "$TESTDIR/actual.mdtest"
-Result: 0 document(s) with 0 testcase(s): 0 succeeded, 0 failed and 0 skipped
+$ "${SCRUT_BIN}" test --match-markdown "*.mdtest" "$TESTDIR/actual.mdtest" --prepend-test-file-paths "$TESTDIR/prepend.mdtest"
+Result: 1 document(s) with 2 testcase(s): 2 succeeded, 0 failed and 0 skipped
 ```
