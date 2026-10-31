@@ -47,7 +47,7 @@ tracing = { version = "0.1.41", features = ["attributes", "valuable"] }
 tracing-subscriber = { version = "0.3.23", features = ["chrono", "env-filter", "json", "local-time", "parking_lot", "registry"] }
 unicode_categories = "0.1.1"
 which = "8.0.6"
-wildmatch = "2.1"
+wildmatch = "2.7.0"
 
 [dev-dependencies]
 insta = { version = "1.49.0", features = ["colors", "console", "default", "glob", "globset", "json", "serde", "walkdir"] }
