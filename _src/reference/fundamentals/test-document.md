@@ -6,7 +6,7 @@
 
 Scrut supports two formats for test documents:
 - [Markdown](/docs/reference/formats/markdown-format/), the default and recommended format for writing test documents.
-- [Cram](/docs/reference/formats/markdown-format/), supported for legacy reasons to run or migrate tests written for the now [deprecated Cram framework](https://github.com/aiiie/cram)
+- [Cram](/docs/reference/formats/cram-format/), supported for legacy reasons to run or migrate tests written for the now [deprecated Cram framework](https://github.com/aiiie/cram)
 
 ## Document Writing Recommendations
 

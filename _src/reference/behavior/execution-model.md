@@ -10,7 +10,7 @@ Each subsequent [test case](/docs/reference/fundamentals/test-case/) in the same
 
 ## Shared Ephemeral Directories
 
-Each [test cases](/docs/reference/fundamentals/test-case/) in the same document executes in the the same [working directory](/docs/reference/behavior/working-directory/) and is provided with the same temporary directory ([`$TEMPDIR`](/docs/reference/fundamentals/environment-variables/)). Both directories will be removed (cleaned up) after test execution - independent of whether the test execution succeeds or fails.
+Each [test case](/docs/reference/fundamentals/test-case/) in the same document executes in the same [working directory](/docs/reference/behavior/working-directory/) and is provided with the same temporary directory ([`$TMPDIR`](/docs/reference/fundamentals/environment-variables/)). Both directories will be removed (cleaned up) after test execution - independent of whether the test execution succeeds or fails.
 
 - *Exception*: If the `--work-directory` command-line parameter is provided, then this directory will not be cleaned up (deleted) after execution. A temporary directory, that still will be removed after execution, will be created within the working directory.
 

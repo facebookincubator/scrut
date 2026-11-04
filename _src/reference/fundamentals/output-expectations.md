@@ -221,7 +221,7 @@ The following example shows an expectation of a string that renders as a bold, r
 
 ```scrut
 $ echo -e 'Foo \033[1;31mBar\033[0m Baz'
-Foo \x1b[1mBar\x1b[0m Baz (escaped)
+Foo \x1b[1;31mBar\x1b[0m Baz (escaped)
 ```
 ````
 
