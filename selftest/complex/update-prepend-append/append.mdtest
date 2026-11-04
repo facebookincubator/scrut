@@ -1,0 +1,11 @@
+---
+append:
+  - included.mdtest
+---
+
+# Document with an outdated test and appended file
+
+```scrut
+$ echo new
+old
+```

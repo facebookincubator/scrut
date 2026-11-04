@@ -1,0 +1,11 @@
+---
+prepend:
+  - included.mdtest
+---
+
+# Document with an outdated test and prepended file
+
+```scrut
+$ echo new
+old
+```

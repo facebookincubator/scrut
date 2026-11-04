@@ -178,7 +178,7 @@ impl Args {
             }
 
             // TODO(config): Add support for updating prepended and appended files (or reason why not)
-            if !config.prepend.is_empty() || !config.prepend.is_empty() {
+            if !config.prepend.is_empty() || !config.append.is_empty() {
                 count_skipped += 1;
                 pw.println(format!(
                     "⏩ {}: skipped, because 'prepend' or 'append' are currently not supported in update",
