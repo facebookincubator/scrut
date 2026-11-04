@@ -395,6 +395,7 @@ impl NumberedLines for Vec<(usize, String)> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
@@ -533,6 +534,47 @@ hello
             },
             testcases[0]
         );
+    }
+
+    #[test]
+    fn test_testcase_environment_overrides_document_defaults() {
+        let markdown_test = r#"
+---
+defaults:
+  environment:
+    FOO: default
+    BAR: default
+---
+
+Inline configuration
+
+```scrut {environment: {FOO: inline}}
+$ echo hello
+hello
+```
+
+Multi-line configuration
+
+```scrut
+% environment: {FOO: multiline}
+$ echo hello
+hello
+```
+"#;
+        let parser = parser();
+        let (_, testcases) = parser.parse(markdown_test).expect("must parse");
+        assert_eq!(2, testcases.len());
+        for (testcase, expected_foo) in testcases.iter().zip(["inline", "multiline"]) {
+            assert_eq!(
+                testcase.config.environment,
+                BTreeMap::from([
+                    ("BAR".to_string(), "default".to_string()),
+                    ("FOO".to_string(), expected_foo.to_string()),
+                ]),
+                "for testcase {:?}",
+                testcase.title,
+            );
+        }
     }
 
     #[test]

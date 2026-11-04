@@ -384,11 +384,11 @@ impl TestCaseConfig {
                 .or_else(|| defaults.output_stream.clone()),
             keep_crlf: self.keep_crlf.or(defaults.keep_crlf),
             timeout: self.timeout.or(defaults.timeout),
-            environment: self
+            environment: defaults
                 .environment
                 .clone()
                 .into_iter()
-                .chain(defaults.environment.clone())
+                .chain(self.environment.clone())
                 .collect(),
             detached: self.detached.or(defaults.detached),
             detached_kill_signal: self
@@ -854,6 +854,53 @@ interpolated: true
                 "test {idx}: for config {config:?}"
             );
         }
+    }
+
+    fn environment(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn test_testcase_config_with_defaults_from_merges_environment() {
+        let testcase = TestCaseConfig {
+            environment: environment(&[("BOTH", "testcase"), ("TESTCASE_ONLY", "testcase")]),
+            ..Default::default()
+        };
+        let defaults = TestCaseConfig {
+            environment: environment(&[("BOTH", "default"), ("DEFAULT_ONLY", "default")]),
+            ..Default::default()
+        };
+        assert_eq!(
+            testcase.with_defaults_from(&defaults).environment,
+            environment(&[
+                ("BOTH", "testcase"),
+                ("DEFAULT_ONLY", "default"),
+                ("TESTCASE_ONLY", "testcase"),
+            ]),
+        );
+    }
+
+    #[test]
+    fn test_testcase_config_with_overrides_from_merges_environment() {
+        let base = TestCaseConfig {
+            environment: environment(&[("BOTH", "base"), ("BASE_ONLY", "base")]),
+            ..Default::default()
+        };
+        let overrides = TestCaseConfig {
+            environment: environment(&[("BOTH", "override"), ("OVERRIDE_ONLY", "override")]),
+            ..Default::default()
+        };
+        assert_eq!(
+            base.with_overrides_from(&overrides).environment,
+            environment(&[
+                ("BASE_ONLY", "base"),
+                ("BOTH", "override"),
+                ("OVERRIDE_ONLY", "override"),
+            ]),
+        );
     }
 
     #[test]
