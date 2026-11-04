@@ -7,7 +7,7 @@ Scrut sets some environment variables when executing tests. They are set just be
 - `TESTDIR`: absolute path of the directory where the document that contains the test that is currently being executed is in
 - `TESTFILE`: name of the [test document](/docs/reference/fundamentals/test-document/) that contains the test that is currently being executed
 - `TESTSHELL`: shell that in which the test is being executed in (default `/bin/bash`, see `--shell` flag on commands)
-- `TMPDIR`: absolute path to a temporary directory that will be cleaned up after the test is executed. This directory is shared in between all executed tests across all test documents. Tools like `mktemp` will make use of `TMPDIR` automatically.
+- `TMPDIR`: absolute path to a temporary directory that will be cleaned up after the test document is executed. This directory is shared in between all test cases within the same test document; each test document gets its own. Tools like `mktemp` will make use of `TMPDIR` automatically.
 - `SCRUT_TEST`: path to the test document and the line number, separated by a colon (e.g. `some/test.md:123`). *This variable is recommend to use when deciding whether an execution is within Scrut.*
 
 :::tip

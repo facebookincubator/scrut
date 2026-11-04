@@ -136,7 +136,7 @@ Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 
 :::note
 
-The amount of lines that are printed is controlled by the `--multiline-match-lines` flag. The default is `100` to strike a balance between meaningful output and flooding the terminal. If more lines than that are produced then only the first 50 and last 50 lines are printed, with a hint that there are more lines in between:
+The amount of lines that are printed is controlled by the `--max-multiline-matched-lines` flag. The default is `100` to strike a balance between meaningful output and flooding the terminal. If more lines than that are produced then only the first 50 and last 50 lines are printed, with a hint that there are more lines in between:
 
 ```bash title="Terminal"
 $ scrut test --max-multiline-matched-lines=2 some-test.md
@@ -161,7 +161,7 @@ $ scrut test --max-multiline-matched-lines=2 some-test.md
 Result: 1 document(s) with 1 testcase(s): 0 succeeded, 1 failed and 0 skipped
 ```
 
-If you set `--multiline-match-lines` to less or equal `1` then Scrut will not print any lines that match the expectation, but only the expectation itself:
+If you set `--max-multiline-matched-lines` to less or equal `1` then Scrut will not print any lines that match the expectation, but only the expectation itself:
 
 ```
    1  | + foo

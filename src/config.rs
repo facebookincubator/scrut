@@ -302,9 +302,10 @@ pub struct TestCaseConfig {
 
     /// Sleep for some time before starting this test (i.e. continuing with testing).
     /// If path is provided, then wait will be aborted (and the testing continues)
-    /// as soon as path exists and the test will fail if it does not show up
-    /// within duration. The wait time does not count against timeout(), but
-    /// against total_timeout(). To be used in conjunction with detached().
+    /// as soon as path exists. If path does not show up within duration, the
+    /// wait ends and the test continues as normal. The wait time does not
+    /// count against timeout(), but against total_timeout(). To be used in
+    /// conjunction with detached().
     #[serde(
         skip_serializing_if = "Option::is_none",
         deserialize_with = "TestCaseWait::parse"
