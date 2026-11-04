@@ -29,8 +29,8 @@ pub fn interpolate_str(text: &str, env: &BTreeMap<String, String>) -> String {
         \$                          # start with a $
         (
             \$ |                    # escaped $
-            \{([A-Za-z0-9]+)\} |    # wrapped variable ${VAR}
-            ([A-Za-z0-9_]+)         # plain variable $VAR
+            \{([A-Za-z_][A-Za-z0-9_]*)\} |  # wrapped variable ${VAR}
+            ([A-Za-z_][A-Za-z0-9_]*)        # plain variable $VAR
         )",
         )
         .unwrap()
@@ -98,6 +98,45 @@ mod tests {
     fn test_braced_syntax() {
         let env = make_env(&[("FOO", "bar")]);
         assert_eq!(interpolate_str("Hello ${FOO}", &env), "Hello bar");
+    }
+
+    #[test]
+    fn test_underscore_in_name() {
+        let env = make_env(&[("FOO_BAR", "baz")]);
+        assert_eq!(interpolate_str("Hello $FOO_BAR", &env), "Hello baz");
+    }
+
+    #[test]
+    fn test_braced_underscore_in_name() {
+        let env = make_env(&[("FOO_BAR", "baz")]);
+        assert_eq!(interpolate_str("Hello ${FOO_BAR}", &env), "Hello baz");
+    }
+
+    #[test]
+    fn test_braced_leading_underscore() {
+        let env = make_env(&[("_FOO", "baz")]);
+        assert_eq!(interpolate_str("Hello ${_FOO}", &env), "Hello baz");
+    }
+
+    #[test]
+    fn test_escaped_braced_underscore_in_name() {
+        let env = make_env(&[("FOO_BAR", "baz")]);
+        assert_eq!(
+            interpolate_str("Hello $${FOO_BAR}", &env),
+            "Hello ${FOO_BAR}"
+        );
+    }
+
+    #[test]
+    fn test_leading_digit_is_not_a_name() {
+        let env = make_env(&[("1A", "x")]);
+        assert_eq!(interpolate_str("$1A", &env), "$1A");
+    }
+
+    #[test]
+    fn test_braced_leading_digit_is_not_a_name() {
+        let env = make_env(&[("1A", "x")]);
+        assert_eq!(interpolate_str("${1A}", &env), "${1A}");
     }
 
     #[test]

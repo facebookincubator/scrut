@@ -3,7 +3,7 @@
 ## Export a variable
 
 ```scrut
-$ export FOO=bar
+$ export FOO=bar FOO_BAR=baz
 ```
 
 ## Variable resolved in shell expression
@@ -25,4 +25,11 @@ Hello $FOO
 ```scrut
 $ echo "Hello \$FOO"
 Hello $FOO
+```
+
+## Braced variable with underscore resolved in output expectation
+
+```scrut {interpolated: true}
+$ echo "Hello $FOO_BAR"
+Hello ${FOO_BAR}
 ```
