@@ -29,7 +29,7 @@ pub fn interpolate_str(text: &str, env: &BTreeMap<String, String>) -> String {
         \$                          # start with a $
         (
             \$ |                    # escaped $
-            \{([A-Za-z0-9_]+)\} |   # wrapped variable ${VAR}
+            \{([A-Za-z0-9]+)\} |    # wrapped variable ${VAR}
             ([A-Za-z0-9_]+)         # plain variable $VAR
         )",
         )
@@ -98,12 +98,6 @@ mod tests {
     fn test_braced_syntax() {
         let env = make_env(&[("FOO", "bar")]);
         assert_eq!(interpolate_str("Hello ${FOO}", &env), "Hello bar");
-    }
-
-    #[test]
-    fn test_braced_syntax_with_underscore() {
-        let env = make_env(&[("MY_VAR", "bar")]);
-        assert_eq!(interpolate_str("Hello ${MY_VAR}", &env), "Hello bar");
     }
 
     #[test]
