@@ -19,12 +19,13 @@ File exists
 ## Run test with append
 
 ```scrut
-$ "${SCRUT_BIN}" test --work-directory "$(pwd)" --match-markdown "*.mdtest" --append-test-file-paths "$TESTDIR/append.mdtest" "$TESTDIR/actual.mdtest"
-Result: 0 document(s) with 0 testcase(s): 0 succeeded, 0 failed and 0 skipped
+$ "${SCRUT_BIN}" test --work-directory "$(pwd)" --match-markdown "*.mdtest" "$TESTDIR/actual.mdtest" --append-test-file-paths "$TESTDIR/append.mdtest"
+Result: 1 document(s) with 2 testcase(s): 2 succeeded, 0 failed and 0 skipped
 ```
 
 There should be no file around afterwards
 
 ```scrut
 $ test -f some-file || echo "File was removed"
+File was removed
 ```
