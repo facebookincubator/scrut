@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-11-04
+
+### Fixed
+
+- Release archives contained binaries built for the build machine rather than the platform in their name: `macos-x86_64` held an ARM64 binary ([#60](https://github.com/facebookincubator/scrut/issues/60)), `linux-aarch64` an x86_64 one, and the Linux binaries were dynamically linked against glibc instead of statically against musl.
+- With `interpolated: true`, `${VAR}` was left as is when the name contained an underscore, such as `${MY_VAR}`. Both `$VAR` and `${VAR}` now match shell variable names, so a name starting with a digit (`$1A`) is no longer replaced. By [@bkudria] in [#73](https://github.com/facebookincubator/scrut/pull/73).
+- A variable set in both front-matter `defaults.environment` and a testcase's `environment` took the default's value. The testcase's value now wins, and `defaults.environment` can no longer replace variables Scrut sets itself, such as `TESTDIR` and `TMPDIR`. By [@bkudria] in [#74](https://github.com/facebookincubator/scrut/pull/74).
+- `scrut update` updated documents that use only `append` without running the appended testcases. It now skips them, as it already did for `prepend`. By [@bkudria] in [#75](https://github.com/facebookincubator/scrut/pull/75).
+- `scrut update --convert` wrote the converted document to the current directory instead of next to its source, and dropped inner dots from the file name (`foo.bar.t` became `foo.md`). Documents with the same name in different directories could overwrite each other. By [@bkudria] in [#76](https://github.com/facebookincubator/scrut/pull/76).
+- The error for a code block without a language reported a line number one lower than the opening fence. By [@bkudria] in [#78](https://github.com/facebookincubator/scrut/pull/78).
+- Timeouts could end up to 1 ms early. By [@roschaefer] in [#84](https://github.com/facebookincubator/scrut/pull/84).
+- Errors in the reference documentation, including a wrong flag name and examples that failed against their own command. By [@bkudria] in [#77](https://github.com/facebookincubator/scrut/pull/77) and [@roschaefer] in [#61](https://github.com/facebookincubator/scrut/pull/61).
+
 ## [0.5.0] - 2026-10-01
 
 ### Added
@@ -127,6 +140,7 @@ No release notes. Not published to crates.io.
 
 No release notes.
 
+[0.5.1]: https://github.com/facebookincubator/scrut/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/facebookincubator/scrut/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/facebookincubator/scrut/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/facebookincubator/scrut/compare/v0.4.1...v0.4.2
@@ -136,4 +150,6 @@ No release notes.
 [0.2.3]: https://github.com/facebookincubator/scrut/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/facebookincubator/scrut/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/facebookincubator/scrut/releases/tag/v0.2.1
+[@bkudria]: https://github.com/bkudria
 [@cboone]: https://github.com/cboone
+[@roschaefer]: https://github.com/roschaefer
