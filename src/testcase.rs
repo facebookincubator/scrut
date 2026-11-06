@@ -10,6 +10,7 @@ use std::fmt::Display;
 #[cfg(test)]
 use std::time::Duration;
 
+use jsonschema::Draft;
 use serde::Serialize;
 use serde::Serializer;
 use serde::ser::SerializeMap;
@@ -156,8 +157,12 @@ impl TestCase {
                 ))
             })?;
 
-        // Build validator
-        let compiled = jsonschema::Validator::new(&schema_value).map_err(|e| {
+        // Without a `$schema`, a schema is Draft 7, which asserts `format`
+        let options = match Draft::Draft7.detect(&schema_value) {
+            Draft::Unknown => jsonschema::options(),
+            draft => jsonschema::options().with_draft(draft),
+        };
+        let compiled = options.build(&schema_value).map_err(|e| {
             TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(
                 JsonSchemaFailure {
                     kind: JsonSchemaFailureKind::InvalidSchema,
@@ -693,6 +698,39 @@ required:
                 other
             ),
         }
+    }
+
+    #[test]
+    fn test_validate_json_schema_without_schema_uri_asserts_format() {
+        let testcase = json_schema_testcase("type: string\nformat: email\n");
+        let output: Output = ("\"not an email\"\n", "").into();
+        match testcase.validate(&output) {
+            Err(TestCaseError::ValidationFailed(ValidationFailure::JsonSchemaFailed(f))) => {
+                assert_eq!(
+                    f.kind,
+                    JsonSchemaFailureKind::ValidationErrors,
+                    "a schema without `$schema` is Draft 7, which asserts `format`"
+                );
+            }
+            other => panic!(
+                "expected JsonSchemaFailed(ValidationErrors), got {:?}",
+                other
+            ),
+        }
+    }
+
+    #[test]
+    fn test_validate_json_schema_draft_2020_12_annotates_format() {
+        let schema = r#"
+"$schema": https://json-schema.org/draft/2020-12/schema
+type: string
+format: email
+"#;
+        let testcase = json_schema_testcase(schema);
+        let output: Output = ("\"not an email\"\n", "").into();
+        testcase
+            .validate(&output)
+            .expect("Draft 2020-12 treats `format` as an annotation, not an assertion");
     }
 
     #[test]
