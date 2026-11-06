@@ -104,7 +104,7 @@ In this example the test **fails** because `"extra"` is not declared in `propert
 
 ### Optional `$schema`
 
-You may include a `$schema` URL in the YAML block, but it is not required:
+You may include a `$schema` URL in the YAML block, but it is not required. Without it, the schema is read as Draft 7, which validates `format` keywords such as `format: email`:
 
 ```yaml
 "$schema": http://json-schema.org/draft-04/schema#
