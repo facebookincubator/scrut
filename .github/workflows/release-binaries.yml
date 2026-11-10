@@ -51,11 +51,17 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install musl C Compiler
+        if: endsWith(matrix.target, '-linux-musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
 
       - name: Build Binary
+        env:
+          CC_aarch64_unknown_linux_musl: musl-gcc
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Build Archive
