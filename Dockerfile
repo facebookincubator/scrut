@@ -17,6 +17,7 @@ RUN mkdir -p src/bin && \
     printf 'extern crate scrut;\n\ninclude!(concat!(env!("OUT_DIR"), "/version.rs"));\n\nfn main() {}\n' > src/bin/main.rs && \
     echo > src/lib.rs
 COPY Cargo.toml build.rs .
+COPY scrutty scrutty
 RUN --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \

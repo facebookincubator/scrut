@@ -2,6 +2,7 @@
 !/build.rs
 !/Cargo.toml
 !/Makefile
+!/scrutty
 !/selftest
 !/src
 /src/bin/fb*
