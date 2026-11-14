@@ -17,6 +17,7 @@ use crate::formatln;
 use crate::generators::outcome::OutcomeTestGenerator;
 use crate::newline::StringNewline;
 use crate::outcome::Outcome;
+use crate::parsers::line_parser::LineParserPosition;
 use crate::parsers::markdown::DEFAULT_MARKDOWN_LANGUAGES;
 use crate::parsers::markdown::MarkdownIterator;
 use crate::parsers::markdown::MarkdownToken;
@@ -77,7 +78,7 @@ impl UpdateGenerator for MarkdownUpdateGenerator {
                     language,
                     config_lines,
                     comment_lines,
-                    code_lines: _,
+                    code_lines,
                 } => {
                     let config = if config_lines.is_empty() {
                         "".into()
@@ -89,7 +90,11 @@ impl UpdateGenerator for MarkdownUpdateGenerator {
                         .with_context(|| format!("testcase number {}", testcase_index + 1))?;
                     let backticks = "`".repeat(max_backtick_size(&generated) + 1);
                     updated.push_str(&formatln!("{}{}{}", &backticks, &language, &config));
-                    for (_, line) in &comment_lines {
+                    let mut position = LineParserPosition::Start;
+                    let prefix_lines = code_lines
+                        .iter()
+                        .take_while(|(_, line)| position.parse_prefix_line(line, true).is_some());
+                    for (_, line) in comment_lines.iter().chain(prefix_lines) {
                         updated.push_str(&line.assure_newline());
                     }
                     updated.push_str(&generated);

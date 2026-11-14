@@ -32,7 +32,7 @@ use crate::validation::ValidationBody;
 static EXIT_CODE_EXPRESSION: LazyLock<Regex> =
     LazyLock::new(|| Regex::new("^\\[([0-9]+)\\]$").expect("exit code expression must compile"));
 
-pub(super) enum CodeType {
+pub(crate) enum CodeType {
     Config,
     Comment,
     CommandStart,
@@ -42,12 +42,35 @@ pub(super) enum CodeType {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-pub(super) enum LineParserPosition {
+pub(crate) enum LineParserPosition {
     Start = 0,
     Config = 1,
     PreCommand = 2,
     Command = 3,
     Body = 4,
+}
+
+impl LineParserPosition {
+    pub(crate) fn parse_prefix_line(
+        &mut self,
+        line: &str,
+        allow_multiline_config: bool,
+    ) -> Option<CodeType> {
+        // comments within / between config or commands, before body
+        if *self < Self::Command && is_comment(line) {
+            return Some(CodeType::Comment);
+        }
+
+        // config preceding command
+        if allow_multiline_config && *self <= Self::Config {
+            if line.starts_with("% ") {
+                *self = Self::Config;
+                return Some(CodeType::Config);
+            }
+            *self = Self::PreCommand;
+        }
+        None
+    }
 }
 
 /// A meta parser engine, that can be used for any line-by-line test file format
@@ -112,19 +135,14 @@ impl LineParser {
 
     /// Add a line that is either a command or an expectation
     pub(super) fn add_testcase_body(&mut self, line: &str, index: usize) -> Result<CodeType> {
-        // comments within / between config or commands, before body
-        if self.position < LineParserPosition::Command && is_comment(line) {
-            return Ok(CodeType::Comment);
-        }
-
-        // config preceding command
-        if self.allow_multiline_config && self.position <= LineParserPosition::Config {
-            if let Some(line) = line.strip_prefix("% ") {
-                self.config_lines.push(line.into());
-                self.position = LineParserPosition::Config;
-                return Ok(CodeType::Config);
+        if let Some(code_type) = self
+            .position
+            .parse_prefix_line(line, self.allow_multiline_config)
+        {
+            if matches!(code_type, CodeType::Config) {
+                self.config_lines.push(line[2..].into());
             }
-            self.position = LineParserPosition::PreCommand;
+            return Ok(code_type);
         }
 
         // start of command
