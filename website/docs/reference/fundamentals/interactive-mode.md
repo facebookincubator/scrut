@@ -15,6 +15,21 @@ Use interactive mode when your CLI:
 
 For programs that simply print output to stdout and exit, use the default [`output` mode](/docs/reference/fundamentals/validation-modes/#output-default) instead.
 
+### Terminal cursor queries
+
+Some interactive applications ask the terminal where the cursor is before
+displaying an editor. Scrut answers these requests (`ESC[6n`) automatically, so
+you do not need to script a reply in your test.
+
+The answer gives the cursor's row and column, counting from 1 at the top-left
+corner. Scrut tracks the position as text is printed, the cursor moves, lines
+wrap, or the terminal is resized. It handles Unicode character widths and requests
+or characters that arrive in separate chunks.
+
+The reply goes directly to the application as terminal input, not as a scripted
+keystroke or an addition to captured output. No extra test directive is needed.
+Only cursor-position requests are answered; other terminal requests are not.
+
 ## Directives
 
 Interactive test bodies consist of **directives** — instructions that tell scrut what to do with the running PTY session. There are four directive types, each available in both long form and short form:
