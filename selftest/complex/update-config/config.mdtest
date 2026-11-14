@@ -1,0 +1,24 @@
+# Multiline configuration
+
+```scrut {timeout: 2s}
+# before configuration
+% output_stream: stderr
+# between configuration lines
+% environment:
+%   MESSAGE: err
+# after configuration
+$ echo "$MESSAGE" >&2
+err
+```
+
+```scrut
+$ echo new
+old
+```
+
+```scrut
+$ printf '%s\n' \
+> '% output_stream: stdout' '# output comment'
+% output_stream: old
+# old output comment
+```

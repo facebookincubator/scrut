@@ -1,0 +1,22 @@
+# Pre-command expectations
+
+```scrut
+
+$ printf '\nhello\n'
+hello
+```
+
+```scrut
+hello
+$ echo hello
+```
+
+```scrut
+% environment:
+%   MESSAGE: hello
+
+% output_stream: stderr
+# output comment
+$ printf '\n%% output_stream: stderr\n# output comment\n%s\n' "$MESSAGE"
+hello
+```
