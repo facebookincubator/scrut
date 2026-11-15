@@ -108,14 +108,21 @@ fn escaped_expectation_ascii(line: &[u8]) -> String {
 }
 
 /// All non-printable unicode are rendered as hexadecimal escape sequence, all
-/// white-spaces as escaped character classes, everything else is printed
+/// white-spaces as escaped character classes, everything else is printed.
+/// If anything is escaped, backslashes are escaped as well, so that the result
+/// resolves back into the original string.
 fn escaped_printable_unicode(bytes: &[u8]) -> String {
     let mut seq = [0; 4];
     if let Ok(s) = String::from_utf8(bytes.to_vec()) {
+        if !s.chars().any(|c| c.is_other()) {
+            return s;
+        }
         return s
             .chars()
             .map(|c| {
-                if c.is_other() {
+                if c == '\\' {
+                    "\\\\".to_string()
+                } else if c.is_other() {
                     let raw = c.encode_utf8(&mut seq).as_bytes();
                     escaped_printable_ascii(raw)
                 } else {
@@ -161,8 +168,11 @@ pub fn strip_colors_bytes(input: &[u8]) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
 
+    use super::Escaper;
     use super::escaped_printable_ascii;
     use super::escaped_printable_unicode;
+    use crate::expectation::ExpectationMaker;
+    use crate::rules::registry::RuleRegistry;
 
     #[test]
     fn test_bytes_as_printable_unicode() {
@@ -177,6 +187,8 @@ mod tests {
                 "foo \x1b[2;5;0;31;47m\t😂\x1d[0m",
                 "foo \\x1b[2;5;0;31;47m\\t😂\\x1d[0m",
             ),
+            ("C:\\temp", "C:\\temp"),
+            ("C:\\temp\tdone", "C:\\\\temp\\tdone"),
         ];
 
         for (from, expect) in tests {
@@ -207,5 +219,37 @@ mod tests {
             let escaped = escaped_printable_ascii(from.as_bytes());
             assert_eq!(expect, &escaped, "from `{from}`");
         }
+    }
+
+    #[test]
+    fn test_escaped_expectation_matches_line() {
+        let maker = ExpectationMaker::new(RuleRegistry::default());
+        let lines: Vec<&[u8]> = vec![
+            b"foo\tbar\n",
+            b"C:\\temp\n",
+            b"C:\\temp\tdone\n",
+            b"\x1b[0;32m\"\\\\t\"\x1b[0m\n",
+            b"foo\\x41\x07\n",
+            b"\xff\\t\n",
+        ];
+
+        for escaper in [Escaper::Unicode, Escaper::Ascii] {
+            for line in &lines {
+                let expression = escaper.escaped_expectation(line);
+                let expectation = maker
+                    .parse(&expression)
+                    .unwrap_or_else(|_| panic!("parse `{expression}`"));
+                assert!(
+                    expectation.matches(line),
+                    "{escaper:?}: `{expression}` matches {:?}",
+                    lossy_string!(line),
+                );
+            }
+        }
+
+        assert_eq!(
+            "C:\\temp",
+            Escaper::Unicode.escaped_expectation(b"C:\\temp\n")
+        );
     }
 }
