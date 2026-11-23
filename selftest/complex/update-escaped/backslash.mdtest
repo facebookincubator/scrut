@@ -1,0 +1,5 @@
+# Output with a backslash and a tab
+
+```scrut
+$ printf 'C:\\temp\tdone\n'
+```
