@@ -46,7 +46,7 @@
     "yarn": "^1.5"
   },
   "devDependencies": {
-    "yarn-audit-fix": "^10.1.1"
+    "yarn-audit-fix": "^11.1.0"
   },
   "resolutions": {
     "lodash-es": ">=4.18.0",
